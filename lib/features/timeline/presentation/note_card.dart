@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NoteCard extends StatefulWidget {
@@ -52,13 +53,7 @@ class _NoteCardState extends State<NoteCard> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              displayNote.user.name ??
-                                  displayNote.user.username,
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            child: _UserName(user: displayNote.user),
                           ),
                           Text(
                             timeago.format(
@@ -114,6 +109,40 @@ class _NoteCardState extends State<NoteCard> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _UserName extends StatelessWidget {
+  const _UserName({required this.user});
+
+  final User user;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = user.name ?? user.username;
+    final remoteHandle =
+        user.host != null ? '@${user.username}@${user.host}' : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          displayName,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (remoteHandle != null)
+          Text(
+            remoteHandle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+      ],
     );
   }
 }
