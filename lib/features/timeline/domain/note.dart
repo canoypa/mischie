@@ -16,6 +16,7 @@ sealed class Note with _$Note {
     Note? renote,
     List<Note>? replies,
     @Default([]) List<DriveFile> files,
+    @Default({}) Map<String, int> reactions,
   }) = _Note;
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);

@@ -102,6 +102,10 @@ class _NoteCardState extends State<NoteCard> {
                           _MediaGrid(files: displayNote.files),
                         ],
                       ],
+                      if (displayNote.reactions.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _Reactions(reactions: displayNote.reactions),
+                      ],
                     ],
                   ),
                 ),
@@ -127,6 +131,40 @@ class _Avatar extends StatelessWidget {
     return CircleAvatar(
       radius: 20,
       backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+    );
+  }
+}
+
+class _Reactions extends StatelessWidget {
+  const _Reactions({required this.reactions});
+
+  final Map<String, int> reactions;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = reactions.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: sorted.map((e) {
+        // カスタム絵文字 (:name@.:) をスターに置換
+        final label = e.key.replaceAll(RegExp(r':[^:]+:'), '⭐');
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$label ${e.value}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        );
+      }).toList(),
     );
   }
 }
