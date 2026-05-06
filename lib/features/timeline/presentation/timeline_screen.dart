@@ -18,6 +18,7 @@ class TimelineScreen extends ConsumerStatefulWidget {
 class TimelineScreenState extends ConsumerState<TimelineScreen> {
   final _scrollController = ScrollController();
   bool _loadingMore = false;
+  int _pendingCount = 0;
 
   @override
   void initState() {
@@ -26,8 +27,32 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ValueNotifier を listen してカウントを受け取る
+    final notifier = ref.read(timelineNotifierProvider.notifier);
+    notifier.pendingCount.removeListener(_onPendingChanged);
+    notifier.pendingCount.addListener(_onPendingChanged);
+  }
+
+  void _onPendingChanged() {
+    if (!mounted) return;
+    setState(() {
+      _pendingCount =
+          ref.read(timelineNotifierProvider.notifier).pendingCount.value;
+    });
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
+    // removeListener は notifier が先に dispose されている場合があるので try
+    try {
+      ref
+          .read(timelineNotifierProvider.notifier)
+          .pendingCount
+          .removeListener(_onPendingChanged);
+    } catch (_) {}
     super.dispose();
   }
 
@@ -58,7 +83,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   Widget build(BuildContext context) {
     final timelineAsync = ref.watch(timelineNotifierProvider);
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
-    final pendingCount = ref.watch(timelinePendingCountProvider);
+    final pendingCount = _pendingCount;
 
     return timelineAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

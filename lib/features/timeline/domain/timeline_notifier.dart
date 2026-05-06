@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/core/streaming/streaming_service.dart';
@@ -15,16 +16,6 @@ final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
   return TimelineRepository(client);
 });
 
-/// ストリーミングで届いた未表示ノート数。
-final timelinePendingCountProvider =
-    NotifierProvider<PendingCountNotifier, int>(PendingCountNotifier.new);
-
-class PendingCountNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-  void set(int v) => state = v;
-}
-
 final timelineNotifierProvider =
     AsyncNotifierProvider<TimelineNotifier, List<Note>>(TimelineNotifier.new);
 
@@ -32,6 +23,9 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   StreamingService? _streaming;
   StreamSubscription<Note>? _subscription;
   final List<Note> _pending = [];
+
+  /// ストリーミングで届いた未表示ノート数。UI が listen して使う。
+  final pendingCount = ValueNotifier<int>(0);
 
   @override
   Future<List<Note>> build() async {
@@ -41,7 +35,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _streaming?.dispose();
     _streaming = null;
     _pending.clear();
-    ref.read(timelinePendingCountProvider.notifier).set(0);
+    pendingCount.value = 0;
 
     if (authState is AuthStateAuthenticated) {
       _startStreaming(authState.host, authState.accessToken);
@@ -62,7 +56,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _streaming!.connect();
     _subscription = _streaming!.noteStream.listen((note) {
       _pending.insert(0, note);
-      ref.read(timelinePendingCountProvider.notifier).set(_pending.length);
+      pendingCount.value = _pending.length;
     });
   }
 
@@ -72,13 +66,13 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     final current = state.value ?? [];
     state = AsyncValue.data([..._pending, ...current]);
     _pending.clear();
-    ref.read(timelinePendingCountProvider.notifier).set(0);
+    pendingCount.value = 0;
   }
 
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
     _pending.clear();
-    ref.read(timelinePendingCountProvider.notifier).set(0);
+    pendingCount.value = 0;
+    state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(timelineRepositoryProvider);
       if (repo == null) return [];
