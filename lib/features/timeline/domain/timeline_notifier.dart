@@ -17,16 +17,11 @@ final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
 
 /// ストリーミングで届いた未表示ノート数。
 final timelinePendingCountProvider =
-    NotifierProvider<_IntNotifier, int>(_IntNotifier.new);
+    NotifierProvider<PendingCountNotifier, int>(PendingCountNotifier.new);
 
-/// インクリメントするたびに TimelineScreen が最上部へスクロールする。
-final timelineScrollToTopProvider =
-    NotifierProvider<_IntNotifier, int>(_IntNotifier.new);
-
-class _IntNotifier extends Notifier<int> {
+class PendingCountNotifier extends Notifier<int> {
   @override
   int build() => 0;
-  void increment() => state++;
   void set(int v) => state = v;
 }
 
@@ -102,4 +97,3 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     state = AsyncValue.data([...current, ...older]);
   }
 }
-

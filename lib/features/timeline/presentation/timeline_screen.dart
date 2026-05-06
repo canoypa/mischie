@@ -5,8 +5,11 @@ import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
+/// HomeScreen から scrollToTop() を呼ぶための GlobalKey。
+final timelineScreenKey = GlobalKey<TimelineScreenState>();
+
 class TimelineScreen extends ConsumerStatefulWidget {
-  const TimelineScreen({super.key});
+  TimelineScreen() : super(key: timelineScreenKey);
 
   @override
   ConsumerState<TimelineScreen> createState() => TimelineScreenState();
@@ -53,9 +56,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // scrollToTop シグナルを監視
-    ref.listen(timelineScrollToTopProvider, (prev, next) => scrollToTop());
-
     final timelineAsync = ref.watch(timelineNotifierProvider);
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
     final pendingCount = ref.watch(timelinePendingCountProvider);
@@ -91,7 +91,8 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                             ? const Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Center(
-                                    child: CircularProgressIndicator()),
+                                  child: CircularProgressIndicator(),
+                                ),
                               )
                             : const SizedBox(height: 80);
                       }
@@ -112,9 +113,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                 child: _NewNotesChip(
                   count: pendingCount,
                   onTap: () {
-                    ref
-                        .read(timelineNotifierProvider.notifier)
-                        .flushPending();
+                    ref.read(timelineNotifierProvider.notifier).flushPending();
                     scrollToTop();
                   },
                 ),
@@ -156,8 +155,11 @@ class _NewNotesChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.arrow_upward,
-                  size: 16, color: colorScheme.onPrimaryContainer),
+              Icon(
+                Icons.arrow_upward,
+                size: 16,
+                color: colorScheme.onPrimaryContainer,
+              ),
               const SizedBox(width: 4),
               Text(
                 '新着 $count 件',
@@ -174,4 +176,3 @@ class _NewNotesChip extends StatelessWidget {
     );
   }
 }
-
