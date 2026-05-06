@@ -12,23 +12,17 @@ class MfmText extends StatelessWidget {
     super.key,
     this.emojis = const {},
     this.style,
-    this.maxLines,
-    this.overflow,
   });
 
   final String text;
   final Map<String, String> emojis;
   final TextStyle? style;
-  final int? maxLines;
-  final TextOverflow? overflow;
 
   @override
   Widget build(BuildContext context) {
-    return Mfm(
-      mfmText: text,
+    return SimpleMfm(
+      text,
       style: style,
-      maxLines: maxLines,
-      overflow: overflow,
       emojiBuilder: (context, emojiName, emojiStyle) {
         final url = emojis[emojiName];
         if (url == null) {

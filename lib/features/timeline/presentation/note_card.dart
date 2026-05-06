@@ -221,13 +221,17 @@ class _MediaGrid extends StatelessWidget {
               aspectRatio: 16 / 9,
               child: _MediaTile(file: images.first),
             )
-          : GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 2,
-              crossAxisSpacing: 2,
-              children: images.take(4).map((f) => _MediaTile(file: f)).toList(),
+          : AspectRatio(
+              // 2 cols: 2 images → 1 row (2:1), 3-4 images → 2 rows (1:1)
+              aspectRatio: images.length == 2 ? 2.0 : 1.0,
+              child: GridView.count(
+                crossAxisCount: 2,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 2,
+                crossAxisSpacing: 2,
+                children:
+                    images.take(4).map((f) => _MediaTile(file: f)).toList(),
+              ),
             ),
     );
   }
