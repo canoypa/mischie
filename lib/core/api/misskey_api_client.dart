@@ -26,4 +26,15 @@ class MisskeyApiClient {
     );
     return response.data!;
   }
+
+  Future<List<Map<String, dynamic>>> postList(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await _dio.post<List<dynamic>>(
+      path,
+      data: body ?? {},
+    );
+    return response.data!.cast<Map<String, dynamic>>();
+  }
 }
