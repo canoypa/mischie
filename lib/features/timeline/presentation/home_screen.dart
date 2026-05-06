@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
+import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/timeline/presentation/timeline_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -19,6 +20,12 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: const TimelineScreen(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ComposeScreen())),
+        child: const Icon(Icons.edit),
+      ),
     );
   }
 }

@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 
-final composeNotifierProvider =
-    AsyncNotifierProvider<ComposeNotifier, void>(ComposeNotifier.new);
+final composeNotifierProvider = AsyncNotifierProvider<ComposeNotifier, void>(
+  ComposeNotifier.new,
+);
 
 class ComposeNotifier extends AsyncNotifier<void> {
   @override
