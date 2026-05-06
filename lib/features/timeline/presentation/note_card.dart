@@ -27,6 +27,10 @@ class _NoteCardState extends ConsumerState<NoteCard> {
     final isRenote = note.renote != null;
     final hasCw = displayNote.cw != null;
 
+    // ローカルサーバー絵文字キャッシュ + ノートに紐づくリモート絵文字をマージ
+    final serverEmojis = ref.watch(emojiCacheProvider).value ?? {};
+    final emojis = {...serverEmojis, ...displayNote.emojis};
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Padding(
@@ -77,7 +81,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                               Expanded(
                                 child: MfmText(
                                   displayNote.cw!,
-                                  emojis: ref.watch(emojiCacheProvider).value ?? {},
+                                  emojis: emojis,
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -107,7 +111,10 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                       ],
                       if (displayNote.reactions.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        _Reactions(reactions: displayNote.reactions),
+                        _Reactions(
+                          reactions: displayNote.reactions,
+                          emojis: emojis,
+                        ),
                       ],
                     ],
                   ),
@@ -172,14 +179,14 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _Reactions extends ConsumerWidget {
-  const _Reactions({required this.reactions});
+class _Reactions extends StatelessWidget {
+  const _Reactions({required this.reactions, required this.emojis});
 
   final Map<String, int> reactions;
+  final Map<String, String> emojis;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final emojis = ref.watch(emojiCacheProvider).value ?? {};
+  Widget build(BuildContext context) {
     final sorted = reactions.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
