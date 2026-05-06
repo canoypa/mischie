@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -12,8 +13,8 @@ const _scopes = 'read:account write:notes';
 
 class OAuthService {
   Future<({String host, String accessToken})> login(String host) async {
-    final codeVerifier = _generateCodeVerifier();
-    final codeChallenge = _generateCodeChallenge(codeVerifier);
+    final codeVerifier = generateCodeVerifier();
+    final codeChallenge = generateCodeChallenge(codeVerifier);
     final state = const Uuid().v4();
 
     final authEndpoint = Uri.https(host, '/oauth/authorize', {
@@ -67,13 +68,15 @@ class OAuthService {
     return (host: host, accessToken: accessToken);
   }
 
-  String _generateCodeVerifier() {
+  @visibleForTesting
+  String generateCodeVerifier() {
     final random = Random.secure();
     final bytes = List<int>.generate(32, (_) => random.nextInt(256));
     return base64UrlEncode(bytes).replaceAll('=', '');
   }
 
-  String _generateCodeChallenge(String verifier) {
+  @visibleForTesting
+  String generateCodeChallenge(String verifier) {
     final bytes = utf8.encode(verifier);
     final digest = sha256.convert(bytes);
     return base64UrlEncode(digest.bytes).replaceAll('=', '');
