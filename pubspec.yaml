@@ -47,6 +47,7 @@ dependencies:
   http: ^1.6.0
   cached_network_image: ^3.4.1
   timeago: ^3.7.1
+  web_socket_channel: ^3.0.3
 
 dev_dependencies:
   flutter_test:
