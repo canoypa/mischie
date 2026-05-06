@@ -1,21 +1,23 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class NoteCard extends StatefulWidget {
+class NoteCard extends ConsumerStatefulWidget {
   const NoteCard({super.key, required this.note});
 
   final Note note;
 
   @override
-  State<NoteCard> createState() => _NoteCardState();
+  ConsumerState<NoteCard> createState() => _NoteCardState();
 }
 
-class _NoteCardState extends State<NoteCard> {
+class _NoteCardState extends ConsumerState<NoteCard> {
   bool _cwExpanded = false;
 
   @override
@@ -75,7 +77,7 @@ class _NoteCardState extends State<NoteCard> {
                               Expanded(
                                 child: MfmText(
                                   displayNote.cw!,
-                                  emojis: displayNote.emojis,
+                                  emojis: ref.watch(emojiCacheProvider).value ?? {},
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -96,7 +98,7 @@ class _NoteCardState extends State<NoteCard> {
                         if (displayNote.text != null)
                           MfmText(
                             displayNote.text!,
-                            emojis: displayNote.emojis,
+                            emojis: ref.watch(emojiCacheProvider).value ?? {},
                           ),
                         if (displayNote.files.isNotEmpty) ...[
                           const SizedBox(height: 8),
