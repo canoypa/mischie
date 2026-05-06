@@ -24,20 +24,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Home')),
-        ),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: Text('Home'))),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     ],
   );
 });
 
 class _AuthStateListenable extends ChangeNotifier {
   _AuthStateListenable(Ref ref, AsyncValue<AuthState> initial) {
-    ref.listen(authNotifierProvider, (_, __) => notifyListeners());
+    ref.listen(authNotifierProvider, (prev, next) => notifyListeners());
   }
 }

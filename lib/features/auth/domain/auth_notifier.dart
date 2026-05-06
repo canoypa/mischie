@@ -3,12 +3,11 @@ import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/auth/data/oauth_service.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 
-final oauthServiceProvider = Provider<OAuthService>(
-  (ref) => OAuthService(),
-);
+final oauthServiceProvider = Provider<OAuthService>((ref) => OAuthService());
 
-final authNotifierProvider =
-    AsyncNotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override

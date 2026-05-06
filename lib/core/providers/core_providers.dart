@@ -15,8 +15,5 @@ final misskeyApiClientProvider = FutureProvider<MisskeyApiClient?>((ref) async {
   final storage = ref.watch(tokenStorageProvider);
   final host = await storage.readServerHost();
   if (host == null) return null;
-  return MisskeyApiClient(
-    host: host,
-    getToken: storage.readAccessToken,
-  );
+  return MisskeyApiClient(host: host, getToken: storage.readAccessToken);
 });

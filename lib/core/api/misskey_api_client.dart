@@ -2,13 +2,15 @@ import 'package:dio/dio.dart';
 import 'package:mischie/core/api/auth_interceptor.dart';
 
 class MisskeyApiClient {
-  MisskeyApiClient({required String host, required Future<String?> Function() getToken})
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: 'https://$host/api/',
-            contentType: 'application/json',
-          ),
-        ) {
+  MisskeyApiClient({
+    required String host,
+    required Future<String?> Function() getToken,
+  }) : _dio = Dio(
+         BaseOptions(
+           baseUrl: 'https://$host/api/',
+           contentType: 'application/json',
+         ),
+       ) {
     _dio.interceptors.add(AuthInterceptor(getToken));
   }
 
