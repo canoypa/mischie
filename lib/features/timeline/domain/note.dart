@@ -18,6 +18,7 @@ sealed class Note with _$Note {
     @Default([]) List<DriveFile> files,
     @Default({}) Map<String, int> reactions,
     @Default({}) Map<String, String> emojis,
+    @Default({}) Map<String, String> reactionEmojis,
   }) = _Note;
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);

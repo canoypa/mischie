@@ -29,7 +29,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
 
     // ローカルサーバー絵文字キャッシュ + ノートに紐づくリモート絵文字をマージ
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? {};
-    final emojis = {...serverEmojis, ...displayNote.emojis};
+    final emojis = {...serverEmojis, ...displayNote.emojis, ...displayNote.reactionEmojis};
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Note {
 
- String get id; String get createdAt; User get user; String? get text; String? get cw; Note? get renote; List<Note>? get replies; List<DriveFile> get files; Map<String, int> get reactions; Map<String, String> get emojis;
+ String get id; String get createdAt; User get user; String? get text; String? get cw; Note? get renote; List<Note>? get replies; List<DriveFile> get files; Map<String, int> get reactions; Map<String, String> get emojis; Map<String, String> get reactionEmojis;
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $NoteCopyWith<Note> get copyWith => _$NoteCopyWithImpl<Note>(this as Note, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.renote, renote) || other.renote == renote)&&const DeepCollectionEquality().equals(other.replies, replies)&&const DeepCollectionEquality().equals(other.files, files)&&const DeepCollectionEquality().equals(other.reactions, reactions)&&const DeepCollectionEquality().equals(other.emojis, emojis));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.renote, renote) || other.renote == renote)&&const DeepCollectionEquality().equals(other.replies, replies)&&const DeepCollectionEquality().equals(other.files, files)&&const DeepCollectionEquality().equals(other.reactions, reactions)&&const DeepCollectionEquality().equals(other.emojis, emojis)&&const DeepCollectionEquality().equals(other.reactionEmojis, reactionEmojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,user,text,cw,renote,const DeepCollectionEquality().hash(replies),const DeepCollectionEquality().hash(files),const DeepCollectionEquality().hash(reactions),const DeepCollectionEquality().hash(emojis));
+int get hashCode => Object.hash(runtimeType,id,createdAt,user,text,cw,renote,const DeepCollectionEquality().hash(replies),const DeepCollectionEquality().hash(files),const DeepCollectionEquality().hash(reactions),const DeepCollectionEquality().hash(emojis),const DeepCollectionEquality().hash(reactionEmojis));
 
 @override
 String toString() {
-  return 'Note(id: $id, createdAt: $createdAt, user: $user, text: $text, cw: $cw, renote: $renote, replies: $replies, files: $files, reactions: $reactions, emojis: $emojis)';
+  return 'Note(id: $id, createdAt: $createdAt, user: $user, text: $text, cw: $cw, renote: $renote, replies: $replies, files: $files, reactions: $reactions, emojis: $emojis, reactionEmojis: $reactionEmojis)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $NoteCopyWith<$Res>  {
   factory $NoteCopyWith(Note value, $Res Function(Note) _then) = _$NoteCopyWithImpl;
 @useResult
 $Res call({
- String id, String createdAt, User user, String? text, String? cw, Note? renote, List<Note>? replies, List<DriveFile> files, Map<String, int> reactions, Map<String, String> emojis
+ String id, String createdAt, User user, String? text, String? cw, Note? renote, List<Note>? replies, List<DriveFile> files, Map<String, int> reactions, Map<String, String> emojis, Map<String, String> reactionEmojis
 });
 
 
@@ -65,7 +65,7 @@ class _$NoteCopyWithImpl<$Res>
 
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? user = null,Object? text = freezed,Object? cw = freezed,Object? renote = freezed,Object? replies = freezed,Object? files = null,Object? reactions = null,Object? emojis = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? user = null,Object? text = freezed,Object? cw = freezed,Object? renote = freezed,Object? replies = freezed,Object? files = null,Object? reactions = null,Object? emojis = null,Object? reactionEmojis = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -77,6 +77,7 @@ as Note?,replies: freezed == replies ? _self.replies : replies // ignore: cast_n
 as List<Note>?,files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
 as List<DriveFile>,reactions: null == reactions ? _self.reactions : reactions // ignore: cast_nullable_to_non_nullable
 as Map<String, int>,emojis: null == emojis ? _self.emojis : emojis // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,reactionEmojis: null == reactionEmojis ? _self.reactionEmojis : reactionEmojis // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,
   ));
 }
@@ -180,10 +181,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String createdAt,  User user,  String? text,  String? cw,  Note? renote,  List<Note>? replies,  List<DriveFile> files,  Map<String, int> reactions,  Map<String, String> emojis)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String createdAt,  User user,  String? text,  String? cw,  Note? renote,  List<Note>? replies,  List<DriveFile> files,  Map<String, int> reactions,  Map<String, String> emojis,  Map<String, String> reactionEmojis)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Note() when $default != null:
-return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.renote,_that.replies,_that.files,_that.reactions,_that.emojis);case _:
+return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.renote,_that.replies,_that.files,_that.reactions,_that.emojis,_that.reactionEmojis);case _:
   return orElse();
 
 }
@@ -201,10 +202,10 @@ return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.re
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String createdAt,  User user,  String? text,  String? cw,  Note? renote,  List<Note>? replies,  List<DriveFile> files,  Map<String, int> reactions,  Map<String, String> emojis)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String createdAt,  User user,  String? text,  String? cw,  Note? renote,  List<Note>? replies,  List<DriveFile> files,  Map<String, int> reactions,  Map<String, String> emojis,  Map<String, String> reactionEmojis)  $default,) {final _that = this;
 switch (_that) {
 case _Note():
-return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.renote,_that.replies,_that.files,_that.reactions,_that.emojis);}
+return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.renote,_that.replies,_that.files,_that.reactions,_that.emojis,_that.reactionEmojis);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -218,10 +219,10 @@ return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.re
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String createdAt,  User user,  String? text,  String? cw,  Note? renote,  List<Note>? replies,  List<DriveFile> files,  Map<String, int> reactions,  Map<String, String> emojis)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String createdAt,  User user,  String? text,  String? cw,  Note? renote,  List<Note>? replies,  List<DriveFile> files,  Map<String, int> reactions,  Map<String, String> emojis,  Map<String, String> reactionEmojis)?  $default,) {final _that = this;
 switch (_that) {
 case _Note() when $default != null:
-return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.renote,_that.replies,_that.files,_that.reactions,_that.emojis);case _:
+return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.renote,_that.replies,_that.files,_that.reactions,_that.emojis,_that.reactionEmojis);case _:
   return null;
 
 }
@@ -233,7 +234,7 @@ return $default(_that.id,_that.createdAt,_that.user,_that.text,_that.cw,_that.re
 @JsonSerializable()
 
 class _Note implements Note {
-  const _Note({required this.id, required this.createdAt, required this.user, this.text, this.cw, this.renote, final  List<Note>? replies, final  List<DriveFile> files = const [], final  Map<String, int> reactions = const {}, final  Map<String, String> emojis = const {}}): _replies = replies,_files = files,_reactions = reactions,_emojis = emojis;
+  const _Note({required this.id, required this.createdAt, required this.user, this.text, this.cw, this.renote, final  List<Note>? replies, final  List<DriveFile> files = const [], final  Map<String, int> reactions = const {}, final  Map<String, String> emojis = const {}, final  Map<String, String> reactionEmojis = const {}}): _replies = replies,_files = files,_reactions = reactions,_emojis = emojis,_reactionEmojis = reactionEmojis;
   factory _Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 
 @override final  String id;
@@ -272,6 +273,13 @@ class _Note implements Note {
   return EqualUnmodifiableMapView(_emojis);
 }
 
+ final  Map<String, String> _reactionEmojis;
+@override@JsonKey() Map<String, String> get reactionEmojis {
+  if (_reactionEmojis is EqualUnmodifiableMapView) return _reactionEmojis;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_reactionEmojis);
+}
+
 
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
@@ -286,16 +294,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.renote, renote) || other.renote == renote)&&const DeepCollectionEquality().equals(other._replies, _replies)&&const DeepCollectionEquality().equals(other._files, _files)&&const DeepCollectionEquality().equals(other._reactions, _reactions)&&const DeepCollectionEquality().equals(other._emojis, _emojis));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.renote, renote) || other.renote == renote)&&const DeepCollectionEquality().equals(other._replies, _replies)&&const DeepCollectionEquality().equals(other._files, _files)&&const DeepCollectionEquality().equals(other._reactions, _reactions)&&const DeepCollectionEquality().equals(other._emojis, _emojis)&&const DeepCollectionEquality().equals(other._reactionEmojis, _reactionEmojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,user,text,cw,renote,const DeepCollectionEquality().hash(_replies),const DeepCollectionEquality().hash(_files),const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_emojis));
+int get hashCode => Object.hash(runtimeType,id,createdAt,user,text,cw,renote,const DeepCollectionEquality().hash(_replies),const DeepCollectionEquality().hash(_files),const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_emojis),const DeepCollectionEquality().hash(_reactionEmojis));
 
 @override
 String toString() {
-  return 'Note(id: $id, createdAt: $createdAt, user: $user, text: $text, cw: $cw, renote: $renote, replies: $replies, files: $files, reactions: $reactions, emojis: $emojis)';
+  return 'Note(id: $id, createdAt: $createdAt, user: $user, text: $text, cw: $cw, renote: $renote, replies: $replies, files: $files, reactions: $reactions, emojis: $emojis, reactionEmojis: $reactionEmojis)';
 }
 
 
@@ -306,7 +314,7 @@ abstract mixin class _$NoteCopyWith<$Res> implements $NoteCopyWith<$Res> {
   factory _$NoteCopyWith(_Note value, $Res Function(_Note) _then) = __$NoteCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String createdAt, User user, String? text, String? cw, Note? renote, List<Note>? replies, List<DriveFile> files, Map<String, int> reactions, Map<String, String> emojis
+ String id, String createdAt, User user, String? text, String? cw, Note? renote, List<Note>? replies, List<DriveFile> files, Map<String, int> reactions, Map<String, String> emojis, Map<String, String> reactionEmojis
 });
 
 
@@ -323,7 +331,7 @@ class __$NoteCopyWithImpl<$Res>
 
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? user = null,Object? text = freezed,Object? cw = freezed,Object? renote = freezed,Object? replies = freezed,Object? files = null,Object? reactions = null,Object? emojis = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? user = null,Object? text = freezed,Object? cw = freezed,Object? renote = freezed,Object? replies = freezed,Object? files = null,Object? reactions = null,Object? emojis = null,Object? reactionEmojis = null,}) {
   return _then(_Note(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -335,6 +343,7 @@ as Note?,replies: freezed == replies ? _self._replies : replies // ignore: cast_
 as List<Note>?,files: null == files ? _self._files : files // ignore: cast_nullable_to_non_nullable
 as List<DriveFile>,reactions: null == reactions ? _self._reactions : reactions // ignore: cast_nullable_to_non_nullable
 as Map<String, int>,emojis: null == emojis ? _self._emojis : emojis // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,reactionEmojis: null == reactionEmojis ? _self._reactionEmojis : reactionEmojis // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,
   ));
 }
