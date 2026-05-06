@@ -172,13 +172,14 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _Reactions extends StatelessWidget {
+class _Reactions extends ConsumerWidget {
   const _Reactions({required this.reactions});
 
   final Map<String, int> reactions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final emojis = ref.watch(emojiCacheProvider).value ?? {};
     final sorted = reactions.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -186,8 +187,11 @@ class _Reactions extends StatelessWidget {
       spacing: 4,
       runSpacing: 4,
       children: sorted.map((e) {
-        // カスタム絵文字 (:name@.:) をスターに置換
-        final label = e.key.replaceAll(RegExp(r':[^:]+:'), '⭐');
+        // `:name@.:` 形式からサーバー部分を除いた shortcode を抽出
+        final match = RegExp(r'^:([^@:]+)').firstMatch(e.key);
+        final shortcode = match?.group(1);
+        final emojiUrl = shortcode != null ? emojis[shortcode] : null;
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
@@ -196,9 +200,23 @@ class _Reactions extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
-            '$label ${e.value}',
-            style: Theme.of(context).textTheme.bodySmall,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (emojiUrl != null)
+                CachedNetworkImage(
+                  imageUrl: emojiUrl,
+                  height: 18,
+                  errorWidget: (context, url, error) => Text(e.key),
+                )
+              else
+                Text(shortcode != null ? ':$shortcode:' : e.key),
+              const SizedBox(width: 4),
+              Text(
+                '${e.value}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ),
         );
       }).toList(),
