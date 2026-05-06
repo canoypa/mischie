@@ -60,7 +60,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                       Row(
                         children: [
                           Expanded(
-                            child: _UserName(user: displayNote.user),
+                            child: _UserName(user: displayNote.user, emojis: emojis),
                           ),
                           Text(
                             timeago.format(
@@ -129,9 +129,10 @@ class _NoteCardState extends ConsumerState<NoteCard> {
 }
 
 class _UserName extends StatelessWidget {
-  const _UserName({required this.user});
+  const _UserName({required this.user, required this.emojis});
 
   final User user;
+  final Map<String, String> emojis;
 
   @override
   Widget build(BuildContext context) {
@@ -142,12 +143,12 @@ class _UserName extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        MfmText(
           displayName,
+          emojis: emojis,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
         if (remoteHandle != null)
           Text(
