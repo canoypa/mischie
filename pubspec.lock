@@ -601,7 +601,7 @@ packages:
     source: hosted
     version: "1.0.9"
   mfm_parser:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: mfm_parser
       sha256: "733a69d14f75c8c15c5b961f2428bd42c7118bbe0b271c03666a7941435fb691"

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mfm/mfm.dart';
+import 'package:mfm_parser/mfm_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// MFM (Misskey Flavored Markdown) テキストを描画するウィジェット。
@@ -29,10 +30,13 @@ class _MfmTextState extends State<MfmText> {
   late LinkTapCallback _linkTap;
   late HashtagCallback _hashtagTap;
   late MentionTapCallBack _mentionTap;
+  // テキストのパース結果をキャッシュ。MfmParentWidget.build() での毎回パースを防ぐ。
+  late List<MfmNode> _parsed;
 
   @override
   void initState() {
     super.initState();
+    _parsed = const MfmParser().parse(widget.text);
     _linkTap = _launch;
     _hashtagTap = (tag) => _launch('https://misskey.io/tags/$tag');
     _mentionTap = (userName, host, acct) {
@@ -45,8 +49,9 @@ class _MfmTextState extends State<MfmText> {
   @override
   void didUpdateWidget(MfmText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // emojis の参照が変わったときのみクロージャを再生成する。
-    // 参照が同じなら Mfm.updateShouldNotify が false になり MFM の再パースを省略できる。
+    if (oldWidget.text != widget.text) {
+      _parsed = const MfmParser().parse(widget.text);
+    }
     if (!identical(oldWidget.emojis, widget.emojis)) {
       _emojiBuilder = _buildEmojiBuilder(widget.emojis);
     }
@@ -79,7 +84,7 @@ class _MfmTextState extends State<MfmText> {
     final linkColor = Theme.of(context).colorScheme.primary;
 
     return Mfm(
-      mfmText: widget.text,
+      mfmNode: _parsed,
       style: widget.style,
       isUseAnimation: false,
       linkStyle: TextStyle(color: linkColor, decoration: TextDecoration.underline),

@@ -31,7 +31,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
     Note displayNote,
   ) {
     if (identical(_lastServerEmojis, serverEmojis) &&
-        _lastDisplayNote == displayNote) {
+        identical(_lastDisplayNote, displayNote)) {
       return _emojis;
     }
     _lastServerEmojis = serverEmojis;
