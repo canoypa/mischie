@@ -8,8 +8,8 @@ import 'package:mischie/features/timeline/domain/note.dart';
 
 class StreamingService {
   StreamingService({required String host, required String accessToken})
-      : _host = host,
-        _accessToken = accessToken;
+    : _host = host,
+      _accessToken = accessToken;
 
   final String _host;
   final String _accessToken;
@@ -31,13 +31,12 @@ class StreamingService {
     _channel = WebSocketChannel.connect(uri);
     _channelId = const Uuid().v4();
 
-    _channel!.sink.add(jsonEncode({
-      'type': 'connect',
-      'body': {
-        'channel': 'homeTimeline',
-        'id': _channelId,
-      },
-    }));
+    _channel!.sink.add(
+      jsonEncode({
+        'type': 'connect',
+        'body': {'channel': 'homeTimeline', 'id': _channelId},
+      }),
+    );
 
     _channel!.stream.listen(
       (message) {
@@ -45,8 +44,7 @@ class StreamingService {
         if (data['type'] == 'channel' &&
             data['body']?['id'] == _channelId &&
             data['body']?['type'] == 'note') {
-          final noteJson =
-              data['body']['body'] as Map<String, dynamic>;
+          final noteJson = data['body']['body'] as Map<String, dynamic>;
           final note = Note.fromJson(noteJson);
           _controller.add(note);
         }
@@ -58,10 +56,12 @@ class StreamingService {
 
   void disconnect() {
     if (_channelId != null && _channel != null) {
-      _channel!.sink.add(jsonEncode({
-        'type': 'disconnect',
-        'body': {'id': _channelId},
-      }));
+      _channel!.sink.add(
+        jsonEncode({
+          'type': 'disconnect',
+          'body': {'id': _channelId},
+        }),
+      );
     }
     _channel?.sink.close();
     _channel = null;
