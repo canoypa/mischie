@@ -211,7 +211,10 @@ class _MediaGrid extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: images.length == 1
-          ? _MediaTile(file: images.first)
+          ? AspectRatio(
+              aspectRatio: 16 / 9,
+              child: _MediaTile(file: images.first),
+            )
           : GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
