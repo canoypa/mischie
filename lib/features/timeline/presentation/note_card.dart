@@ -4,15 +4,24 @@ import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class NoteCard extends StatelessWidget {
+class NoteCard extends StatefulWidget {
   const NoteCard({super.key, required this.note});
 
   final Note note;
 
   @override
+  State<NoteCard> createState() => _NoteCardState();
+}
+
+class _NoteCardState extends State<NoteCard> {
+  bool _cwExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final note = widget.note;
     final displayNote = note.renote ?? note;
     final isRenote = note.renote != null;
+    final hasCw = displayNote.cw != null;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -61,10 +70,37 @@ class NoteCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      if (displayNote.text != null) Text(displayNote.text!),
-                      if (displayNote.files.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _MediaGrid(files: displayNote.files),
+                      if (hasCw) ...[
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _cwExpanded = !_cwExpanded),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayNote.cw!,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Chip(
+                                label: Text(_cwExpanded ? '隠す' : '続きを見る'),
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (!hasCw || _cwExpanded) ...[
+                        if (displayNote.text != null) Text(displayNote.text!),
+                        if (displayNote.files.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _MediaGrid(files: displayNote.files),
+                        ],
                       ],
                     ],
                   ),

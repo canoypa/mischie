@@ -12,6 +12,7 @@ sealed class Note with _$Note {
     required String createdAt,
     required User user,
     String? text,
+    String? cw,
     Note? renote,
     List<Note>? replies,
     @Default([]) List<DriveFile> files,

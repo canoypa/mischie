@@ -11,6 +11,7 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   createdAt: json['createdAt'] as String,
   user: User.fromJson(json['user'] as Map<String, dynamic>),
   text: json['text'] as String?,
+  cw: json['cw'] as String?,
   renote: json['renote'] == null
       ? null
       : Note.fromJson(json['renote'] as Map<String, dynamic>),
@@ -29,6 +30,7 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'createdAt': instance.createdAt,
   'user': instance.user,
   'text': instance.text,
+  'cw': instance.cw,
   'renote': instance.renote,
   'replies': instance.replies,
   'files': instance.files,
