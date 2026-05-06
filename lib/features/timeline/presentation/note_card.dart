@@ -208,6 +208,8 @@ class _Reactions extends StatelessWidget {
         final displayName = identifier.contains('@')
             ? identifier.substring(0, identifier.indexOf('@'))
             : identifier;
+        // match != null → カスタム絵文字 (:name:)、null → Unicode 絵文字
+        final isCustomEmoji = match != null;
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -227,7 +229,7 @@ class _Reactions extends StatelessWidget {
                   errorWidget: (context, url, error) => Text(e.key),
                 )
               else
-                Text(':$displayName:'),
+                Text(isCustomEmoji ? ':$displayName:' : displayName),
               const SizedBox(width: 4),
               Text(
                 '${e.value}',
