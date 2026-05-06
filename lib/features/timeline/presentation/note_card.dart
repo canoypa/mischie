@@ -20,6 +20,30 @@ class NoteCard extends ConsumerStatefulWidget {
 class _NoteCardState extends ConsumerState<NoteCard> {
   bool _cwExpanded = false;
 
+  // emojis マップの再生成コストを避けるためキャッシュする。
+  // serverEmojis はプロバイダが同じオブジェクトを返す限り identical になる。
+  Map<String, String> _lastServerEmojis = const {};
+  Note? _lastDisplayNote;
+  Map<String, String> _emojis = const {};
+
+  Map<String, String> _getEmojis(
+    Map<String, String> serverEmojis,
+    Note displayNote,
+  ) {
+    if (identical(_lastServerEmojis, serverEmojis) &&
+        _lastDisplayNote == displayNote) {
+      return _emojis;
+    }
+    _lastServerEmojis = serverEmojis;
+    _lastDisplayNote = displayNote;
+    _emojis = {
+      ...serverEmojis,
+      ...displayNote.emojis,
+      ...displayNote.reactionEmojis,
+    };
+    return _emojis;
+  }
+
   @override
   Widget build(BuildContext context) {
     final note = widget.note;
@@ -27,9 +51,9 @@ class _NoteCardState extends ConsumerState<NoteCard> {
     final isRenote = note.renote != null;
     final hasCw = displayNote.cw != null;
 
-    // ローカルサーバー絵文字キャッシュ + ノートに紐づくリモート絵文字をマージ
+    // ローカルサーバー絵文字キャッシュ + ノートに紐づくリモート絵文字をマージ（キャッシュ済み）
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? {};
-    final emojis = {...serverEmojis, ...displayNote.emojis, ...displayNote.reactionEmojis};
+    final emojis = _getEmojis(serverEmojis, displayNote);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
