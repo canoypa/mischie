@@ -31,10 +31,7 @@ class MisskeyApiClient {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await _dio.post<List<dynamic>>(
-      path,
-      data: body ?? {},
-    );
+    final response = await _dio.post<List<dynamic>>(path, data: body ?? {});
     return response.data!.cast<Map<String, dynamic>>();
   }
 }

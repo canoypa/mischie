@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/auth/presentation/login_screen.dart';
+import 'package:mischie/features/timeline/presentation/home_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider);
@@ -22,11 +23,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     refreshListenable: _AuthStateListenable(ref, authNotifier),
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: Text('Home'))),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     ],
   );
