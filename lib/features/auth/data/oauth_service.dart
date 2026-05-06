@@ -9,7 +9,7 @@ import 'package:uuid/uuid.dart';
 
 const _clientId = 'https://mischie.tepbyte.dev/';
 const _redirectUri = 'mischie://oauth/callback';
-const _scopes = 'read:account write:notes';
+const _scopes = 'read:account write:notes read:notifications';
 
 class OAuthService {
   Future<({String host, String accessToken})> login(String host) async {
