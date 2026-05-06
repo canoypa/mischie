@@ -28,6 +28,11 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
         (k, e) => MapEntry(k, (e as num).toInt()),
       ) ??
       const {},
+  emojis:
+      (json['emojis'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const {},
 );
 
 Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
@@ -40,4 +45,5 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'replies': instance.replies,
   'files': instance.files,
   'reactions': instance.reactions,
+  'emojis': instance.emojis,
 };

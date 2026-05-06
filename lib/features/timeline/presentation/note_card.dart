@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
@@ -72,8 +73,9 @@ class _NoteCardState extends State<NoteCard> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
+                                child: MfmText(
                                   displayNote.cw!,
+                                  emojis: displayNote.emojis,
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -91,7 +93,11 @@ class _NoteCardState extends State<NoteCard> {
                         ),
                       ],
                       if (!hasCw || _cwExpanded) ...[
-                        if (displayNote.text != null) Text(displayNote.text!),
+                        if (displayNote.text != null)
+                          MfmText(
+                            displayNote.text!,
+                            emojis: displayNote.emojis,
+                          ),
                         if (displayNote.files.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           _MediaGrid(files: displayNote.files),
