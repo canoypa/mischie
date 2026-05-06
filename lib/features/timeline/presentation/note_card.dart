@@ -102,7 +102,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                         if (displayNote.text != null)
                           MfmText(
                             displayNote.text!,
-                            emojis: ref.watch(emojiCacheProvider).value ?? {},
+                            emojis: emojis,
                           ),
                         if (displayNote.files.isNotEmpty) ...[
                           const SizedBox(height: 8),
@@ -194,10 +194,20 @@ class _Reactions extends StatelessWidget {
       spacing: 4,
       runSpacing: 4,
       children: sorted.map((e) {
-        // `:name@.:` 形式からサーバー部分を除いた shortcode を抽出
-        final match = RegExp(r'^:([^@:]+)').firstMatch(e.key);
-        final shortcode = match?.group(1);
-        final emojiUrl = shortcode != null ? emojis[shortcode] : null;
+        // `:name:` または `:name@server.tld:` 形式からキーを抽出
+        final match = RegExp(r'^:([^:]+):$').firstMatch(e.key);
+        final identifier = match?.group(1) ?? e.key;
+        // フルキー (name@server.tld) でまず検索し、なければ短縮名 (name) で検索
+        var emojiUrl = emojis[identifier];
+        if (emojiUrl == null) {
+          final atIndex = identifier.indexOf('@');
+          if (atIndex > 0) {
+            emojiUrl = emojis[identifier.substring(0, atIndex)];
+          }
+        }
+        final displayName = identifier.contains('@')
+            ? identifier.substring(0, identifier.indexOf('@'))
+            : identifier;
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -217,7 +227,7 @@ class _Reactions extends StatelessWidget {
                   errorWidget: (context, url, error) => Text(e.key),
                 )
               else
-                Text(shortcode != null ? ':$shortcode:' : e.key),
+                Text(':$displayName:'),
               const SizedBox(width: 4),
               Text(
                 '${e.value}',

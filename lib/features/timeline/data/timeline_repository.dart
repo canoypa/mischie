@@ -14,7 +14,6 @@ class TimelineRepository {
     if (untilId != null) body['untilId'] = untilId;
 
     final list = await _client.postList('notes/timeline', body: body);
-
     return list.map(Note.fromJson).toList();
   }
 }
