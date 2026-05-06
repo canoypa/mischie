@@ -44,7 +44,9 @@ class TimelineScreen extends ConsumerWidget {
                       ),
                     );
                   }
-                  return NoteCard(note: notes[index]);
+                  return RepaintBoundary(
+                    child: NoteCard(note: notes[index]),
+                  );
                 },
               ),
       ),
