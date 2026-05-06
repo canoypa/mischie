@@ -1,43 +1,39 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class NoteCard extends ConsumerStatefulWidget {
-  const NoteCard({super.key, required this.note});
+class NoteCard extends StatefulWidget {
+  const NoteCard({super.key, required this.note, required this.serverEmojis});
 
   final Note note;
+  /// サーバー全体の絵文字キャッシュ。TimelineScreen で1回だけ watch して渡す。
+  final Map<String, String> serverEmojis;
 
   @override
-  ConsumerState<NoteCard> createState() => _NoteCardState();
+  State<NoteCard> createState() => _NoteCardState();
 }
 
-class _NoteCardState extends ConsumerState<NoteCard> {
+class _NoteCardState extends State<NoteCard> {
   bool _cwExpanded = false;
 
-  // emojis マップの再生成コストを避けるためキャッシュする。
-  // serverEmojis はプロバイダが同じオブジェクトを返す限り identical になる。
-  Map<String, String> _lastServerEmojis = const {};
-  Note? _lastDisplayNote;
+  // note.emojis / reactionEmojis とのマージ結果をキャッシュ。
+  Note? _lastNote;
+  Map<String, String>? _lastServerEmojis;
   Map<String, String> _emojis = const {};
 
-  Map<String, String> _getEmojis(
-    Map<String, String> serverEmojis,
-    Note displayNote,
-  ) {
-    if (identical(_lastServerEmojis, serverEmojis) &&
-        identical(_lastDisplayNote, displayNote)) {
+  Map<String, String> _mergeEmojis(Note displayNote) {
+    if (identical(_lastServerEmojis, widget.serverEmojis) &&
+        identical(_lastNote, displayNote)) {
       return _emojis;
     }
-    _lastServerEmojis = serverEmojis;
-    _lastDisplayNote = displayNote;
+    _lastServerEmojis = widget.serverEmojis;
+    _lastNote = displayNote;
     _emojis = {
-      ...serverEmojis,
+      ...widget.serverEmojis,
       ...displayNote.emojis,
       ...displayNote.reactionEmojis,
     };
@@ -51,9 +47,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
     final isRenote = note.renote != null;
     final hasCw = displayNote.cw != null;
 
-    // ローカルサーバー絵文字キャッシュ + ノートに紐づくリモート絵文字をマージ（キャッシュ済み）
-    final serverEmojis = ref.watch(emojiCacheProvider).value ?? {};
-    final emojis = _getEmojis(serverEmojis, displayNote);
+    final emojis = _mergeEmojis(displayNote);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

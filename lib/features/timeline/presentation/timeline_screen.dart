@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
@@ -10,6 +11,11 @@ class TimelineScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timelineAsync = ref.watch(timelineNotifierProvider);
+    // emojiCacheProvider はここで1回だけ watch する。
+    // NoteCard は ConsumerWidget を使わず、emojis を props として受け取るだけ。
+    // これにより絵文字ロード時に rebuild されるのは TimelineScreen だけになり、
+    // 各 NoteCard は rebuild されない。
+    final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
 
     return timelineAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -45,7 +51,10 @@ class TimelineScreen extends ConsumerWidget {
                     );
                   }
                   return RepaintBoundary(
-                    child: NoteCard(note: notes[index]),
+                    child: NoteCard(
+                      note: notes[index],
+                      serverEmojis: serverEmojis,
+                    ),
                   );
                 },
               ),
