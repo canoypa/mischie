@@ -9,11 +9,17 @@ class MischieApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'mischie',
+      title: 'Mischie',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFFA8E800),
       ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFFA8E800),
+        brightness: Brightness.dark,
+      ),
+      themeMode: ThemeMode.system,
       routerConfig: router,
     );
   }
