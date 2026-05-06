@@ -38,8 +38,10 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   void _onPendingChanged() {
     if (!mounted) return;
     setState(() {
-      _pendingCount =
-          ref.read(timelineNotifierProvider.notifier).pendingCount.value;
+      _pendingCount = ref
+          .read(timelineNotifierProvider.notifier)
+          .pendingCount
+          .value;
     });
   }
 
