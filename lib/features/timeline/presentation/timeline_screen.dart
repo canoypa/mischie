@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
@@ -16,7 +17,7 @@ class TimelineScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('エラー: $e'),
+            Text(resolveErrorMessage(e)),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: () => ref.invalidate(timelineNotifierProvider),

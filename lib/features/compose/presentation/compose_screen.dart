@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
@@ -27,9 +28,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (mounted) {
       final state = ref.read(composeNotifierProvider);
       if (state.hasError) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('投稿に失敗しました: ${state.error}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(resolveErrorMessage(state.error!))),
+        );
       } else {
         Navigator.of(context).pop();
       }
