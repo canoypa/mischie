@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/notification/presentation/notification_screen.dart';
 import 'package:mischie/features/profile/presentation/profile_screen.dart';
+import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/timeline_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -22,6 +23,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     NotificationScreen(),
     ProfileScreen(),
   ];
+
+  void _onDestinationSelected(int i) {
+    if (i == 0 && _currentIndex == 0) {
+      // すでにホームにいる → 最上部へスクロール
+      ref.read(timelineScrollToTopProvider.notifier).increment();
+      return;
+    }
+    setState(() => _currentIndex = i);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        onDestinationSelected: _onDestinationSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

@@ -15,12 +15,28 @@ final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
   return TimelineRepository(client);
 });
 
+/// ストリーミングで届いた未表示ノート数。
+final timelinePendingCountProvider =
+    NotifierProvider<_IntNotifier, int>(_IntNotifier.new);
+
+/// インクリメントするたびに TimelineScreen が最上部へスクロールする。
+final timelineScrollToTopProvider =
+    NotifierProvider<_IntNotifier, int>(_IntNotifier.new);
+
+class _IntNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+  void increment() => state++;
+  void set(int v) => state = v;
+}
+
 final timelineNotifierProvider =
     AsyncNotifierProvider<TimelineNotifier, List<Note>>(TimelineNotifier.new);
 
 class TimelineNotifier extends AsyncNotifier<List<Note>> {
   StreamingService? _streaming;
   StreamSubscription<Note>? _subscription;
+  final List<Note> _pending = [];
 
   @override
   Future<List<Note>> build() async {
@@ -29,6 +45,8 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _subscription?.cancel();
     _streaming?.dispose();
     _streaming = null;
+    _pending.clear();
+    ref.read(timelinePendingCountProvider.notifier).set(0);
 
     if (authState is AuthStateAuthenticated) {
       _startStreaming(authState.host, authState.accessToken);
@@ -48,15 +66,24 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _streaming = StreamingService(host: host, accessToken: accessToken);
     _streaming!.connect();
     _subscription = _streaming!.noteStream.listen((note) {
-      final current = state.value;
-      if (current != null) {
-        state = AsyncValue.data([note, ...current]);
-      }
+      _pending.insert(0, note);
+      ref.read(timelinePendingCountProvider.notifier).set(_pending.length);
     });
+  }
+
+  /// バッファしたノートをリスト先頭に追加してカウントをリセット。
+  void flushPending() {
+    if (_pending.isEmpty) return;
+    final current = state.value ?? [];
+    state = AsyncValue.data([..._pending, ...current]);
+    _pending.clear();
+    ref.read(timelinePendingCountProvider.notifier).set(0);
   }
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
+    _pending.clear();
+    ref.read(timelinePendingCountProvider.notifier).set(0);
     state = await AsyncValue.guard(() async {
       final repo = ref.read(timelineRepositoryProvider);
       if (repo == null) return [];
@@ -75,3 +102,4 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     state = AsyncValue.data([...current, ...older]);
   }
 }
+
