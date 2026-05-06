@@ -15,12 +15,22 @@ class StreamingService {
   final String _accessToken;
 
   WebSocketChannel? _channel;
+  StreamSubscription<dynamic>? _subscription;
   final _controller = StreamController<Note>.broadcast();
   String? _channelId;
+
+  bool _disposed = false;
+  Timer? _reconnectTimer;
+
+  static const _reconnectDelay = Duration(seconds: 3);
 
   Stream<Note> get noteStream => _controller.stream;
 
   void connect() {
+    if (_disposed) return;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
     final uri = Uri(
       scheme: 'wss',
       host: _host,
@@ -38,7 +48,7 @@ class StreamingService {
       }),
     );
 
-    _channel!.stream.listen(
+    _subscription = _channel!.stream.listen(
       (message) {
         final data = jsonDecode(message as String) as Map<String, dynamic>;
         if (data['type'] == 'channel' &&
@@ -49,19 +59,37 @@ class StreamingService {
           _controller.add(note);
         }
       },
-      onError: (_) {},
+      onError: (_) => _scheduleReconnect(),
+      onDone: _scheduleReconnect,
       cancelOnError: false,
     );
   }
 
+  void _scheduleReconnect() {
+    if (_disposed) return;
+    _channel?.sink.close();
+    _channel = null;
+    _subscription?.cancel();
+    _subscription = null;
+    _channelId = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(_reconnectDelay, connect);
+  }
+
   void disconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _subscription?.cancel();
+    _subscription = null;
     if (_channelId != null && _channel != null) {
-      _channel!.sink.add(
-        jsonEncode({
-          'type': 'disconnect',
-          'body': {'id': _channelId},
-        }),
-      );
+      try {
+        _channel!.sink.add(
+          jsonEncode({
+            'type': 'disconnect',
+            'body': {'id': _channelId},
+          }),
+        );
+      } catch (_) {}
     }
     _channel?.sink.close();
     _channel = null;
@@ -69,6 +97,7 @@ class StreamingService {
   }
 
   void dispose() {
+    _disposed = true;
     disconnect();
     _controller.close();
   }
