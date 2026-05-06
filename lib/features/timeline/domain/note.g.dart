@@ -17,6 +17,11 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   replies: (json['replies'] as List<dynamic>?)
       ?.map((e) => Note.fromJson(e as Map<String, dynamic>))
       .toList(),
+  files:
+      (json['files'] as List<dynamic>?)
+          ?.map((e) => DriveFile.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
@@ -26,4 +31,5 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'text': instance.text,
   'renote': instance.renote,
   'replies': instance.replies,
+  'files': instance.files,
 };

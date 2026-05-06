@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -61,6 +62,10 @@ class NoteCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       if (displayNote.text != null) Text(displayNote.text!),
+                      if (displayNote.files.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _MediaGrid(files: displayNote.files),
+                      ],
                     ],
                   ),
                 ),
@@ -86,6 +91,69 @@ class _Avatar extends StatelessWidget {
     return CircleAvatar(
       radius: 20,
       backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+    );
+  }
+}
+
+class _MediaGrid extends StatelessWidget {
+  const _MediaGrid({required this.files});
+
+  final List<DriveFile> files;
+
+  @override
+  Widget build(BuildContext context) {
+    final images = files.where((f) => f.type.startsWith('image/')).toList();
+    if (images.isEmpty) return const SizedBox.shrink();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: images.length == 1
+          ? _MediaTile(file: images.first)
+          : GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 2,
+              crossAxisSpacing: 2,
+              children: images.take(4).map((f) => _MediaTile(file: f)).toList(),
+            ),
+    );
+  }
+}
+
+class _MediaTile extends StatelessWidget {
+  const _MediaTile({required this.file});
+
+  final DriveFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CachedNetworkImage(
+          imageUrl: file.thumbnailUrl ?? file.url,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
+          errorWidget: (context, url, error) =>
+              const Center(child: Icon(Icons.broken_image)),
+        ),
+        if (file.isSensitive)
+          Container(
+            color: Colors.black54,
+            child: const Center(
+              child: Text(
+                'NSFW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
