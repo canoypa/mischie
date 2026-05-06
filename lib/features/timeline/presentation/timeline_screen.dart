@@ -50,11 +50,9 @@ class TimelineScreen extends ConsumerWidget {
                       ),
                     );
                   }
-                  return RepaintBoundary(
-                    child: NoteCard(
-                      note: notes[index],
-                      serverEmojis: serverEmojis,
-                    ),
+                  return NoteCard(
+                    note: notes[index],
+                    serverEmojis: serverEmojis,
                   );
                 },
               ),
