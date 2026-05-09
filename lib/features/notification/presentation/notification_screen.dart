@@ -62,10 +62,7 @@ class NotificationScreen extends ConsumerWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({
-    required this.item,
-    required this.serverEmojis,
-  });
+  const _NotificationTile({required this.item, required this.serverEmojis});
 
   final NotificationItem item;
   final Map<String, String> serverEmojis;
@@ -132,15 +129,12 @@ class _NotificationTile extends StatelessWidget {
             child: MfmText(
               username,
               emojis: const {},
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-          Text(
-            ' が $label',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text(' が $label', style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
       subtitle: Column(

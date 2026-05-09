@@ -11,6 +11,7 @@ class NoteCard extends StatefulWidget {
   const NoteCard({super.key, required this.note, required this.serverEmojis});
 
   final Note note;
+
   /// サーバー全体の絵文字キャッシュ。TimelineScreen で1回だけ watch して渡す。
   final Map<String, String> serverEmojis;
 
@@ -92,7 +93,10 @@ class _NoteCardState extends State<NoteCard> {
                       Row(
                         children: [
                           Expanded(
-                            child: _UserName(user: displayNote.user, emojis: emojis),
+                            child: _UserName(
+                              user: displayNote.user,
+                              emojis: emojis,
+                            ),
                           ),
                           Text(
                             timeago.format(
@@ -114,9 +118,7 @@ class _NoteCardState extends State<NoteCard> {
                                 child: MfmText(
                                   displayNote.cw!,
                                   emojis: emojis,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
+                                  style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -132,10 +134,7 @@ class _NoteCardState extends State<NoteCard> {
                       ],
                       if (!hasCw || _cwExpanded) ...[
                         if (displayNote.text != null)
-                          MfmText(
-                            displayNote.text!,
-                            emojis: emojis,
-                          ),
+                          MfmText(displayNote.text!, emojis: emojis),
                         if (displayNote.files.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           _MediaGrid(files: displayNote.files),
@@ -169,8 +168,9 @@ class _UserName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = user.name ?? user.username;
-    final remoteHandle =
-        user.host != null ? '@${user.username}@${user.host}' : null;
+    final remoteHandle = user.host != null
+        ? '@${user.username}@${user.host}'
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,9 +178,9 @@ class _UserName extends StatelessWidget {
         MfmText(
           displayName,
           emojis: emojis,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         if (remoteHandle != null)
           Text(
@@ -264,10 +264,7 @@ class _Reactions extends StatelessWidget {
               else
                 Text(isCustomEmoji ? ':$displayName:' : displayName),
               const SizedBox(width: 4),
-              Text(
-                '${e.value}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text('${e.value}', style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         );
@@ -301,8 +298,10 @@ class _MediaGrid extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 2,
                 crossAxisSpacing: 2,
-                children:
-                    images.take(4).map((f) => _MediaTile(file: f)).toList(),
+                children: images
+                    .take(4)
+                    .map((f) => _MediaTile(file: f))
+                    .toList(),
               ),
             ),
     );
@@ -335,8 +334,7 @@ class _MediaTileState extends State<_MediaTile> {
           placeholder: (context, url) => file.blurhash != null
               ? BlurHash(hash: file.blurhash!)
               : Container(
-                  color:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
           errorWidget: (context, url, error) =>
               const Center(child: Icon(Icons.broken_image)),
@@ -355,8 +353,11 @@ class _MediaTileState extends State<_MediaTile> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.warning_amber_rounded,
-                          color: Colors.white, size: 28),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       SizedBox(height: 4),
                       Text(
                         'Sensitive',

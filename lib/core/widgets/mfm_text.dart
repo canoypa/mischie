@@ -5,12 +5,7 @@ import 'package:mfm_parser/mfm_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MfmText extends StatefulWidget {
-  const MfmText(
-    this.text, {
-    super.key,
-    this.emojis = const {},
-    this.style,
-  });
+  const MfmText(this.text, {super.key, this.emojis = const {}, this.style});
 
   final String text;
   final Map<String, String> emojis;
@@ -62,10 +57,8 @@ class _MfmTextState extends State<MfmText> {
         imageUrl: url,
         height: fontSize * 1.8,
         fit: BoxFit.contain,
-        placeholder: (_, __) => SizedBox(
-          height: fontSize * 1.8,
-          width: fontSize * 1.8,
-        ),
+        placeholder: (_, __) =>
+            SizedBox(height: fontSize * 1.8, width: fontSize * 1.8),
         errorWidget: (context, url, error) =>
             Text(':$emojiName:', style: emojiStyle),
       );
@@ -86,7 +79,9 @@ class _MfmTextState extends State<MfmText> {
       style: widget.style,
       isUseAnimation: false,
       linkStyle: TextStyle(
-          color: linkColor, decoration: TextDecoration.underline),
+        color: linkColor,
+        decoration: TextDecoration.underline,
+      ),
       hashtagStyle: TextStyle(color: linkColor),
       mentionStyle: TextStyle(color: linkColor),
       emojiBuilder: _emojiBuilder,
