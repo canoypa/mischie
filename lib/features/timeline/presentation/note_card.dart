@@ -370,10 +370,12 @@ class _MediaTileState extends State<_MediaTile> {
   bool _revealed = false;
 
   void _openViewer() {
-    showDialog<void>(
+    showGeneralDialog<void>(
       context: context,
-      barrierColor: Colors.black87,
-      builder: (_) =>
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.transparent,
+      pageBuilder: (context, anim, _) =>
           _ImageViewer(images: widget.images, initialIndex: widget.index),
     );
   }
@@ -456,74 +458,158 @@ class _ImageViewer extends StatefulWidget {
   State<_ImageViewer> createState() => _ImageViewerState();
 }
 
-class _ImageViewerState extends State<_ImageViewer> {
+class _ImageViewerState extends State<_ImageViewer>
+    with SingleTickerProviderStateMixin {
   late int _current;
+  late AnimationController _bgController;
+  late Animation<double> _bgOpacity;
+  double _dragY = 0;
+  bool _dragging = false;
+
+  static const _bgMaxOpacity = 0.92;
+  static const _dismissThreshold = 120.0;
 
   @override
   void initState() {
     super.initState();
     _current = widget.initialIndex;
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      value: 1,
+    );
+    _bgOpacity = _bgController.drive(
+      Tween<double>(begin: 0, end: _bgMaxOpacity),
+    );
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
+
+  void _onVerticalStart(DragStartDetails d) {
+    // ピンチズーム中（scale != 1）は無視するが PhotoView に任せる
+    setState(() {
+      _dragging = true;
+      _dragY = 0;
+    });
+  }
+
+  void _onVerticalUpdate(DragUpdateDetails d) {
+    setState(() => _dragY += d.delta.dy);
+    final progress = (_dragY.abs() / _dismissThreshold).clamp(0.0, 1.0);
+    _bgController.value = 1 - progress * 0.6;
+  }
+
+  void _onVerticalEnd(DragEndDetails d) {
+    if (_dragY.abs() >= _dismissThreshold ||
+        d.velocity.pixelsPerSecond.dy.abs() > 800) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() {
+        _dragging = false;
+        _dragY = 0;
+      });
+      _bgController.animateTo(1);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        PhotoViewGallery.builder(
-          itemCount: widget.images.length,
-          pageController: PageController(initialPage: widget.initialIndex),
-          onPageChanged: (i) => setState(() => _current = i),
-          builder: (context, index) {
-            final file = widget.images[index];
-            return PhotoViewGalleryPageOptions(
-              imageProvider: CachedNetworkImageProvider(file.url),
-              minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 3,
-            );
-          },
-          backgroundDecoration: const BoxDecoration(color: Colors.transparent),
-          loadingBuilder: (context, event) =>
-              const Center(child: CircularProgressIndicator()),
-        ),
-        // 閉じるボタン
-        SafeArea(
-          child: Align(
-            alignment: Alignment.topRight,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
+    return AnimatedBuilder(
+      animation: _bgOpacity,
+      builder: (context, child) {
+        return Material(
+          color: Colors.black.withAlpha(
+            (_bgOpacity.value * 255).round(),
           ),
-        ),
-        // ページインジケーター
-        if (widget.images.length > 1)
-          Positioned(
-            bottom: 16,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                widget.images.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _current ? 12 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: i == _current
-                        ? Colors.white
-                        : Colors.white.withAlpha(128),
-                    borderRadius: BorderRadius.circular(3),
+          child: child,
+        );
+      },
+      child: GestureDetector(
+        onVerticalDragStart: _onVerticalStart,
+        onVerticalDragUpdate: _onVerticalUpdate,
+        onVerticalDragEnd: _onVerticalEnd,
+        child: Transform.translate(
+          offset: Offset(0, _dragY),
+          child: Stack(
+            children: [
+              PhotoViewGallery.builder(
+                itemCount: widget.images.length,
+                pageController:
+                    PageController(initialPage: widget.initialIndex),
+                onPageChanged: (i) => setState(() => _current = i),
+                builder: (context, index) {
+                  final file = widget.images[index];
+                  return PhotoViewGalleryPageOptions(
+                    imageProvider: CachedNetworkImageProvider(file.url),
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 3,
+                  );
+                },
+                backgroundDecoration:
+                    const BoxDecoration(color: Colors.transparent),
+                loadingBuilder: (context, event) =>
+                    const Center(child: CircularProgressIndicator()),
+              ),
+              // 閉じるボタン
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
                 ),
               ),
-            ),
+              // ページインジケーター
+              if (widget.images.length > 1)
+                Positioned(
+                  bottom: 32,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      widget.images.length,
+                      (i) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == _current ? 12 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: i == _current
+                              ? Colors.white
+                              : Colors.white.withAlpha(128),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              // 下スワイプヒント
+              if (!_dragging)
+                Positioned(
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.white.withAlpha(100),
+                      size: 28,
+                    ),
+                  ),
+                ),
+            ],
           ),
-      ],
+        ),
+      ),
     );
   }
 }
