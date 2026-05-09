@@ -59,11 +59,24 @@ class _NoteCardState extends State<NoteCard> {
             if (isRenote)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  '${note.user.name ?? note.user.username} がリノート',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: MfmText(
+                        note.user.name ?? note.user.username,
+                        emojis: emojis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      ' がリノート',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             Row(
