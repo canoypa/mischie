@@ -37,11 +37,18 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   void _onPendingChanged() {
     if (!mounted) return;
+    final notifier = ref.read(timelineNotifierProvider.notifier);
+    final count = notifier.pendingCount.value;
+
+    // 最上部にいる場合は自動で表示
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels == 0) {
+      notifier.flushPending();
+      return;
+    }
+
     setState(() {
-      _pendingCount = ref
-          .read(timelineNotifierProvider.notifier)
-          .pendingCount
-          .value;
+      _pendingCount = count;
     });
   }
 
