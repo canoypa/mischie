@@ -76,6 +76,10 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   void _onScroll() {
     final pos = _scrollController.position;
+    // 最上部に戻ったとき、新着があれば自動表示
+    if (pos.pixels == 0 && _pendingCount > 0) {
+      ref.read(timelineNotifierProvider.notifier).flushPending();
+    }
     // 末尾 200px 以内に来たら追加ロード
     if (pos.pixels >= pos.maxScrollExtent - 200 && !_loadingMore) {
       _loadMore();
