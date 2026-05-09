@@ -284,7 +284,9 @@ class _Reactions extends StatelessWidget {
         }
 
         return InkWell(
-          onTap: () {/* TODO: リアクション送信 */},
+          onTap: () {
+            /* TODO: リアクション送信 */
+          },
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -332,11 +334,13 @@ class _MediaGrid extends StatelessWidget {
                     .toList()
                     .asMap()
                     .entries
-                    .map((e) => _MediaTile(
-                          file: e.value,
-                          images: images,
-                          index: e.key,
-                        ))
+                    .map(
+                      (e) => _MediaTile(
+                        file: e.value,
+                        images: images,
+                        index: e.key,
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -366,10 +370,8 @@ class _MediaTileState extends State<_MediaTile> {
     showDialog<void>(
       context: context,
       barrierColor: Colors.black87,
-      builder: (_) => _ImageViewer(
-        images: widget.images,
-        initialIndex: widget.index,
-      ),
+      builder: (_) =>
+          _ImageViewer(images: widget.images, initialIndex: widget.index),
     );
   }
 
@@ -389,8 +391,9 @@ class _MediaTileState extends State<_MediaTile> {
             placeholder: (context, url) => file.blurhash != null
                 ? BlurHash(hash: file.blurhash!)
                 : Container(
-                    color:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                   ),
             errorWidget: (context, url, error) =>
                 const Center(child: Icon(Icons.broken_image)),
@@ -476,9 +479,8 @@ class _ImageViewerState extends State<_ImageViewer> {
             );
           },
           backgroundDecoration: const BoxDecoration(color: Colors.transparent),
-          loadingBuilder: (context, event) => const Center(
-            child: CircularProgressIndicator(),
-          ),
+          loadingBuilder: (context, event) =>
+              const Center(child: CircularProgressIndicator()),
         ),
         // 閉じるボタン
         SafeArea(

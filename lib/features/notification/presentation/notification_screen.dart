@@ -83,8 +83,8 @@ class _NotificationTile extends StatelessWidget {
     final username = item.user?.name ?? item.user?.username ?? '不明';
     final handle = item.user != null
         ? (item.user!.host != null
-            ? '@${item.user!.username}@${item.user!.host}'
-            : '@${item.user!.username}')
+              ? '@${item.user!.username}@${item.user!.host}'
+              : '@${item.user!.username}')
         : null;
     final time = timeago.format(DateTime.parse(item.createdAt), locale: 'ja');
     final noteEmojis = {
