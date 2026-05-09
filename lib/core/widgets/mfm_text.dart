@@ -83,6 +83,7 @@ class _MfmTextState extends State<MfmText> {
       linkStyle: TextStyle(
           color: linkColor, decoration: TextDecoration.underline),
       hashtagStyle: TextStyle(color: linkColor),
+      mentionStyle: TextStyle(color: linkColor),
       emojiBuilder: _emojiBuilder,
       linkTap: _linkTap,
       hashtagTap: _hashtagTap,
