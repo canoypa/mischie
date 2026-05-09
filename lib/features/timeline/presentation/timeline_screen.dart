@@ -43,6 +43,8 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
     if (_scrollController.hasClients &&
         _scrollController.position.pixels == 0) {
       notifier.flushPending();
+      // バッジを即座にリセット
+      if (_pendingCount != 0) setState(() => _pendingCount = 0);
       return;
     }
 
@@ -78,6 +80,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
     // 最上部に戻ったとき、新着があれば自動表示
     if (pos.pixels == 0 && _pendingCount > 0) {
       ref.read(timelineNotifierProvider.notifier).flushPending();
+      setState(() => _pendingCount = 0);
     }
     // 末尾 200px 以内に来たら追加ロード
     if (pos.pixels >= pos.maxScrollExtent - 200 && !_loadingMore) {
