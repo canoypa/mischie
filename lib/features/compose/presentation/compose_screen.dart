@@ -63,59 +63,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final isOverLimit = remaining < 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ノートを書く'),
-        actions: [
-          TextButton(
-            onPressed: isLoading || isOverLimit ? null : _post,
-            child: isLoading
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('投稿'),
-          ),
-        ],
+      appBar: AppBar(title: const Text('ノートを書く')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: isLoading || isOverLimit ? null : _post,
+        icon: isLoading
+            ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.send),
+        label: const Text('投稿'),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: [
-                // CW トグル
-                IconButton(
-                  icon: Icon(
-                    _showCw ? Icons.warning : Icons.warning_outlined,
-                    color: _showCw
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
-                  tooltip: 'CW (閲覧注意)',
-                  onPressed: () => setState(() => _showCw = !_showCw),
-                ),
-                // 公開範囲
-                _VisibilitySelector(
-                  value: _visibility,
-                  onChanged: (v) => setState(() => _visibility = v),
-                ),
-                const Spacer(),
-                // 文字数カウント
-                Text(
-                  '$remaining',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isOverLimit
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.outline,
-                    fontWeight:
-                        isOverLimit ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
           if (_showCw)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -144,6 +105,44 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              // CW トグル
+              IconButton(
+                icon: Icon(
+                  _showCw ? Icons.warning : Icons.warning_outlined,
+                  color: _showCw
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                tooltip: 'CW (閲覧注意)',
+                onPressed: () => setState(() => _showCw = !_showCw),
+              ),
+              // 公開範囲
+              _VisibilitySelector(
+                value: _visibility,
+                onChanged: (v) => setState(() => _visibility = v),
+              ),
+              const Spacer(),
+              // 文字数カウント
+              Text(
+                '$remaining',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isOverLimit
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.outline,
+                  fontWeight:
+                      isOverLimit ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              const SizedBox(width: 80), // FAB の幅分のスペース
+            ],
+          ),
+        ),
       ),
     );
   }
