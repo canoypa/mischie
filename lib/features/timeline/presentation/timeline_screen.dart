@@ -23,7 +23,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -74,7 +73,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
     );
   }
 
-  void _onScroll() {
+  void _onScroll(ScrollUpdateNotification notification) {
     final pos = _scrollController.position;
     // 最上部に戻ったとき、新着があれば自動表示
     if (pos.pixels == 0 && _pendingCount > 0) {
@@ -120,28 +119,34 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                 ref.read(timelineNotifierProvider.notifier).refresh(),
             child: notes.isEmpty
                 ? const Center(child: Text('ノートがありません'))
-                : ListView.builder(
-                    controller: _scrollController,
-                    cacheExtent: 1000,
-                    itemCount: notes.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == notes.length) {
-                        return _loadingMore
-                            ? const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : const SizedBox(height: 80);
-                      }
-                      return RepaintBoundary(
-                        child: NoteCard(
-                          note: notes[index],
-                          serverEmojis: serverEmojis,
-                        ),
-                      );
+                : NotificationListener<ScrollUpdateNotification>(
+                    onNotification: (n) {
+                      _onScroll(n);
+                      return false;
                     },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      cacheExtent: 1000,
+                      itemCount: notes.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == notes.length) {
+                          return _loadingMore
+                              ? const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : const SizedBox(height: 80);
+                        }
+                        return RepaintBoundary(
+                          child: NoteCard(
+                            note: notes[index],
+                            serverEmojis: serverEmojis,
+                          ),
+                        );
+                      },
+                    ),
                   ),
           ),
           // 新着ノートチップ

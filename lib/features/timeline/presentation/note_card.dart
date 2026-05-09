@@ -21,8 +21,12 @@ class NoteCard extends StatefulWidget {
   State<NoteCard> createState() => _NoteCardState();
 }
 
-class _NoteCardState extends State<NoteCard> {
+class _NoteCardState extends State<NoteCard>
+    with AutomaticKeepAliveClientMixin {
   bool _cwExpanded = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   // note.emojis / reactionEmojis とのマージ結果をキャッシュ。
   Note? _lastNote;
@@ -46,6 +50,7 @@ class _NoteCardState extends State<NoteCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin required
     final note = widget.note;
     final displayNote = note.renote ?? note;
     final isRenote = note.renote != null;
