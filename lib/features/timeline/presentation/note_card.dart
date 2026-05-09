@@ -242,29 +242,57 @@ class _Reactions extends StatelessWidget {
             : identifier;
         // match != null → カスタム絵文字 (:name:)、null → Unicode 絵文字
         final isCustomEmoji = match != null;
+        // 外部サーバーの絵文字（name@host 形式）はリアクション不可
+        final isExternal = identifier.contains('@');
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
+        final emojiWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (emojiUrl != null)
+              CachedNetworkImage(
+                imageUrl: emojiUrl,
+                height: 22,
+                errorWidget: (context, url, error) => Text(e.key),
+              )
+            else
+              Text(
+                isCustomEmoji ? ':$displayName:' : displayName,
+                style: const TextStyle(fontSize: 16),
+              ),
+            const SizedBox(width: 6),
+            Text('${e.value}', style: Theme.of(context).textTheme.bodySmall),
+          ],
+        );
+
+        if (isExternal) {
+          // 外部サーバーの絵文字は disabled ボタン風
+          return Opacity(
+            opacity: 0.5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: emojiWidget,
             ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (emojiUrl != null)
-                CachedNetworkImage(
-                  imageUrl: emojiUrl,
-                  height: 18,
-                  errorWidget: (context, url, error) => Text(e.key),
-                )
-              else
-                Text(isCustomEmoji ? ':$displayName:' : displayName),
-              const SizedBox(width: 4),
-              Text('${e.value}', style: Theme.of(context).textTheme.bodySmall),
-            ],
+          );
+        }
+
+        return InkWell(
+          onTap: () {/* TODO: リアクション送信 */},
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: emojiWidget,
           ),
         );
       }).toList(),
