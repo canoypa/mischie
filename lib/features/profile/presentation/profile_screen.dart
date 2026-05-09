@@ -1,7 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 
@@ -11,6 +14,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncState = ref.watch(profileNotifierProvider);
+    final serverEmojis = ref.watch(emojiCacheProvider).value ?? {};
 
     return asyncState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -37,7 +41,7 @@ class ProfileScreen extends ConsumerWidget {
               child: CircleAvatar(
                 radius: 48,
                 backgroundImage: user.avatarUrl != null
-                    ? NetworkImage(user.avatarUrl!)
+                    ? CachedNetworkImageProvider(user.avatarUrl!)
                     : null,
                 child: user.avatarUrl == null
                     ? const Icon(Icons.person, size: 48)
@@ -46,8 +50,9 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Center(
-              child: Text(
+              child: MfmText(
                 user.name ?? user.username,
+                emojis: serverEmojis,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
