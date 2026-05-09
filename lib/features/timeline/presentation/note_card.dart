@@ -267,22 +267,20 @@ class _Reactions extends StatelessWidget {
         );
 
         if (isExternal) {
-          // 外部サーバーの絵文字は disabled ボタン風
-          return Opacity(
-            opacity: 0.5,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                borderRadius: BorderRadius.circular(16),
+          // 外部サーバーの絵文字: 絵文字は通常表示、ボタンとして無効（タップ不可・枠線を薄く）
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
               ),
-              child: emojiWidget,
+              borderRadius: BorderRadius.circular(16),
             ),
+            child: emojiWidget,
           );
         }
 
+        // 現在のサーバーの絵文字: タップ可能なアクティブボタン
         return InkWell(
           onTap: () {
             /* TODO: リアクション送信 */
@@ -292,7 +290,7 @@ class _Reactions extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant,
+                color: Theme.of(context).colorScheme.primary,
               ),
               borderRadius: BorderRadius.circular(16),
             ),
