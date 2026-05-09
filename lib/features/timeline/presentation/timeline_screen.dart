@@ -122,6 +122,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                 ? const Center(child: Text('ノートがありません'))
                 : ListView.builder(
                     controller: _scrollController,
+                    cacheExtent: 1000,
                     itemCount: notes.length + 1,
                     itemBuilder: (context, index) {
                       if (index == notes.length) {
@@ -134,9 +135,11 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                               )
                             : const SizedBox(height: 80);
                       }
-                      return NoteCard(
-                        note: notes[index],
-                        serverEmojis: serverEmojis,
+                      return RepaintBoundary(
+                        child: NoteCard(
+                          note: notes[index],
+                          serverEmojis: serverEmojis,
+                        ),
                       );
                     },
                   ),
