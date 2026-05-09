@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -308,36 +309,72 @@ class _MediaGrid extends StatelessWidget {
   }
 }
 
-class _MediaTile extends StatelessWidget {
+class _MediaTile extends StatefulWidget {
   const _MediaTile({required this.file});
 
   final DriveFile file;
 
   @override
+  State<_MediaTile> createState() => _MediaTileState();
+}
+
+class _MediaTileState extends State<_MediaTile> {
+  bool _revealed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final file = widget.file;
+    final showOverlay = file.isSensitive && !_revealed;
+
     return Stack(
       fit: StackFit.expand,
       children: [
         CachedNetworkImage(
           imageUrl: file.thumbnailUrl ?? file.url,
           fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
+          placeholder: (context, url) => file.blurhash != null
+              ? BlurHash(hash: file.blurhash!)
+              : Container(
+                  color:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
           errorWidget: (context, url, error) =>
               const Center(child: Icon(Icons.broken_image)),
         ),
-        if (file.isSensitive)
-          Container(
-            color: Colors.black54,
-            child: const Center(
-              child: Text(
-                'NSFW',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+        if (showOverlay)
+          GestureDetector(
+            onTap: () => setState(() => _revealed = true),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (file.blurhash != null)
+                  BlurHash(hash: file.blurhash!)
+                else
+                  Container(color: Colors.black54),
+                const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.warning_amber_rounded,
+                          color: Colors.white, size: 28),
+                      SizedBox(height: 4),
+                      Text(
+                        'Sensitive',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Click to show',
+                        style: TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
       ],

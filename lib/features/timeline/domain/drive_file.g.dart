@@ -12,6 +12,7 @@ _DriveFile _$DriveFileFromJson(Map<String, dynamic> json) => _DriveFile(
   url: json['url'] as String,
   thumbnailUrl: json['thumbnailUrl'] as String?,
   name: json['name'] as String?,
+  blurhash: json['blurhash'] as String?,
   isSensitive: json['isSensitive'] as bool? ?? false,
 );
 
@@ -22,5 +23,6 @@ Map<String, dynamic> _$DriveFileToJson(_DriveFile instance) =>
       'url': instance.url,
       'thumbnailUrl': instance.thumbnailUrl,
       'name': instance.name,
+      'blurhash': instance.blurhash,
       'isSensitive': instance.isSensitive,
     };

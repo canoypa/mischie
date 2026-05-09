@@ -11,6 +11,7 @@ sealed class DriveFile with _$DriveFile {
     required String url,
     String? thumbnailUrl,
     String? name,
+    String? blurhash,
     @Default(false) bool isSensitive,
   }) = _DriveFile;
 
