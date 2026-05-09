@@ -5,6 +5,8 @@ import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NoteCard extends StatefulWidget {
@@ -315,7 +317,7 @@ class _MediaGrid extends StatelessWidget {
       child: images.length == 1
           ? AspectRatio(
               aspectRatio: 16 / 9,
-              child: _MediaTile(file: images.first),
+              child: _MediaTile(file: images.first, images: images, index: 0),
             )
           : AspectRatio(
               // 2 cols: 2 images → 1 row (2:1), 3-4 images → 2 rows (1:1)
@@ -327,7 +329,14 @@ class _MediaGrid extends StatelessWidget {
                 crossAxisSpacing: 2,
                 children: images
                     .take(4)
-                    .map((f) => _MediaTile(file: f))
+                    .toList()
+                    .asMap()
+                    .entries
+                    .map((e) => _MediaTile(
+                          file: e.value,
+                          images: images,
+                          index: e.key,
+                        ))
                     .toList(),
               ),
             ),
@@ -336,9 +345,15 @@ class _MediaGrid extends StatelessWidget {
 }
 
 class _MediaTile extends StatefulWidget {
-  const _MediaTile({required this.file});
+  const _MediaTile({
+    required this.file,
+    required this.images,
+    required this.index,
+  });
 
   final DriveFile file;
+  final List<DriveFile> images;
+  final int index;
 
   @override
   State<_MediaTile> createState() => _MediaTileState();
@@ -347,62 +362,160 @@ class _MediaTile extends StatefulWidget {
 class _MediaTileState extends State<_MediaTile> {
   bool _revealed = false;
 
+  void _openViewer() {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => _ImageViewer(
+        images: widget.images,
+        initialIndex: widget.index,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final file = widget.file;
     final showOverlay = file.isSensitive && !_revealed;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        CachedNetworkImage(
-          imageUrl: file.thumbnailUrl ?? file.url,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => file.blurhash != null
-              ? BlurHash(hash: file.blurhash!)
-              : Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                ),
-          errorWidget: (context, url, error) =>
-              const Center(child: Icon(Icons.broken_image)),
-        ),
-        if (showOverlay)
-          GestureDetector(
-            onTap: () => setState(() => _revealed = true),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (file.blurhash != null)
-                  BlurHash(hash: file.blurhash!)
-                else
-                  Container(color: Colors.black54),
-                const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Sensitive',
-                        style: TextStyle(
+    return GestureDetector(
+      onTap: showOverlay ? null : _openViewer,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            imageUrl: file.thumbnailUrl ?? file.url,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => file.blurhash != null
+                ? BlurHash(hash: file.blurhash!)
+                : Container(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                  ),
+            errorWidget: (context, url, error) =>
+                const Center(child: Icon(Icons.broken_image)),
+          ),
+          if (showOverlay)
+            GestureDetector(
+              onTap: () => setState(() => _revealed = true),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (file.blurhash != null)
+                    BlurHash(hash: file.blurhash!)
+                  else
+                    Container(color: Colors.black54),
+                  const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          size: 28,
                         ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Click to show',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
+                        SizedBox(height: 4),
+                        Text(
+                          'Sensitive',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Click to show',
+                          style: TextStyle(color: Colors.white70, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageViewer extends StatefulWidget {
+  const _ImageViewer({required this.images, required this.initialIndex});
+
+  final List<DriveFile> images;
+  final int initialIndex;
+
+  @override
+  State<_ImageViewer> createState() => _ImageViewerState();
+}
+
+class _ImageViewerState extends State<_ImageViewer> {
+  late int _current;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.initialIndex;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        PhotoViewGallery.builder(
+          itemCount: widget.images.length,
+          pageController: PageController(initialPage: widget.initialIndex),
+          onPageChanged: (i) => setState(() => _current = i),
+          builder: (context, index) {
+            final file = widget.images[index];
+            return PhotoViewGalleryPageOptions(
+              imageProvider: CachedNetworkImageProvider(file.url),
+              minScale: PhotoViewComputedScale.contained,
+              maxScale: PhotoViewComputedScale.covered * 3,
+            );
+          },
+          backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+          loadingBuilder: (context, event) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        // 閉じるボタン
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+        ),
+        // ページインジケーター
+        if (widget.images.length > 1)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                widget.images.length,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: i == _current ? 12 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: i == _current
+                        ? Colors.white
+                        : Colors.white.withAlpha(128),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
       ],
