@@ -168,9 +168,9 @@ class _UserName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = user.name ?? user.username;
-    final remoteHandle = user.host != null
+    final handle = user.host != null
         ? '@${user.username}@${user.host}'
-        : null;
+        : '@${user.username}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,14 +182,13 @@ class _UserName extends StatelessWidget {
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
-        if (remoteHandle != null)
-          Text(
-            remoteHandle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            overflow: TextOverflow.ellipsis,
+        Text(
+          handle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }

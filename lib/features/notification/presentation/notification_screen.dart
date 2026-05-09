@@ -81,6 +81,11 @@ class _NotificationTile extends StatelessWidget {
     };
 
     final username = item.user?.name ?? item.user?.username ?? '不明';
+    final handle = item.user != null
+        ? (item.user!.host != null
+            ? '@${item.user!.username}@${item.user!.host}'
+            : '@${item.user!.username}')
+        : null;
     final time = timeago.format(DateTime.parse(item.createdAt), locale: 'ja');
     final noteEmojis = {
       ...serverEmojis,
@@ -134,6 +139,13 @@ class _NotificationTile extends StatelessWidget {
               ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
+          if (handle != null)
+            Text(
+              ' $handle',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           Text(' が $label', style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),

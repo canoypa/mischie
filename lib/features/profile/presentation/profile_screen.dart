@@ -60,7 +60,7 @@ class ProfileScreen extends ConsumerWidget {
               child: Text(
                 '@${user.username}${user.host != null ? "@${user.host}" : ""}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
