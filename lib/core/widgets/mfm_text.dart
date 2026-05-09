@@ -61,6 +61,11 @@ class _MfmTextState extends State<MfmText> {
       return CachedNetworkImage(
         imageUrl: url,
         height: fontSize * 1.8,
+        fit: BoxFit.contain,
+        placeholder: (_, __) => SizedBox(
+          height: fontSize * 1.8,
+          width: fontSize * 1.8,
+        ),
         errorWidget: (context, url, error) =>
             Text(':$emojiName:', style: emojiStyle),
       );
