@@ -39,6 +39,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         accessToken: result.accessToken,
       );
     });
+    if (state.hasError) {
+      final error = state.error;
+      final stackTrace = state.stackTrace ?? StackTrace.current;
+      Error.throwWithStackTrace(error!, stackTrace);
+    }
   }
 
   Future<void> logout() async {

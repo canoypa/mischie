@@ -46,3 +46,7 @@ app.*.map.json
 
 # Agent Files
 .agents/
+
+# Release signing (keep out of version control)
+android/key.properties
+**/*.jks
