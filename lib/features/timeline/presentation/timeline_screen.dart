@@ -66,6 +66,12 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
     super.dispose();
   }
 
+  /// タイムラインを切り替えたときなど、アニメーションなしで先頭に戻す。
+  void jumpToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.jumpTo(0);
+  }
+
   void scrollToTop() {
     if (!_scrollController.hasClients) return;
     _scrollController.animateTo(

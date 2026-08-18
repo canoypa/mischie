@@ -7,12 +7,17 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
 class StreamingService {
-  StreamingService({required String host, required String accessToken})
-    : _host = host,
-      _accessToken = accessToken;
+  StreamingService({
+    required String host,
+    required String accessToken,
+    required String channel,
+  }) : _host = host,
+       _accessToken = accessToken,
+       _channelName = channel;
 
   final String _host;
   final String _accessToken;
+  final String _channelName;
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -44,7 +49,7 @@ class StreamingService {
     _channel!.sink.add(
       jsonEncode({
         'type': 'connect',
-        'body': {'channel': 'homeTimeline', 'id': _channelId},
+        'body': {'channel': _channelName, 'id': _channelId},
       }),
     );
 
