@@ -219,50 +219,54 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            children: [
-              // 画像添付
-              IconButton(
-                icon: const Icon(Icons.image_outlined),
-                tooltip: '画像を追加',
-                onPressed: _attachments.length >= _maxAttachments
-                    ? null
-                    : _pickImages,
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                children: [
+                  // 画像添付
+                  IconButton(
+                    icon: const Icon(Icons.image_outlined),
+                    tooltip: '画像を追加',
+                    onPressed: _attachments.length >= _maxAttachments
+                        ? null
+                        : _pickImages,
+                  ),
+                  // CW トグル
+                  IconButton(
+                    icon: Icon(
+                      _showCw ? Icons.warning : Icons.warning_outlined,
+                      color: _showCw
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    tooltip: 'CW (閲覧注意)',
+                    onPressed: () => setState(() => _showCw = !_showCw),
+                  ),
+                  // 公開範囲
+                  _VisibilitySelector(
+                    value: _visibility,
+                    onChanged: (v) => setState(() => _visibility = v),
+                  ),
+                  const Spacer(),
+                  // 文字数カウント
+                  Text(
+                    '$remaining',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isOverLimit
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.outline,
+                      fontWeight: isOverLimit
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                  const SizedBox(width: 80), // FAB の幅分のスペース
+                ],
               ),
-              // CW トグル
-              IconButton(
-                icon: Icon(
-                  _showCw ? Icons.warning : Icons.warning_outlined,
-                  color: _showCw ? Theme.of(context).colorScheme.primary : null,
-                ),
-                tooltip: 'CW (閲覧注意)',
-                onPressed: () => setState(() => _showCw = !_showCw),
-              ),
-              // 公開範囲
-              _VisibilitySelector(
-                value: _visibility,
-                onChanged: (v) => setState(() => _visibility = v),
-              ),
-              const Spacer(),
-              // 文字数カウント
-              Text(
-                '$remaining',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isOverLimit
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.outline,
-                  fontWeight: isOverLimit ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              const SizedBox(width: 80), // FAB の幅分のスペース
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
