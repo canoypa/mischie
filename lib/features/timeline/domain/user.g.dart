@@ -12,6 +12,8 @@ _User _$UserFromJson(Map<String, dynamic> json) => _User(
   name: json['name'] as String?,
   avatarUrl: json['avatarUrl'] as String?,
   host: json['host'] as String?,
+  isCat: json['isCat'] as bool? ?? false,
+  isBot: json['isBot'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
@@ -20,4 +22,6 @@ Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
   'name': instance.name,
   'avatarUrl': instance.avatarUrl,
   'host': instance.host,
+  'isCat': instance.isCat,
+  'isBot': instance.isBot,
 };

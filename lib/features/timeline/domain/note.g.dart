@@ -26,6 +26,10 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
       .toList(),
   uri: json['uri'] as String?,
   url: json['url'] as String?,
+  channelId: json['channelId'] as String?,
+  channel: json['channel'] == null
+      ? null
+      : NoteChannel.fromJson(json['channel'] as Map<String, dynamic>),
   visibility: json['visibility'] as String? ?? 'public',
   localOnly: json['localOnly'] as bool? ?? false,
   repliesCount: (json['repliesCount'] as num?)?.toInt() ?? 0,
@@ -67,6 +71,8 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'replies': instance.replies,
   'uri': instance.uri,
   'url': instance.url,
+  'channelId': instance.channelId,
+  'channel': instance.channel,
   'visibility': instance.visibility,
   'localOnly': instance.localOnly,
   'repliesCount': instance.repliesCount,
@@ -77,3 +83,18 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'emojis': instance.emojis,
   'reactionEmojis': instance.reactionEmojis,
 };
+
+_NoteChannel _$NoteChannelFromJson(Map<String, dynamic> json) => _NoteChannel(
+  id: json['id'] as String,
+  name: json['name'] as String? ?? '',
+  color: json['color'] as String?,
+  isSensitive: json['isSensitive'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$NoteChannelToJson(_NoteChannel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'color': instance.color,
+      'isSensitive': instance.isSensitive,
+    };

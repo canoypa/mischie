@@ -11,6 +11,8 @@ sealed class User with _$User {
     String? name,
     String? avatarUrl,
     String? host,
+    @Default(false) bool isCat,
+    @Default(false) bool isBot,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

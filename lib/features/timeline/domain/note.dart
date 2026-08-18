@@ -21,6 +21,8 @@ sealed class Note with _$Note {
     List<Note>? replies,
     String? uri,
     String? url,
+    String? channelId,
+    NoteChannel? channel,
     @Default('public') String visibility,
     @Default(false) bool localOnly,
     @Default(0) int repliesCount,
@@ -39,4 +41,18 @@ sealed class Note with _$Note {
   /// 本文も添付もリアクションも持たない、純粋なリノート（引用ではない）。
   bool get isPureRenote =>
       renote != null && (text == null || text!.isEmpty) && files.isEmpty;
+}
+
+/// ノートが投稿されたチャンネル。
+@freezed
+sealed class NoteChannel with _$NoteChannel {
+  const factory NoteChannel({
+    required String id,
+    @Default('') String name,
+    String? color,
+    @Default(false) bool isSensitive,
+  }) = _NoteChannel;
+
+  factory NoteChannel.fromJson(Map<String, dynamic> json) =>
+      _$NoteChannelFromJson(json);
 }

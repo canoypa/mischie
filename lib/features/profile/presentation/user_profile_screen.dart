@@ -4,6 +4,7 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
@@ -284,6 +285,7 @@ class _MinimalHeader extends StatelessWidget {
               child: _AvatarRing(
                 avatarUrl: user.avatarUrl,
                 colorScheme: colorScheme,
+                isCat: user.isCat,
               ),
             ),
           ],
@@ -358,6 +360,7 @@ class _FullHeader extends StatelessWidget {
               child: _AvatarRing(
                 avatarUrl: detail.avatarUrl,
                 colorScheme: colorScheme,
+                isCat: detail.isCat,
               ),
             ),
           ],
@@ -509,14 +512,21 @@ class _FullHeader extends StatelessWidget {
 }
 
 class _AvatarRing extends StatelessWidget {
-  const _AvatarRing({required this.avatarUrl, required this.colorScheme});
+  const _AvatarRing({
+    required this.avatarUrl,
+    required this.colorScheme,
+    this.isCat = false,
+  });
 
   final String? avatarUrl;
   final ColorScheme colorScheme;
+  final bool isCat;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    const diameter = 96.0; // 半径 44 + 枠 4
+
+    final avatar = Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: colorScheme.surface, width: 4),
@@ -527,6 +537,25 @@ class _AvatarRing extends StatelessWidget {
             ? CachedNetworkImageProvider(avatarUrl!)
             : null,
         child: avatarUrl == null ? const Icon(Icons.person) : null,
+      ),
+    );
+
+    if (!isCat) return avatar;
+
+    return SizedBox(
+      width: diameter,
+      height: diameter,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Positioned(
+            top: -diameter * 0.34,
+            left: 0,
+            right: 0,
+            child: CatEars(width: diameter),
+          ),
+          avatar,
+        ],
       ),
     );
   }

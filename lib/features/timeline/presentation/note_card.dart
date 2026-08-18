@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/navigation/link_handler.dart';
+import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
@@ -96,8 +98,17 @@ class _NoteCardState extends ConsumerState<NoteCard>
 
     final emojis = _mergeEmojis(displayNote);
 
+    final channel = displayNote.channel;
+    final channelColor = _parseColor(channel?.color);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      shape: channelColor == null
+          ? null
+          : RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: channelColor, width: 3),
+            ),
       // カード全体を InkWell で包むと、カードごとに ink レイヤーと
       // クリップ用の saveLayer が増えてスクロールが重くなる。
       // タップ判定だけ取れれば足りるので GestureDetector を使う。
@@ -138,7 +149,10 @@ class _NoteCardState extends ConsumerState<NoteCard>
                 children: [
                   GestureDetector(
                     onTap: () => _openProfile(displayNote.user),
-                    child: _Avatar(avatarUrl: displayNote.user.avatarUrl),
+                    child: _Avatar(
+                      avatarUrl: displayNote.user.avatarUrl,
+                      isCat: displayNote.user.isCat,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -157,6 +171,17 @@ class _NoteCardState extends ConsumerState<NoteCard>
                                 ),
                               ),
                             ),
+                            if (_visibilityIcon(displayNote.visibility)
+                                case final icon?) ...[
+                              Icon(
+                                icon,
+                                size: 13,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
                             Text(
                               timeago.format(
                                 DateTime.parse(displayNote.createdAt),
@@ -210,6 +235,10 @@ class _NoteCardState extends ConsumerState<NoteCard>
                             note: note.renote!,
                             serverEmojis: widget.serverEmojis,
                           ),
+                        ],
+                        if (channel != null) ...[
+                          const SizedBox(height: 6),
+                          _ChannelBadge(channel: channel, color: channelColor),
                         ],
                         if (displayNote.reactions.isNotEmpty) ...[
                           const SizedBox(height: 8),
@@ -292,23 +321,43 @@ class _UserName extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.avatarUrl, this.size = 40});
+  const _Avatar({required this.avatarUrl, this.size = 40, this.isCat = false});
 
   final String? avatarUrl;
   final double size;
+  final bool isCat;
 
   @override
   Widget build(BuildContext context) {
     final radius = size / 2;
-    if (avatarUrl == null) {
-      return CircleAvatar(
-        radius: radius,
-        child: Icon(Icons.person, size: radius),
-      );
-    }
-    return CircleAvatar(
-      radius: radius,
-      backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+    final avatar = avatarUrl == null
+        ? CircleAvatar(
+            radius: radius,
+            child: Icon(Icons.person, size: radius),
+          )
+        : CircleAvatar(
+            radius: radius,
+            backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+          );
+
+    if (!isCat) return avatar;
+
+    // 猫耳はアバターの上にはみ出すので、Stack の外にレイアウトを広げない
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -size * 0.22,
+            left: 0,
+            right: 0,
+            child: CatEars(width: size),
+          ),
+          avatar,
+        ],
+      ),
     );
   }
 }
@@ -996,7 +1045,11 @@ class _QuotedNote extends StatelessWidget {
           children: [
             Row(
               children: [
-                _Avatar(avatarUrl: note.user.avatarUrl, size: 20),
+                _Avatar(
+                  avatarUrl: note.user.avatarUrl,
+                  size: 20,
+                  isCat: note.user.isCat,
+                ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: MfmText(
@@ -1021,3 +1074,55 @@ class _QuotedNote extends StatelessWidget {
     );
   }
 }
+
+/// チャンネル投稿であることを示すバッジ。チャンネル画面は Mischie に無いので
+/// タップは Web クライアントへ流す。
+class _ChannelBadge extends ConsumerWidget {
+  const _ChannelBadge({required this.channel, required this.color});
+
+  final NoteChannel channel;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => openOnServer(ref, '/channels/${channel.id}'),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.tv, size: 14, color: effectiveColor),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              channel.name,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: effectiveColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Misskey のチャンネル色は "#86b300" 形式。読めなければ色を付けない。
+Color? _parseColor(String? value) {
+  if (value == null) return null;
+  final hex = value.replaceFirst('#', '');
+  if (hex.length != 6) return null;
+  final parsed = int.tryParse(hex, radix: 16);
+  return parsed == null ? null : Color(0xFF000000 | parsed);
+}
+
+/// パブリック以外だけアイコンを出す（既定を目立たせない）。
+IconData? _visibilityIcon(String visibility) => switch (visibility) {
+  'home' => Icons.home_outlined,
+  'followers' => Icons.lock_outline,
+  'specified' => Icons.mail_outline,
+  _ => null,
+};
