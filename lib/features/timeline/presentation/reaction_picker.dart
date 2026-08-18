@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 
-/// よく使う Unicode 絵文字。カスタム絵文字が無いサーバーでも押せるようにする。
-const _frequentlyUsed = [
+/// 履歴が空のときに出す既定。カスタム絵文字が無いサーバーでも押せる。
+const _defaultReactions = [
   '👍',
   '❤️',
   '😆',
@@ -57,6 +57,8 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
   @override
   Widget build(BuildContext context) {
     final emojis = ref.watch(emojiCacheProvider).value ?? const {};
+    final history = ref.watch(reactionHistoryProvider).value ?? const [];
+    final quickPicks = history.isEmpty ? _defaultReactions : history;
     // 外部サーバーの絵文字 (name@host) は自サーバーへリアクションできない
     final local = emojis.keys.where((k) => !k.contains('@')).toList()..sort();
     final filtered = _query.isEmpty
@@ -90,13 +92,13 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
-                  for (final e in _frequentlyUsed)
+                  for (final reaction in quickPicks)
                     InkWell(
-                      onTap: () => Navigator.of(context).pop(e),
+                      onTap: () => Navigator.of(context).pop(reaction),
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: Text(e, style: const TextStyle(fontSize: 26)),
+                        child: _QuickPick(reaction: reaction, emojis: emojis),
                       ),
                     ),
                 ],
@@ -141,6 +143,29 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 履歴の 1 つ。カスタム絵文字 (`:name:`) は画像で、Unicode はそのまま出す。
+class _QuickPick extends StatelessWidget {
+  const _QuickPick({required this.reaction, required this.emojis});
+
+  final String reaction;
+  final Map<String, String> emojis;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = RegExp(r'^:([^:]+):$').firstMatch(reaction);
+    final url = match == null ? null : emojis[match.group(1)];
+    if (url == null) {
+      return Text(reaction, style: const TextStyle(fontSize: 26));
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      height: 28,
+      placeholder: (_, _) => const SizedBox(height: 28, width: 28),
+      errorWidget: (_, _, _) => Text(reaction),
     );
   }
 }

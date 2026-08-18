@@ -27,6 +27,10 @@ class TimelineSource {
   Map<String, dynamic> get params =>
       listId == null ? const {} : {'listId': listId};
 
+  /// 保存用の識別子。再起動後に同じタイムラインへ戻すために使う。
+  String get storageKey =>
+      listId == null ? 'kind:${_kind!.name}' : 'list:$listId';
+
   @override
   bool operator ==(Object other) =>
       other is TimelineSource && other._kind == _kind && other.listId == listId;

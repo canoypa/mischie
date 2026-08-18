@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/timeline/data/note_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -69,7 +70,10 @@ class NoteActions {
 
     try {
       if (current.myReaction != null) await repo.unreact(note.id);
-      if (!isSame) await repo.react(note.id, reaction);
+      if (!isSame) {
+        await repo.react(note.id, reaction);
+        await _ref.read(reactionHistoryProvider.notifier).record(reaction);
+      }
     } catch (_) {
       overrides.put(previous);
       rethrow;

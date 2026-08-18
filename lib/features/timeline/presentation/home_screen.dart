@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
+import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/features/notification/domain/notification_notifier.dart';
 import 'package:mischie/features/notification/presentation/notification_screen.dart';
 import 'package:mischie/features/profile/presentation/profile_screen.dart';
@@ -33,6 +34,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     for (final kind in TimelineKind.values) TimelineSource.builtin(kind),
   ];
 
+  /// 前回開いていたタイムライン。復元し終えたら null にする。
+  String? _savedSourceKey;
+
+  static const _sourcePrefKey = 'selected_timeline';
+
   // ホームは下のタブが種類を示すので、タイトルはアプリ名にする
   static const _titles = ['Mischie', '検索', '通知', 'プロフィール'];
 
@@ -47,6 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     _tabController = _createTabController();
+    _restoreSelection();
     // 共有を受け取れるのはログイン後だけなので、HomeScreen で購読する。
     // 起動中の共有と、共有から起動された場合の両方を拾う。
     _shareSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(
@@ -58,6 +65,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       // 同じ共有で二重に開かないよう、受け取ったら破棄する
       ReceiveSharingIntent.instance.reset();
     });
+  }
+
+  /// 前回のタブを開き直す。リストは後から届くので、タブを組み直すたびに
+  /// もう一度試す。
+  Future<void> _restoreSelection() async {
+    _savedSourceKey ??= await ref
+        .read(prefsStoreProvider)
+        .read<String>(_sourcePrefKey);
+    final key = _savedSourceKey;
+    if (key == null || !mounted) return;
+
+    final index = _sources.indexWhere((s) => s.storageKey == key);
+    if (index < 0) return; // まだリストが届いていない
+
+    _savedSourceKey = null;
+    if (index == _timelineTabIndex) return;
+    _timelineTabIndex = index;
+    _tabController.index = index;
+    ref.read(selectedTimelineProvider.notifier).source = _sources[index];
   }
 
   TabController _createTabController() =>
@@ -80,6 +106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ..index = _timelineTabIndex.clamp(0, sources.length - 1);
     });
     previous.dispose();
+    _restoreSelection();
   }
 
   @override
@@ -96,8 +123,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // 表示が遅れるので、index が動いた時点で切り替える
     if (_tabController.index == _timelineTabIndex) return;
     _timelineTabIndex = _tabController.index;
-    ref.read(selectedTimelineProvider.notifier).source =
-        _sources[_timelineTabIndex];
+    final source = _sources[_timelineTabIndex];
+    ref.read(selectedTimelineProvider.notifier).source = source;
+    ref.read(prefsStoreProvider).write(_sourcePrefKey, source.storageKey);
     // 別のタイムラインになるので、読んでいた位置には意味がない
     timelineScreenKey.currentState?.jumpToTop();
   }
