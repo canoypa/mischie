@@ -415,69 +415,14 @@ class _Reactions extends StatelessWidget {
         final isCustomEmoji = match != null;
         final isExternal = isRemoteReaction(identifier);
 
-        final colorScheme = Theme.of(context).colorScheme;
-        final isMine = note.myReaction == e.key;
-
-        // リアクションは「誰かが付けた」という事実の表示であり、押せるか
-        // どうかとは別の軸。押せないものを薄くすると、事実の側まで
-        // 弱く見えてしまう。表示は揃えて、区別するのは自分のものだけ。
-        final (background, foreground) = isMine
-            ? (colorScheme.primaryContainer, colorScheme.onPrimaryContainer)
-            : (colorScheme.surfaceContainerHighest, colorScheme.onSurface);
-
-        final emojiWidget = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (emojiUrl != null)
-              CachedNetworkImage(
-                imageUrl: emojiUrl,
-                height: 22,
-                // 幅を予約しないと、読み込み前は 0 幅で描かれてから
-                // 画像の到着で広がり、ノート全体がずれる
-                placeholder: (_, _) => const SizedBox(height: 22, width: 22),
-                errorWidget: (context, url, error) => Text(e.key),
-              )
-            else
-              Text(
-                isCustomEmoji ? ':$displayName:' : displayName,
-                style: TextStyle(fontSize: 16, color: foreground),
-              ),
-            const SizedBox(width: 6),
-            Text(
-              '${e.value}',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: foreground),
-            ),
-          ],
-        );
-
-        final chip = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: background,
-            border: isMine ? Border.all(color: colorScheme.primary) : null,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: emojiWidget,
-        );
-
-        // リモートの絵文字は自サーバーへ付け直せない。見た目で伝えるより、
-        // 押したときに理由を返すほうが表示を歪めずに済む。
-        if (isExternal) {
-          return InkWell(
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('リモートサーバーの絵文字にはリアクションできません')),
-            ),
-            borderRadius: BorderRadius.circular(16),
-            child: chip,
-          );
-        }
-
-        return InkWell(
+        return _ReactionChip(
+          key: ValueKey(e.key),
+          count: e.value,
+          isMine: note.myReaction == e.key,
+          isRemote: isExternal,
+          emojiUrl: emojiUrl,
+          fallbackLabel: isCustomEmoji ? ':$displayName:' : displayName,
           onTap: () => onTap(e.key),
-          borderRadius: BorderRadius.circular(16),
-          child: chip,
         );
       }).toList(),
     );
@@ -1218,3 +1163,100 @@ IconData? _visibilityIcon(String visibility) => switch (visibility) {
   'specified' => Icons.mail_outline,
   _ => null,
 };
+
+/// リアクション 1 つぶん。
+///
+/// 箱を自前で描くと InkWell の上に不透明な面が乗り、Material 3 の状態
+/// レイヤー（ホバー・押下・フォーカス）が見えなくなる。標準のチップに
+/// 任せることで、状態表現も 48dp のタップ領域も付いてくる。
+class _ReactionChip extends StatefulWidget {
+  const _ReactionChip({
+    super.key,
+    required this.count,
+    required this.isMine,
+    required this.isRemote,
+    required this.emojiUrl,
+    required this.fallbackLabel,
+    required this.onTap,
+  });
+
+  final int count;
+  final bool isMine;
+  final bool isRemote;
+  final String? emojiUrl;
+  final String fallbackLabel;
+  final VoidCallback onTap;
+
+  @override
+  State<_ReactionChip> createState() => _ReactionChipState();
+}
+
+class _ReactionChipState extends State<_ReactionChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  );
+
+  late final Animation<double> _pop = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 1, end: 1.22), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1.22, end: 1), weight: 2),
+  ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+  @override
+  void didUpdateWidget(_ReactionChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 増えた瞬間に跳ねる。数字が差し替わるだけだと気づけない。
+    if (widget.count > oldWidget.count) _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    if (widget.isRemote) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('リモートサーバーの絵文字にはリアクションできません')),
+      );
+      return;
+    }
+    // 押した手応えを返す。見た目の変化はサーバー応答を待たない。
+    HapticFeedback.selectionClick();
+    _controller.forward(from: 0);
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emojiUrl = widget.emojiUrl;
+
+    return ScaleTransition(
+      scale: _pop,
+      child: FilterChip(
+        avatar: emojiUrl == null
+            ? Text(widget.fallbackLabel, style: const TextStyle(fontSize: 15))
+            : CachedNetworkImage(
+                imageUrl: emojiUrl,
+                height: 22,
+                // 幅を予約しないと、読み込み前は 0 幅で描かれてから
+                // 画像の到着で広がり、ノート全体がずれる
+                placeholder: (_, _) => const SizedBox(height: 22, width: 22),
+                errorWidget: (_, _, _) => Text(widget.fallbackLabel),
+              ),
+        avatarBoxConstraints: const BoxConstraints.tightFor(
+          width: 24,
+          height: 24,
+        ),
+        label: Text('${widget.count}'),
+        selected: widget.isMine,
+        showCheckmark: false,
+        visualDensity: VisualDensity.compact,
+        labelPadding: const EdgeInsets.only(left: 4, right: 2),
+        onSelected: (_) => _handleTap(),
+      ),
+    );
+  }
+}
