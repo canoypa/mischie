@@ -11,7 +11,23 @@ import 'package:uuid/uuid.dart';
 
 const _clientId = 'https://mischie.tepbyte.dev/';
 const _redirectUri = 'mischie://oauth/callback';
-const _scopes = 'read:account write:notes read:notifications';
+
+/// 要求するスコープ。
+///
+/// エンドポイントごとの必要権限は API 仕様（/api.json の各 description に
+/// ある **Permission**）から拾ったもの。足りないと該当操作だけが 403 で
+/// 落ちるうえ、トークンは発行時のスコープで固定されるため、増やしたときは
+/// 再ログインが要る。
+const _scopes =
+    'read:account '
+    'read:notifications '
+    'write:notes '
+    'write:reactions '
+    'write:following '
+    'write:drive '
+    'write:mutes '
+    'write:blocks '
+    'write:channels';
 
 class OAuthService {
   Future<({String host, String accessToken})> login(String host) async {

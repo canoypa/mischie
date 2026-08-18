@@ -18,6 +18,27 @@ final channelProvider = FutureProvider.family<Channel, String>((
   return repo.show(channelId);
 });
 
+/// フォロー中のチャンネル。無ければおすすめを見せる。
+final followedChannelsProvider = FutureProvider<List<Channel>>((ref) async {
+  final repo = ref.watch(channelRepositoryProvider);
+  if (repo == null) return const [];
+  return repo.followed();
+});
+
+final featuredChannelsProvider = FutureProvider<List<Channel>>((ref) async {
+  final repo = ref.watch(channelRepositoryProvider);
+  if (repo == null) return const [];
+  return repo.featured();
+});
+
+final channelSearchProvider = FutureProvider.autoDispose
+    .family<List<Channel>, String>((ref, query) async {
+      if (query.isEmpty) return const [];
+      final repo = ref.watch(channelRepositoryProvider);
+      if (repo == null) return const [];
+      return repo.search(query);
+    });
+
 /// チャンネルのフォロー状態のローカル上書き。プロフィールのフォローと同じく、
 /// 押した瞬間に切り替えて失敗時だけ戻す。
 final channelFollowOverridesProvider =
