@@ -201,14 +201,16 @@ class _NoteCardState extends ConsumerState<NoteCard>
                             _MediaGrid(files: displayNote.files),
                           ],
                         ],
-                        if (!hasCw || _cwExpanded)
-                          if (!isRenote && note.renote != null) ...[
-                            const SizedBox(height: 8),
-                            _QuotedNote(
-                              note: note.renote!,
-                              serverEmojis: widget.serverEmojis,
-                            ),
-                          ],
+                        // 引用リノート: 埋め込みも CW で隠す対象に含める
+                        if ((!hasCw || _cwExpanded) &&
+                            !isRenote &&
+                            note.renote != null) ...[
+                          const SizedBox(height: 8),
+                          _QuotedNote(
+                            note: note.renote!,
+                            serverEmojis: widget.serverEmojis,
+                          ),
+                        ],
                         if (displayNote.reactions.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           _Reactions(
