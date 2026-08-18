@@ -28,6 +28,18 @@ import 'package:url_launcher/url_launcher.dart';
 /// リアクションごとに組み直すと、その回数だけ正規表現の構築コストがかかる。
 final customEmojiPattern = RegExp(r'^:([^:]+):$');
 
+/// 他サーバーの絵文字によるリアクションか。自サーバーへは付け直せない。
+///
+/// Misskey はリアクションのキーにホストを付ける。ローカルの絵文字は
+/// `name@.` の形（`.` がローカルホストを指す）で返るため、`@` の有無だけで
+/// 判定するとローカルの絵文字まで「押せない」ことになる。
+bool isRemoteReaction(String identifier) {
+  final atIndex = identifier.indexOf('@');
+  if (atIndex < 0) return false;
+  final host = identifier.substring(atIndex + 1);
+  return host.isNotEmpty && host != '.';
+}
+
 class NoteCard extends ConsumerStatefulWidget {
   const NoteCard({
     super.key,
@@ -395,13 +407,13 @@ class _Reactions extends StatelessWidget {
             emojiUrl = emojis[identifier.substring(0, atIndex)];
           }
         }
-        final displayName = identifier.contains('@')
-            ? identifier.substring(0, identifier.indexOf('@'))
+        final atIndex = identifier.indexOf('@');
+        final displayName = atIndex > 0
+            ? identifier.substring(0, atIndex)
             : identifier;
         // match != null → カスタム絵文字 (:name:)、null → Unicode 絵文字
         final isCustomEmoji = match != null;
-        // 外部サーバーの絵文字（name@host 形式）はリアクション不可
-        final isExternal = identifier.contains('@');
+        final isExternal = isRemoteReaction(identifier);
 
         final colorScheme = Theme.of(context).colorScheme;
         final isMine = note.myReaction == e.key;

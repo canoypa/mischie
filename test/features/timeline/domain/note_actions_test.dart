@@ -109,7 +109,10 @@ void main() {
 
       await container.read(noteActionsProvider).toggleReaction(note, '👍');
 
-      expect(container.read(noteOverridesProvider)['note1']!.reactions, isEmpty);
+      expect(
+        container.read(noteOverridesProvider)['note1']!.reactions,
+        isEmpty,
+      );
     });
 
     test('別のリアクションへ付け替える', () async {

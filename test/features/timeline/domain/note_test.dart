@@ -5,10 +5,7 @@ import 'package:mischie/features/timeline/domain/user.dart';
 void main() {
   group('User.fromJson', () {
     test('必須フィールドのみ', () {
-      final user = User.fromJson({
-        'id': 'user1',
-        'username': 'alice',
-      });
+      final user = User.fromJson({'id': 'user1', 'username': 'alice'});
       expect(user.id, 'user1');
       expect(user.username, 'alice');
       expect(user.name, isNull);

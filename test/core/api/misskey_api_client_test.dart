@@ -24,14 +24,10 @@ void main() {
   group('MisskeyApiClient', () {
     test('post() は Map を返す', () async {
       // Dio のネットワーク層をモックするため HttpClientAdapter を差し替え
-      final testDio = Dio(
-        BaseOptions(baseUrl: 'https://misskey.example/api/'),
-      );
+      final testDio = Dio(BaseOptions(baseUrl: 'https://misskey.example/api/'));
       testDio.httpClientAdapter = mockAdapter;
 
-      when(
-        mockAdapter.fetch(any, any, any),
-      ).thenAnswer(
+      when(mockAdapter.fetch(any, any, any)).thenAnswer(
         (_) async => ResponseBody.fromString(
           '{"id": "note1"}',
           200,
@@ -49,14 +45,10 @@ void main() {
     });
 
     test('postList() は List を返す', () async {
-      final testDio = Dio(
-        BaseOptions(baseUrl: 'https://misskey.example/api/'),
-      );
+      final testDio = Dio(BaseOptions(baseUrl: 'https://misskey.example/api/'));
       testDio.httpClientAdapter = mockAdapter;
 
-      when(
-        mockAdapter.fetch(any, any, any),
-      ).thenAnswer(
+      when(mockAdapter.fetch(any, any, any)).thenAnswer(
         (_) async => ResponseBody.fromString(
           '[{"id": "note1"}, {"id": "note2"}]',
           200,

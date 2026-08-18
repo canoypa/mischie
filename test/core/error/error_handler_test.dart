@@ -8,10 +8,7 @@ void main() {
       return DioException(
         requestOptions: RequestOptions(),
         response: statusCode != null
-            ? Response(
-                requestOptions: RequestOptions(),
-                statusCode: statusCode,
-              )
+            ? Response(requestOptions: RequestOptions(), statusCode: statusCode)
             : null,
         type: type ?? DioExceptionType.unknown,
       );
@@ -25,10 +22,7 @@ void main() {
     });
 
     test('403 → アクセス権なし', () {
-      expect(
-        resolveErrorMessage(makeDio(statusCode: 403)),
-        'アクセス権がありません',
-      );
+      expect(resolveErrorMessage(makeDio(statusCode: 403)), 'アクセス権がありません');
     });
 
     test('429 → リクエスト過多', () {
@@ -74,10 +68,7 @@ void main() {
     });
 
     test('その他の DioException → 汎用エラー', () {
-      expect(
-        resolveErrorMessage(makeDio()),
-        'エラーが発生しました',
-      );
+      expect(resolveErrorMessage(makeDio()), 'エラーが発生しました');
     });
 
     test('非 DioException → 汎用エラー', () {
