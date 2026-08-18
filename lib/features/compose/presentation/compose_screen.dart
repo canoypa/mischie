@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mischie/features/compose/data/draft_store.dart';
+import 'package:mischie/features/compose/domain/draft_notifier.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -19,7 +21,11 @@ class ComposeScreen extends ConsumerStatefulWidget {
     this.quoteOf,
     this.initialText,
     this.initialImagePaths = const [],
+    this.draft,
   });
+
+  /// 下書きから再開する場合の元データ。
+  final Draft? draft;
 
   /// 他アプリからの共有で渡された本文。
   final String? initialText;
@@ -45,6 +51,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   int _textLength = 0;
   final List<_Attachment> _attachments = [];
 
+  /// 下書きの同一性。保存し直しても増殖しないように使い回す。
+  late final String _draftId =
+      widget.draft?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +76,112 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (widget.initialImagePaths.isNotEmpty) {
       _addAttachments(widget.initialImagePaths);
     }
+
+    final draft = widget.draft;
+    if (draft != null) {
+      _textController.text = draft.text;
+      if (draft.cw != null && draft.cw!.isNotEmpty) {
+        _showCw = true;
+        _cwController.text = draft.cw!;
+      }
+      _visibility = NoteVisibility.values.firstWhere(
+        (v) => v.name == draft.visibility,
+        orElse: () => NoteVisibility.public,
+      );
+      _attachments.addAll(draft.fileIds.map(_Attachment.uploaded));
+    }
+  }
+
+  bool get _hasContent =>
+      _textController.text.trim().isNotEmpty || _attachments.isNotEmpty;
+
+  Future<void> _saveDraft() async {
+    await ref
+        .read(draftsProvider.notifier)
+        .save(
+          Draft(
+            id: _draftId,
+            text: _textController.text,
+            savedAt: DateTime.now().toIso8601String(),
+            cw: _showCw ? _cwController.text : null,
+            visibility: _visibility.name,
+            fileIds: _attachments
+                .map((a) => a.fileId)
+                .whereType<String>()
+                .toList(),
+            replyId: widget.replyTo?.id,
+            renoteId: widget.quoteOf?.id,
+          ),
+        );
+  }
+
+  /// 書きかけを黙って捨てない。破棄・下書き保存・書き続けるを選ばせる。
+  Future<bool> _confirmDiscard() async {
+    if (!_hasContent) return true;
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('書きかけのノート'),
+        content: const Text('下書きに保存しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: const Text('書き続ける'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: const Text('破棄'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (action == 'save') {
+      await _saveDraft();
+      return true;
+    }
+    return action == 'discard';
+  }
+
+  Future<void> _openDrafts() async {
+    final drafts = ref.read(draftsProvider).value ?? const [];
+    if (drafts.isEmpty) return;
+
+    final selected = await showModalBottomSheet<Draft>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final draft in drafts)
+              ListTile(
+                title: Text(
+                  draft.text.isEmpty ? '(本文なし)' : draft.text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(draft.savedAt.substring(0, 16)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      ref.read(draftsProvider.notifier).remove(draft.id),
+                ),
+                onTap: () => Navigator.pop(context, draft),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected == null || !mounted) return;
+
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => ComposeScreen(draft: selected)),
+    );
   }
 
   /// 選んだ時点でアップロードを始める。投稿ボタンを押してから
@@ -82,9 +198,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<void> _upload(_Attachment attachment) async {
     final repo = ref.read(composeRepositoryProvider);
-    if (repo == null) return;
+    final path = attachment.path;
+    if (repo == null || path == null) return;
     try {
-      final file = await repo.uploadFile(attachment.path);
+      final file = await repo.uploadFile(path);
       if (!mounted) return;
       setState(() {
         attachment.fileId = file.id;
@@ -137,7 +254,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           SnackBar(content: Text(resolveErrorMessage(state.error!))),
         );
       } else {
-        Navigator.of(context).pop();
+        await ref.read(draftsProvider.notifier).remove(_draftId);
+        if (mounted) Navigator.of(context).pop();
       }
     }
   }
@@ -154,119 +272,141 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final isQuote = widget.quoteOf != null;
     final target = widget.replyTo ?? widget.quoteOf;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          isReply
-              ? '返信'
-              : isQuote
-              ? '引用'
-              : 'ノートを書く',
+    final draftCount = ref.watch(draftsProvider).value?.length ?? 0;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            isReply
+                ? '返信'
+                : isQuote
+                ? '引用'
+                : 'ノートを書く',
+          ),
+          actions: [
+            if (draftCount > 0)
+              IconButton(
+                icon: Badge(
+                  label: Text('$draftCount'),
+                  child: const Icon(Icons.drafts_outlined),
+                ),
+                tooltip: '下書き',
+                onPressed: _openDrafts,
+              ),
+          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: isLoading || isOverLimit || isUploading || isEmpty
-            ? null
-            : _post,
-        icon: isLoading
-            ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.send),
-        label: const Text('投稿'),
-      ),
-      body: Column(
-        children: [
-          if (target != null) _TargetPreview(note: target, isReply: isReply),
-          if (_showCw)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: TextField(
-                controller: _cwController,
-                decoration: const InputDecoration(
-                  hintText: '閲覧注意の説明',
-                  border: UnderlineInputBorder(),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: isLoading || isOverLimit || isUploading || isEmpty
+              ? null
+              : _post,
+          icon: isLoading
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.send),
+          label: const Text('投稿'),
+        ),
+        body: Column(
+          children: [
+            if (target != null) _TargetPreview(note: target, isReply: isReply),
+            if (_showCw)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: TextField(
+                  controller: _cwController,
+                  decoration: const InputDecoration(
+                    hintText: '閲覧注意の説明',
+                    border: UnderlineInputBorder(),
+                  ),
+                ),
+              ),
+            if (_attachments.isNotEmpty)
+              _AttachmentStrip(
+                attachments: _attachments,
+                onRemove: (a) => setState(() => _attachments.remove(a)),
+                onRetry: (a) {
+                  setState(() {
+                    a.uploading = true;
+                    a.error = null;
+                  });
+                  _upload(a);
+                },
+              ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _textController,
+                  autofocus: true,
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  decoration: InputDecoration(
+                    hintText: isReply ? 'このノートに返信' : '今何してる？',
+                    border: InputBorder.none,
+                  ),
                 ),
               ),
             ),
-          if (_attachments.isNotEmpty)
-            _AttachmentStrip(
-              attachments: _attachments,
-              onRemove: (a) => setState(() => _attachments.remove(a)),
-              onRetry: (a) {
-                setState(() {
-                  a.uploading = true;
-                  a.error = null;
-                });
-                _upload(a);
-              },
-            ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _textController,
-                autofocus: true,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                decoration: InputDecoration(
-                  hintText: isReply ? 'このノートに返信' : '今何してる？',
-                  border: InputBorder.none,
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  children: [
+                    // 画像添付
+                    IconButton(
+                      icon: const Icon(Icons.image_outlined),
+                      tooltip: '画像を追加',
+                      onPressed: _attachments.length >= _maxAttachments
+                          ? null
+                          : _pickImages,
+                    ),
+                    // CW トグル
+                    IconButton(
+                      icon: Icon(
+                        _showCw ? Icons.warning : Icons.warning_outlined,
+                        color: _showCw
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      tooltip: 'CW (閲覧注意)',
+                      onPressed: () => setState(() => _showCw = !_showCw),
+                    ),
+                    // 公開範囲
+                    _VisibilitySelector(
+                      value: _visibility,
+                      onChanged: (v) => setState(() => _visibility = v),
+                    ),
+                    const Spacer(),
+                    // 文字数カウント
+                    Text(
+                      '$remaining',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isOverLimit
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.outline,
+                        fontWeight: isOverLimit
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(width: 80), // FAB の幅分のスペース
+                  ],
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  // 画像添付
-                  IconButton(
-                    icon: const Icon(Icons.image_outlined),
-                    tooltip: '画像を追加',
-                    onPressed: _attachments.length >= _maxAttachments
-                        ? null
-                        : _pickImages,
-                  ),
-                  // CW トグル
-                  IconButton(
-                    icon: Icon(
-                      _showCw ? Icons.warning : Icons.warning_outlined,
-                      color: _showCw
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                    ),
-                    tooltip: 'CW (閲覧注意)',
-                    onPressed: () => setState(() => _showCw = !_showCw),
-                  ),
-                  // 公開範囲
-                  _VisibilitySelector(
-                    value: _visibility,
-                    onChanged: (v) => setState(() => _visibility = v),
-                  ),
-                  const Spacer(),
-                  // 文字数カウント
-                  Text(
-                    '$remaining',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isOverLimit
-                          ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.outline,
-                      fontWeight: isOverLimit
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  const SizedBox(width: 80), // FAB の幅分のスペース
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -383,7 +523,10 @@ class _TargetPreview extends StatelessWidget {
 class _Attachment {
   _Attachment(this.path);
 
-  final String path;
+  /// 下書きから戻したぶん。アップロードは済んでいるのでローカルパスを持たない。
+  _Attachment.uploaded(String id) : path = null, fileId = id, uploading = false;
+
+  final String? path;
   String? fileId;
   bool uploading = true;
   Object? error;
@@ -415,13 +558,22 @@ class _AttachmentStrip extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(attachment.path),
-                  width: 88,
-                  height: 88,
-                  fit: BoxFit.cover,
-                  cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
-                ),
+                child: attachment.path == null
+                    ? Container(
+                        width: 88,
+                        height: 88,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        child: const Icon(Icons.image_outlined),
+                      )
+                    : Image.file(
+                        File(attachment.path!),
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.cover,
+                        cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
+                      ),
               ),
               if (attachment.uploading)
                 const Positioned.fill(
