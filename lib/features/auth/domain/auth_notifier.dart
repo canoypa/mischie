@@ -23,7 +23,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> login(String host) async {
-    state = const AsyncValue.loading();
+    // ここで loading にしない。値を捨てるとルーターからは「認証状態が
+    // まだ分からない」と見え、ログイン中に画面がスプラッシュへ飛ぶ。
+    // ボタンの進行表示はログイン画面が自前で持っている。
     state = await AsyncValue.guard(() async {
       final oauth = ref.read(oauthServiceProvider);
       final result = await oauth.login(host);

@@ -4,26 +4,36 @@ import 'package:go_router/go_router.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/auth/presentation/login_screen.dart';
+import 'package:mischie/features/auth/presentation/splash_screen.dart';
 import 'package:mischie/features/timeline/presentation/home_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider);
 
   return GoRouter(
+    initialLocation: '/splash',
     redirect: (context, state) {
       final authState = authNotifier.value;
-      if (authState == null) return null;
+      final isSplashRoute = state.matchedLocation == '/splash';
+
+      // 認証状態が分かるまではスプラッシュに留める。ここで '/' を描くと
+      // ログイン画面の前に空のタイムラインが一瞬見える。
+      if (authState == null) return isSplashRoute ? null : '/splash';
 
       final isLoginRoute = state.matchedLocation == '/login';
       final isAuthenticated = authState is AuthStateAuthenticated;
 
-      if (!isAuthenticated && !isLoginRoute) return '/login';
-      if (isAuthenticated && isLoginRoute) return '/';
+      if (!isAuthenticated) return isLoginRoute ? null : '/login';
+      if (isLoginRoute || isSplashRoute) return '/';
       return null;
     },
     refreshListenable: _AuthStateListenable(ref, authNotifier),
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     ],
   );
