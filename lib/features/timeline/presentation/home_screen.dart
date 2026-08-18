@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
+import 'package:mischie/features/notification/domain/notification_notifier.dart';
 import 'package:mischie/features/notification/presentation/notification_screen.dart';
 import 'package:mischie/features/profile/presentation/profile_screen.dart';
 import 'package:mischie/features/search/presentation/search_screen.dart';
@@ -110,6 +111,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       timelineScreenKey.currentState?.scrollToTop();
       return;
     }
+    if (i == 2) {
+      ref.read(notificationNotifierProvider.notifier).markAllRead();
+    }
     setState(() => _currentIndex = i);
   }
 
@@ -151,29 +155,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onDestinationSelected,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'ホーム',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.search_outlined),
             selectedIcon: Icon(Icons.search),
             label: '検索',
           ),
           NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications),
+            icon: _UnreadBadge(child: const Icon(Icons.notifications_outlined)),
+            selectedIcon: const Icon(Icons.notifications),
             label: '通知',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outlined),
             selectedIcon: Icon(Icons.person),
             label: 'プロフィール',
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 未読通知の件数バッジ。件数だけが変わるので ValueNotifier を直接聴く
+/// （通知一覧の再構築に巻き込まれないようにするため）。
+class _UnreadBadge extends ConsumerWidget {
+  const _UnreadBadge({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ValueListenableBuilder<int>(
+      valueListenable: ref
+          .read(notificationNotifierProvider.notifier)
+          .unreadCount,
+      builder: (context, count, child) =>
+          count == 0 ? child! : Badge(label: Text('$count'), child: child),
+      child: child,
     );
   }
 }

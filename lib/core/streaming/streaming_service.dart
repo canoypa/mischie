@@ -22,6 +22,7 @@ class StreamingService {
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   final _controller = StreamController<Note>.broadcast();
+  final _events = StreamController<StreamingEvent>.broadcast();
   String? _channelId;
 
   bool _disposed = false;
@@ -30,6 +31,9 @@ class StreamingService {
   static const _reconnectDelay = Duration(seconds: 3);
 
   Stream<Note> get noteStream => _controller.stream;
+
+  /// チャンネルから届いた生のイベント。ノート以外（通知など）に使う。
+  Stream<StreamingEvent> get events => _events.stream;
 
   void connect() {
     if (_disposed) return;
@@ -56,12 +60,17 @@ class StreamingService {
     _subscription = _channel!.stream.listen(
       (message) {
         final data = jsonDecode(message as String) as Map<String, dynamic>;
-        if (data['type'] == 'channel' &&
-            data['body']?['id'] == _channelId &&
-            data['body']?['type'] == 'note') {
-          final noteJson = data['body']['body'] as Map<String, dynamic>;
-          final note = Note.fromJson(noteJson);
-          _controller.add(note);
+        if (data['type'] != 'channel' || data['body']?['id'] != _channelId) {
+          return;
+        }
+        final body = data['body'] as Map<String, dynamic>;
+        final type = body['type'] as String?;
+        if (type == null) return;
+        final payload = body['body'] as Map<String, dynamic>? ?? const {};
+
+        _events.add(StreamingEvent(type: type, body: payload));
+        if (type == 'note') {
+          _controller.add(Note.fromJson(payload));
         }
       },
       onError: (_) => _scheduleReconnect(),
@@ -105,5 +114,14 @@ class StreamingService {
     _disposed = true;
     disconnect();
     _controller.close();
+    _events.close();
   }
+}
+
+/// ストリーミングのチャンネルイベント。`type` は 'note' や 'notification' など。
+class StreamingEvent {
+  const StreamingEvent({required this.type, required this.body});
+
+  final String type;
+  final Map<String, dynamic> body;
 }
