@@ -104,6 +104,7 @@ class _PushTile extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
+              // 例外の toString をそのまま出す（表示用の文言を持たせてある）
               '${enabledAsync.error}',
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
@@ -164,7 +165,10 @@ class _PushTile extends ConsumerWidget {
           );
     if (selected == null) return;
 
-    await ref.read(pushServiceProvider).enable(distributor: selected);
-    await ref.read(pushEnabledProvider.notifier).set(enabled: true);
+    // enable は notifier 経由でだけ呼ぶ。直接呼ぶと二重に購読され、
+    // 失敗もエラー表示に乗らない。
+    await ref
+        .read(pushEnabledProvider.notifier)
+        .set(enabled: true, distributor: selected);
   }
 }

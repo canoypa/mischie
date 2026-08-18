@@ -20,6 +20,22 @@ final pushRepositoryProvider = Provider<PushRepository?>((ref) {
 
 final pushServiceProvider = Provider<PushService>(PushService.new);
 
+/// サーバーが Web Push の鍵を設定していない。クライアント側では直せない。
+class PushUnsupportedException implements Exception {
+  const PushUnsupportedException();
+
+  @override
+  String toString() => 'このサーバーはプッシュ通知に対応していません（管理者が ServiceWorker の鍵を設定していません）';
+}
+
+/// 通知を配達するアプリ（UnifiedPush ディストリビュータ）が端末にない。
+class PushDistributorMissingException implements Exception {
+  const PushDistributorMissingException();
+
+  @override
+  String toString() => '通知を配達するアプリ（ntfy など）が見つかりません';
+}
+
 /// プッシュ通知の有効・無効。設定画面が読む。
 final pushEnabledProvider = AsyncNotifierProvider<PushEnabled, bool>(
   PushEnabled.new,
@@ -29,12 +45,12 @@ class PushEnabled extends AsyncNotifier<bool> {
   @override
   Future<bool> build() => ref.read(pushStoreProvider).readEnabled();
 
-  Future<void> set({required bool enabled}) async {
+  Future<void> set({required bool enabled, String? distributor}) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final service = ref.read(pushServiceProvider);
       if (enabled) {
-        await service.enable();
+        await service.enable(distributor: distributor);
       } else {
         await service.disable();
       }
@@ -73,10 +89,16 @@ class PushService {
 
     // 既に有効なら、起動のたびに登録し直す（UnifiedPush の作法）
     if (await _ref.read(pushStoreProvider).readEnabled()) {
-      await UnifiedPush.register(vapid: await _vapidKey());
+      final vapid = await _vapidKey();
+      if (vapid != null) await UnifiedPush.register(vapid: vapid);
     }
   }
 
+  /// サーバーの VAPID 公開鍵。
+  ///
+  /// Misskey の Web Push はサーバー側で鍵ペアを設定していないと動かない。
+  /// 公開インスタンスは自前の Web クライアントの通知がこれに依存するため
+  /// 大抵は設定済みだが、設定していないサーバーもある。
   Future<String?> _vapidKey() async {
     try {
       return await _ref.read(pushRepositoryProvider)?.fetchVapidKey();
@@ -89,10 +111,17 @@ class PushService {
   Future<List<String>> availableDistributors() => UnifiedPush.getDistributors();
 
   Future<void> enable({String? distributor}) async {
+    // 鍵が無いサーバーでは購読しても何も届かない。黙って有効にすると
+    // 「設定したのに通知が来ない」という壊れ方をするので、先に弾く。
+    final vapid = await _vapidKey();
+    if (vapid == null) {
+      throw const PushUnsupportedException();
+    }
+
     if (distributor != null) {
       await UnifiedPush.saveDistributor(distributor);
     } else if (!await UnifiedPush.tryUseCurrentOrDefaultDistributor()) {
-      throw Exception('通知を配信するアプリ（ディストリビュータ）が見つかりません');
+      throw const PushDistributorMissingException();
     }
 
     await _local
@@ -101,7 +130,7 @@ class PushService {
         >()
         ?.requestNotificationsPermission();
 
-    await UnifiedPush.register(vapid: await _vapidKey());
+    await UnifiedPush.register(vapid: vapid);
   }
 
   Future<void> disable() async {
