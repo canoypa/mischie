@@ -1,2 +1,5 @@
 [tools]
 flutter = "3.41.9"
+# unifiedpush が依存する webcrypto は、ホスト向けテストの実行時に
+# ネイティブアセットを cmake でビルドする
+cmake = "4.4.2"
