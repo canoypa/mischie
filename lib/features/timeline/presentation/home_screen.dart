@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/notification/presentation/notification_screen.dart';
 import 'package:mischie/features/profile/presentation/profile_screen.dart';
+import 'package:mischie/features/search/presentation/search_screen.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/timeline_screen.dart';
@@ -24,10 +25,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late final TabController _tabController;
 
   // ホームは下のタブが種類を示すので、タイトルはアプリ名にする
-  static const _titles = ['Mischie', '通知', 'プロフィール'];
+  static const _titles = ['Mischie', '検索', '通知', 'プロフィール'];
 
   final _screens = [
     TimelineScreen(),
+    const SearchScreen(),
     const NotificationScreen(),
     const ProfileScreen(),
   ];
@@ -143,6 +145,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'ホーム',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: '検索',
           ),
           NavigationDestination(
             icon: Icon(Icons.notifications_outlined),
