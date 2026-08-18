@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
+import 'package:mischie/core/emoji/layered_emojis.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
@@ -152,11 +153,10 @@ class _NotificationTile extends StatelessWidget {
               : '@${item.user!.username}')
         : null;
     final time = timeago.format(DateTime.parse(item.createdAt), locale: 'ja');
-    final noteEmojis = {
-      ...serverEmojis,
-      ...?item.note?.emojis,
-      ...?item.note?.reactionEmojis,
-    };
+    final noteEmojis = LayeredEmojis(
+      base: serverEmojis,
+      overlay: {...?item.note?.emojis, ...?item.note?.reactionEmojis},
+    );
 
     return ListTile(
       leading: SizedBox(

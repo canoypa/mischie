@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
+import 'package:mischie/core/emoji/layered_emojis.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
@@ -254,7 +255,10 @@ class _ProfileHeader extends ConsumerWidget {
         ),
       ),
       data: (detail) {
-        final emojis = {...serverEmojis, ...detail.emojis};
+        final emojis = LayeredEmojis(
+          base: serverEmojis,
+          overlay: detail.emojis,
+        );
         return _FullHeader(detail: detail, emojis: emojis);
       },
     );

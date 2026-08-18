@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
+import 'package:mischie/features/timeline/presentation/note_card.dart';
 
 /// 履歴が空のときに出す既定。カスタム絵文字が無いサーバーでも押せる。
 const _defaultReactions = [
@@ -156,7 +157,7 @@ class _QuickPick extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final match = RegExp(r'^:([^:]+):$').firstMatch(reaction);
+    final match = customEmojiPattern.firstMatch(reaction);
     final url = match == null ? null : emojis[match.group(1)];
     if (url == null) {
       return Text(reaction, style: const TextStyle(fontSize: 26));

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/emoji/layered_emojis.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/widgets/collapsible_content.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
@@ -22,6 +23,10 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
+
+/// `:name:` / `:name@server.tld:` 形式のリアクションキー。
+/// リアクションごとに組み直すと、その回数だけ正規表現の構築コストがかかる。
+final customEmojiPattern = RegExp(r'^:([^:]+):$');
 
 class NoteCard extends ConsumerStatefulWidget {
   const NoteCard({
@@ -47,17 +52,14 @@ class NoteCard extends ConsumerStatefulWidget {
   ConsumerState<NoteCard> createState() => _NoteCardState();
 }
 
-class _NoteCardState extends ConsumerState<NoteCard>
-    with AutomaticKeepAliveClientMixin {
+// 通り過ぎたカードを keep alive しない。生かし続けると、スクロールした
+// ぶんだけウィジェットと画像が残り続け、進むほど重くなる。
+class _NoteCardState extends ConsumerState<NoteCard> {
   bool _cwExpanded = false;
 
-  @override
-  bool get wantKeepAlive => true;
-
-  // note.emojis / reactionEmojis とのマージ結果をキャッシュ。
+  // ノート固有の絵文字だけを畳んだ結果をキャッシュする。
   Note? _lastNote;
-  Map<String, String>? _lastServerEmojis;
-  Map<String, String> _emojis = const {};
+  Map<String, String> _noteEmojis = const {};
 
   void _openProfile(User user) {
     Navigator.of(context).push(
@@ -67,24 +69,22 @@ class _NoteCardState extends ConsumerState<NoteCard>
     );
   }
 
+  /// サーバー全体の絵文字は共有のまま重ねて引く。ここで
+  /// `{...serverEmojis, ...}` と書くと、カスタム絵文字が数千〜1 万件ある
+  /// サーバーではノート 1 件ごとにその規模のコピーができてしまう。
   Map<String, String> _mergeEmojis(Note displayNote) {
-    if (identical(_lastServerEmojis, widget.serverEmojis) &&
-        identical(_lastNote, displayNote)) {
-      return _emojis;
+    if (!identical(_lastNote, displayNote)) {
+      _lastNote = displayNote;
+      _noteEmojis =
+          displayNote.emojis.isEmpty && displayNote.reactionEmojis.isEmpty
+          ? const {}
+          : {...displayNote.emojis, ...displayNote.reactionEmojis};
     }
-    _lastServerEmojis = widget.serverEmojis;
-    _lastNote = displayNote;
-    _emojis = {
-      ...widget.serverEmojis,
-      ...displayNote.emojis,
-      ...displayNote.reactionEmojis,
-    };
-    return _emojis;
+    return LayeredEmojis(base: widget.serverEmojis, overlay: _noteEmojis);
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // AutomaticKeepAliveClientMixin required
     final note = resolveNote(ref, widget.note);
     final displayNote = note.isPureRenote ? note.renote! : note;
     final isRenote = note.isPureRenote;
@@ -361,7 +361,7 @@ class _Reactions extends StatelessWidget {
       runSpacing: 4,
       children: sorted.map((e) {
         // `:name:` または `:name@server.tld:` 形式からキーを抽出
-        final match = RegExp(r'^:([^:]+):$').firstMatch(e.key);
+        final match = customEmojiPattern.firstMatch(e.key);
         final identifier = match?.group(1) ?? e.key;
         // フルキー (name@server.tld) でまず検索し、なければ短縮名 (name) で検索
         var emojiUrl = emojis[identifier];
@@ -1075,7 +1075,7 @@ class _QuotedNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final emojis = {...serverEmojis, ...note.emojis};
+    final emojis = LayeredEmojis(base: serverEmojis, overlay: note.emojis);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
