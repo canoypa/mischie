@@ -146,6 +146,7 @@ class _ChannelScreenState extends ConsumerState<ChannelScreen> {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => RepaintBoundary(
+                      key: ValueKey(_notes[index].id),
                       child: NoteCard(
                         note: _notes[index],
                         serverEmojis: serverEmojis,

@@ -162,6 +162,7 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => RepaintBoundary(
+                  key: ValueKey(_notes[index].id),
                   child: NoteCard(
                     note: _notes[index],
                     serverEmojis: serverEmojis,

@@ -133,28 +133,42 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                       _onScroll(n);
                       return false;
                     },
-                    child: ListView.builder(
+                    child: ListView.custom(
                       controller: _scrollController,
                       cacheExtent: 1000,
-                      itemCount: notes.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == notes.length) {
-                          return _loadingMore
-                              ? const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                )
-                              : const SizedBox(height: 80);
-                        }
-                        return RepaintBoundary(
-                          child: NoteCard(
-                            note: notes[index],
-                            serverEmojis: serverEmojis,
-                          ),
-                        );
-                      },
+                      // 新着は先頭に挿入されるので、キーが無いと全カードの
+                      // index がずれて、表示中のカードが丸ごと作り直される
+                      // （新着のたびに一瞬ガクつく原因）。
+                      childrenDelegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          if (index == notes.length) {
+                            return _loadingMore
+                                ? const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : const SizedBox(height: 80);
+                          }
+                          final note = notes[index];
+                          return RepaintBoundary(
+                            key: ValueKey(note.id),
+                            child: NoteCard(
+                              note: note,
+                              serverEmojis: serverEmojis,
+                            ),
+                          );
+                        },
+                        childCount: notes.length + 1,
+                        findChildIndexCallback: (key) {
+                          if (key is! ValueKey<String>) return null;
+                          final index = notes.indexWhere(
+                            (n) => n.id == key.value,
+                          );
+                          return index < 0 ? null : index;
+                        },
+                      ),
                     ),
                   ),
           ),
