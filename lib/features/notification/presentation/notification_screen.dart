@@ -4,15 +4,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
+import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 import 'package:mischie/features/notification/domain/notification_notifier.dart';
+import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class NotificationScreen extends ConsumerWidget {
+class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends ConsumerState<NotificationScreen> {
+  bool _loadingMore = false;
+
+  Future<void> _loadMore() async {
+    if (_loadingMore) return;
+    setState(() => _loadingMore = true);
+    await ref.read(notificationNotifierProvider.notifier).loadMore();
+    if (mounted) setState(() => _loadingMore = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final asyncState = ref.watch(notificationNotifierProvider);
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? {};
 
@@ -36,25 +52,29 @@ class NotificationScreen extends ConsumerWidget {
             ref.read(notificationNotifierProvider.notifier).refresh(),
         child: items.isEmpty
             ? const Center(child: Text('通知はありません'))
-            : ListView.builder(
-                itemCount: items.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == items.length) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: FilledButton(
-                        onPressed: () => ref
-                            .read(notificationNotifierProvider.notifier)
-                            .loadMore(),
-                        child: const Text('もっと読み込む'),
-                      ),
-                    );
-                  }
-                  return _NotificationTile(
-                    item: items[index],
-                    serverEmojis: serverEmojis,
-                  );
+            : NotificationListener<ScrollUpdateNotification>(
+                onNotification: (n) {
+                  final pos = n.metrics;
+                  if (pos.pixels >= pos.maxScrollExtent - 200) _loadMore();
+                  return false;
                 },
+                child: ListView.builder(
+                  itemCount: items.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == items.length) {
+                      return _loadingMore
+                          ? const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          : const SizedBox(height: 80);
+                    }
+                    return _NotificationTile(
+                      item: items[index],
+                      serverEmojis: serverEmojis,
+                    );
+                  },
+                ),
               ),
       ),
     );
@@ -133,7 +153,7 @@ class _NotificationTile extends StatelessWidget {
           Flexible(
             child: MfmText(
               username,
-              emojis: const {},
+              emojis: serverEmojis,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -159,10 +179,32 @@ class _NotificationTile extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           if (item.reaction != null)
-            Text(item.reaction!, style: Theme.of(context).textTheme.bodySmall),
+            MfmText(
+              item.reaction!,
+              emojis: noteEmojis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
         ],
       ),
       trailing: Text(time, style: Theme.of(context).textTheme.bodySmall),
+      // 通知は「開けて当然」なので、ノートがあればノートへ、
+      // なければ相手のプロフィールへ飛ぶ
+      onTap: () {
+        final note = item.note;
+        if (note != null) {
+          openNoteDetail(context, note);
+          return;
+        }
+        final user = item.user;
+        if (user != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  UserProfileScreen(userId: user.id, initialUser: user),
+            ),
+          );
+        }
+      },
     );
   }
 }
