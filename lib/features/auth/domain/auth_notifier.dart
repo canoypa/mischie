@@ -53,3 +53,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.data(AuthState.unauthenticated());
   }
 }
+
+/// ログイン中のサーバーホスト。ノート URL の組み立てなどに使う。
+final currentHostProvider = Provider<String?>((ref) {
+  final state = ref.watch(authNotifierProvider).value;
+  return state is AuthStateAuthenticated ? state.host : null;
+});

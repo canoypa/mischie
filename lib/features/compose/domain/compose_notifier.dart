@@ -22,12 +22,20 @@ class ComposeNotifier extends AsyncNotifier<void> {
     String text, {
     String? cw,
     NoteVisibility visibility = NoteVisibility.public,
+    String? replyId,
+    String? renoteId,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(composeRepositoryProvider);
       if (repo == null) throw Exception('未ログイン');
-      await repo.postNote(text, cw: cw, visibility: visibility);
+      await repo.postNote(
+        text,
+        cw: cw,
+        visibility: visibility,
+        replyId: replyId,
+        renoteId: renoteId,
+      );
     });
   }
 }

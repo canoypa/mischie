@@ -1,27 +1,50 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
+import 'package:mischie/features/auth/domain/auth_notifier.dart';
+import 'package:mischie/features/compose/presentation/compose_screen.dart';
+import 'package:mischie/features/profile/domain/profile_notifier.dart';
+import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
+import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
+import 'package:mischie/features/timeline/presentation/reaction_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:url_launcher/url_launcher.dart';
 
-class NoteCard extends StatefulWidget {
-  const NoteCard({super.key, required this.note, required this.serverEmojis});
+class NoteCard extends ConsumerStatefulWidget {
+  const NoteCard({
+    super.key,
+    required this.note,
+    required this.serverEmojis,
+    this.showActions = true,
+    this.onTap,
+  });
 
   final Note note;
 
   /// サーバー全体の絵文字キャッシュ。TimelineScreen で1回だけ watch して渡す。
   final Map<String, String> serverEmojis;
 
+  /// ノート詳細では返信フォームを別に持つため、アクション行を隠せるようにする。
+  final bool showActions;
+
+  /// タップ時の遷移。既定ではノート詳細を開く。
+  final VoidCallback? onTap;
+
   @override
-  State<NoteCard> createState() => _NoteCardState();
+  ConsumerState<NoteCard> createState() => _NoteCardState();
 }
 
-class _NoteCardState extends State<NoteCard>
+class _NoteCardState extends ConsumerState<NoteCard>
     with AutomaticKeepAliveClientMixin {
   bool _cwExpanded = false;
 
@@ -32,6 +55,14 @@ class _NoteCardState extends State<NoteCard>
   Note? _lastNote;
   Map<String, String>? _lastServerEmojis;
   Map<String, String> _emojis = const {};
+
+  void _openProfile(User user) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(userId: user.id, initialUser: user),
+      ),
+    );
+  }
 
   Map<String, String> _mergeEmojis(Note displayNote) {
     if (identical(_lastServerEmojis, widget.serverEmojis) &&
@@ -51,118 +82,175 @@ class _NoteCardState extends State<NoteCard>
   @override
   Widget build(BuildContext context) {
     super.build(context); // AutomaticKeepAliveClientMixin required
-    final note = widget.note;
-    final displayNote = note.renote ?? note;
-    final isRenote = note.renote != null;
+    final note = resolveNote(ref, widget.note);
+    final displayNote = note.isPureRenote ? note.renote! : note;
+    final isRenote = note.isPureRenote;
+
+    final isDeleted = ref.watch(
+      deletedNoteIdsProvider.select(
+        (ids) => ids.contains(note.id) || ids.contains(displayNote.id),
+      ),
+    );
+    if (isDeleted) return const SizedBox.shrink();
     final hasCw = displayNote.cw != null;
 
     final emojis = _mergeEmojis(displayNote);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (isRenote)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: MfmText(
-                        note.user.name ?? note.user.username,
-                        emojis: emojis,
+      // カード全体を InkWell で包むと、カードごとに ink レイヤーと
+      // クリップ用の saveLayer が増えてスクロールが重くなる。
+      // タップ判定だけ取れれば足りるので GestureDetector を使う。
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap ?? () => openNoteDetail(context, displayNote),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isRenote)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: MfmText(
+                          note.user.name ?? note.user.username,
+                          emojis: emojis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                        ),
+                      ),
+                      Text(
+                        ' がリノート',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
-                    ),
-                    Text(
-                      ' がリノート',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _Avatar(avatarUrl: displayNote.user.avatarUrl),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _UserName(
-                              user: displayNote.user,
-                              emojis: emojis,
-                            ),
-                          ),
-                          Text(
-                            timeago.format(
-                              DateTime.parse(displayNote.createdAt),
-                              locale: 'ja',
-                            ),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      if (hasCw) ...[
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _cwExpanded = !_cwExpanded),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: MfmText(
-                                  displayNote.cw!,
-                                  emojis: emojis,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Chip(
-                                label: Text(_cwExpanded ? '隠す' : '続きを見る'),
-                                padding: EdgeInsets.zero,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (!hasCw || _cwExpanded) ...[
-                        if (displayNote.text != null)
-                          MfmText(displayNote.text!, emojis: emojis),
-                        if (displayNote.files.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          _MediaGrid(files: displayNote.files),
-                        ],
-                      ],
-                      if (displayNote.reactions.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _Reactions(
-                          reactions: displayNote.reactions,
-                          emojis: emojis,
-                        ),
-                      ],
                     ],
                   ),
                 ),
-              ],
-            ),
-          ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () => _openProfile(displayNote.user),
+                    child: _Avatar(avatarUrl: displayNote.user.avatarUrl),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _openProfile(displayNote.user),
+                                behavior: HitTestBehavior.opaque,
+                                child: _UserName(
+                                  user: displayNote.user,
+                                  emojis: emojis,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              timeago.format(
+                                DateTime.parse(displayNote.createdAt),
+                                locale: 'ja',
+                              ),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        if (hasCw) ...[
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _cwExpanded = !_cwExpanded),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: MfmText(
+                                    displayNote.cw!,
+                                    emojis: emojis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Chip(
+                                  label: Text(_cwExpanded ? '隠す' : '続きを見る'),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (!hasCw || _cwExpanded) ...[
+                          if (displayNote.text != null)
+                            MfmText(displayNote.text!, emojis: emojis),
+                          if (displayNote.files.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            _MediaGrid(files: displayNote.files),
+                          ],
+                        ],
+                        if (!hasCw || _cwExpanded)
+                          if (!isRenote && note.renote != null) ...[
+                            const SizedBox(height: 8),
+                            _QuotedNote(
+                              note: note.renote!,
+                              serverEmojis: widget.serverEmojis,
+                            ),
+                          ],
+                        if (displayNote.reactions.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _Reactions(
+                            note: displayNote,
+                            emojis: emojis,
+                            onTap: (reaction) => _react(displayNote, reaction),
+                          ),
+                        ],
+                        if (widget.showActions) ...[
+                          const SizedBox(height: 4),
+                          _NoteActions(
+                            note: displayNote,
+                            onReact: () => _pickReaction(displayNote),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _pickReaction(Note note) async {
+    final reaction = await showReactionPicker(context);
+    if (reaction == null) return;
+    await _react(note, reaction);
+  }
+
+  Future<void> _react(Note note, String reaction) async {
+    try {
+      await ref.read(noteActionsProvider).toggleReaction(note, reaction);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    }
   }
 }
 
@@ -202,31 +290,41 @@ class _UserName extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.avatarUrl});
+  const _Avatar({required this.avatarUrl, this.size = 40});
 
   final String? avatarUrl;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
+    final radius = size / 2;
     if (avatarUrl == null) {
-      return const CircleAvatar(radius: 20, child: Icon(Icons.person));
+      return CircleAvatar(
+        radius: radius,
+        child: Icon(Icons.person, size: radius),
+      );
     }
     return CircleAvatar(
-      radius: 20,
+      radius: radius,
       backgroundImage: CachedNetworkImageProvider(avatarUrl!),
     );
   }
 }
 
 class _Reactions extends StatelessWidget {
-  const _Reactions({required this.reactions, required this.emojis});
+  const _Reactions({
+    required this.note,
+    required this.emojis,
+    required this.onTap,
+  });
 
-  final Map<String, int> reactions;
+  final Note note;
   final Map<String, String> emojis;
+  final ValueChanged<String> onTap;
 
   @override
   Widget build(BuildContext context) {
-    final sorted = reactions.entries.toList()
+    final sorted = note.reactions.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Wrap(
@@ -286,17 +384,16 @@ class _Reactions extends StatelessWidget {
         }
 
         // 現在のサーバーの絵文字: タップ可能なアクティブボタン
+        final isMine = note.myReaction == e.key;
+        final colorScheme = Theme.of(context).colorScheme;
         return InkWell(
-          onTap: () {
-            /* TODO: リアクション送信 */
-          },
+          onTap: () => onTap(e.key),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              color: isMine ? colorScheme.primaryContainer : null,
+              border: Border.all(color: colorScheme.primary),
               borderRadius: BorderRadius.circular(16),
             ),
             child: emojiWidget,
@@ -522,9 +619,7 @@ class _ImageViewerState extends State<_ImageViewer>
       animation: _bgOpacity,
       builder: (context, child) {
         return Material(
-          color: Colors.black.withAlpha(
-            (_bgOpacity.value * 255).round(),
-          ),
+          color: Colors.black.withAlpha((_bgOpacity.value * 255).round()),
           child: child,
         );
       },
@@ -538,8 +633,9 @@ class _ImageViewerState extends State<_ImageViewer>
             children: [
               PhotoViewGallery.builder(
                 itemCount: widget.images.length,
-                pageController:
-                    PageController(initialPage: widget.initialIndex),
+                pageController: PageController(
+                  initialPage: widget.initialIndex,
+                ),
                 onPageChanged: (i) => setState(() => _current = i),
                 builder: (context, index) {
                   final file = widget.images[index];
@@ -549,8 +645,9 @@ class _ImageViewerState extends State<_ImageViewer>
                     maxScale: PhotoViewComputedScale.covered * 3,
                   );
                 },
-                backgroundDecoration:
-                    const BoxDecoration(color: Colors.transparent),
+                backgroundDecoration: const BoxDecoration(
+                  color: Colors.transparent,
+                ),
                 loadingBuilder: (context, event) =>
                     const Center(child: CircularProgressIndicator()),
               ),
@@ -608,6 +705,315 @@ class _ImageViewerState extends State<_ImageViewer>
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 返信・リノート・リアクション・その他のアクション行。
+class _NoteActions extends ConsumerWidget {
+  const _NoteActions({required this.note, required this.onReact});
+
+  final Note note;
+  final VoidCallback onReact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final myId = ref.watch(profileNotifierProvider).value?.id;
+    final isMine = myId != null && myId == (note.userId ?? note.user.id);
+    // ダイレクト/フォロワー限定はリノートできない
+    final canRenote =
+        note.visibility != 'specified' && note.visibility != 'followers';
+
+    return Row(
+      children: [
+        _ActionButton(
+          icon: Icons.reply,
+          count: note.repliesCount,
+          tooltip: '返信',
+          onPressed: () => _openReply(context),
+        ),
+        _ActionButton(
+          icon: Icons.repeat,
+          count: note.renoteCount,
+          tooltip: 'リノート',
+          color: canRenote ? null : colorScheme.outlineVariant,
+          onPressed: canRenote ? () => _showRenoteMenu(context, ref) : null,
+        ),
+        _ActionButton(
+          icon: note.myReaction != null
+              ? Icons.emoji_emotions
+              : Icons.add_reaction_outlined,
+          tooltip: 'リアクション',
+          color: note.myReaction != null ? colorScheme.primary : null,
+          onPressed: onReact,
+        ),
+        const Spacer(),
+        _ActionButton(
+          icon: Icons.more_horiz,
+          tooltip: 'その他',
+          onPressed: () => _showMoreMenu(context, ref, isMine: isMine),
+        ),
+      ],
+    );
+  }
+
+  void _openReply(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => ComposeScreen(replyTo: note)));
+  }
+
+  Future<void> _showRenoteMenu(BuildContext context, WidgetRef ref) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: const Text('リノート'),
+              onTap: () => Navigator.of(context).pop('renote'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.format_quote),
+              title: const Text('引用'),
+              onTap: () => Navigator.of(context).pop('quote'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat_on_outlined),
+              title: const Text('リノート解除'),
+              onTap: () => Navigator.of(context).pop('unrenote'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !context.mounted) return;
+
+    switch (action) {
+      case 'quote':
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => ComposeScreen(quoteOf: note)));
+      case 'renote':
+        await _run(context, () => ref.read(noteActionsProvider).renote(note));
+        if (context.mounted) _toast(context, 'リノートしました');
+      case 'unrenote':
+        await _run(context, () => ref.read(noteActionsProvider).unrenote(note));
+        if (context.mounted) _toast(context, 'リノートを解除しました');
+    }
+  }
+
+  Future<void> _showMoreMenu(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isMine,
+  }) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('リンクをコピー'),
+              onTap: () => Navigator.of(context).pop('copy'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_copy),
+              title: const Text('本文をコピー'),
+              onTap: () => Navigator.of(context).pop('copyText'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.open_in_browser),
+              title: const Text('ブラウザで開く'),
+              onTap: () => Navigator.of(context).pop('browser'),
+            ),
+            if (isMine)
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
+                  '削除',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                onTap: () => Navigator.of(context).pop('delete'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !context.mounted) return;
+
+    switch (action) {
+      case 'copy':
+        final link = _noteUrl(ref, note);
+        if (link == null) return;
+        await Clipboard.setData(ClipboardData(text: link));
+        if (context.mounted) _toast(context, 'リンクをコピーしました');
+      case 'copyText':
+        await Clipboard.setData(ClipboardData(text: note.text ?? ''));
+        if (context.mounted) _toast(context, 'コピーしました');
+      case 'browser':
+        final url = _noteUrl(ref, note);
+        if (url != null) {
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        }
+      case 'delete':
+        final ok = await _confirmDelete(context);
+        if (ok != true || !context.mounted) return;
+        await _run(context, () => ref.read(noteActionsProvider).delete(note));
+        if (context.mounted) _toast(context, '削除しました');
+    }
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('ノートを削除'),
+      content: const Text('この操作は取り消せません。削除しますか？'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('キャンセル'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('削除'),
+        ),
+      ],
+    ),
+  );
+
+  /// リモートのノートは元サーバーの URL。ローカルのノートは API が url を
+  /// 返さないので、ログイン中のホストから組み立てる。
+  String? _noteUrl(WidgetRef ref, Note note) {
+    final remote = note.url ?? note.uri;
+    if (remote != null) return remote;
+    final host = ref.read(currentHostProvider);
+    return host == null ? null : 'https://$host/notes/${note.id}';
+  }
+
+  Future<void> _run(
+    BuildContext context,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+    } catch (e) {
+      if (!context.mounted) return;
+      _toast(context, resolveErrorMessage(e));
+    }
+  }
+
+  void _toast(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.count,
+    this.color,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final int? count;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor =
+        color ?? Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: effectiveColor),
+              if (count != null && count! > 0) ...[
+                const SizedBox(width: 4),
+                Text(
+                  '$count',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: effectiveColor),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 引用リノートの中に埋め込まれる、枠付きの小さなノート。
+class _QuotedNote extends StatelessWidget {
+  const _QuotedNote({required this.note, required this.serverEmojis});
+
+  final Note note;
+  final Map<String, String> serverEmojis;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final emojis = {...serverEmojis, ...note.emojis};
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => openNoteDetail(context, note),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          border: Border.all(color: colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _Avatar(avatarUrl: note.user.avatarUrl, size: 20),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: MfmText(
+                    note.user.name ?? note.user.username,
+                    emojis: emojis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+            if (note.text != null) ...[
+              const SizedBox(height: 6),
+              MfmText(
+                note.text!,
+                emojis: emojis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ],
         ),
       ),
     );

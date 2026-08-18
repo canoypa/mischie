@@ -10,12 +10,17 @@ class ComposeRepository {
     String text, {
     String? cw,
     NoteVisibility visibility = NoteVisibility.public,
+    String? replyId,
+    String? renoteId,
   }) async {
     final body = <String, dynamic>{
-      'text': text,
       'visibility': visibility.name,
+      // 引用でない純粋なリノート以外は text を必ず送る
+      if (text.isNotEmpty) 'text': text,
+      if (cw != null && cw.isNotEmpty) 'cw': cw,
+      'replyId': ?replyId,
+      'renoteId': ?renoteId,
     };
-    if (cw != null && cw.isNotEmpty) body['cw'] = cw;
 
     await _client.post('notes/create', body: body);
   }

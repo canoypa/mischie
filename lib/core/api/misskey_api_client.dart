@@ -27,6 +27,13 @@ class MisskeyApiClient {
     return response.data!;
   }
 
+  /// レスポンス本文を使わないエンドポイント用。
+  /// Misskey は成功時に 204 No Content を返すものが多く、`post` では
+  /// `response.data!` が null で落ちるため分けている。
+  Future<void> postVoid(String path, {Map<String, dynamic>? body}) async {
+    await _dio.post<dynamic>(path, data: body ?? {});
+  }
+
   Future<List<Map<String, dynamic>>> postList(
     String path, {
     Map<String, dynamic>? body,

@@ -3,8 +3,7 @@ import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/notification/data/notification_repository.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 
-final notificationRepositoryProvider =
-    Provider<NotificationRepository?>((ref) {
+final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final client = ref.watch(misskeyApiClientProvider).value;
   if (client == null) return null;
   return NotificationRepository(client);

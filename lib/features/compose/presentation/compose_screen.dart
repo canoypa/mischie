@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
+import 'package:mischie/features/timeline/domain/note.dart';
 
 const _maxLength = 3000;
 
 class ComposeScreen extends ConsumerStatefulWidget {
-  const ComposeScreen({super.key});
+  const ComposeScreen({super.key, this.replyTo, this.quoteOf});
+
+  /// 返信先のノート。指定すると replyId 付きで投稿する。
+  final Note? replyTo;
+
+  /// 引用元のノート。指定すると renoteId 付きで投稿する。
+  final Note? quoteOf;
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
@@ -25,6 +32,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _textController.addListener(
       () => setState(() => _textLength = _textController.text.length),
     );
+    // 返信は元ノートの公開範囲を引き継ぐ（元より広く公開しない）
+    final source = widget.replyTo;
+    if (source != null) {
+      _visibility = NoteVisibility.values.firstWhere(
+        (v) => v.name == source.visibility,
+        orElse: () => NoteVisibility.public,
+      );
+    }
   }
 
   @override
@@ -38,11 +53,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    await ref.read(composeNotifierProvider.notifier).postNote(
-      text,
-      cw: _showCw ? _cwController.text.trim() : null,
-      visibility: _visibility,
-    );
+    await ref
+        .read(composeNotifierProvider.notifier)
+        .postNote(
+          text,
+          cw: _showCw ? _cwController.text.trim() : null,
+          visibility: _visibility,
+          replyId: widget.replyTo?.id,
+          renoteId: widget.quoteOf?.id,
+        );
 
     if (mounted) {
       final state = ref.read(composeNotifierProvider);
@@ -62,8 +81,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final remaining = _maxLength - _textLength;
     final isOverLimit = remaining < 0;
 
+    final isReply = widget.replyTo != null;
+    final isQuote = widget.quoteOf != null;
+    final target = widget.replyTo ?? widget.quoteOf;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('ノートを書く')),
+      appBar: AppBar(
+        title: Text(
+          isReply
+              ? '返信'
+              : isQuote
+              ? '引用'
+              : 'ノートを書く',
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: isLoading || isOverLimit ? null : _post,
         icon: isLoading
@@ -77,6 +108,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       ),
       body: Column(
         children: [
+          if (target != null) _TargetPreview(note: target, isReply: isReply),
           if (_showCw)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -97,8 +129,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 maxLines: null,
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
-                decoration: const InputDecoration(
-                  hintText: '今何してる？',
+                decoration: InputDecoration(
+                  hintText: isReply ? 'このノートに返信' : '今何してる？',
                   border: InputBorder.none,
                 ),
               ),
@@ -115,9 +147,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               IconButton(
                 icon: Icon(
                   _showCw ? Icons.warning : Icons.warning_outlined,
-                  color: _showCw
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
+                  color: _showCw ? Theme.of(context).colorScheme.primary : null,
                 ),
                 tooltip: 'CW (閲覧注意)',
                 onPressed: () => setState(() => _showCw = !_showCw),
@@ -135,8 +165,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   color: isOverLimit
                       ? Theme.of(context).colorScheme.error
                       : Theme.of(context).colorScheme.outline,
-                  fontWeight:
-                      isOverLimit ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isOverLimit ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
               const SizedBox(width: 80), // FAB の幅分のスペース
@@ -155,18 +184,18 @@ class _VisibilitySelector extends StatelessWidget {
   final ValueChanged<NoteVisibility> onChanged;
 
   IconData _icon(NoteVisibility v) => switch (v) {
-        NoteVisibility.public => Icons.public,
-        NoteVisibility.home => Icons.home,
-        NoteVisibility.followers => Icons.lock,
-        NoteVisibility.specified => Icons.mail,
-      };
+    NoteVisibility.public => Icons.public,
+    NoteVisibility.home => Icons.home,
+    NoteVisibility.followers => Icons.lock,
+    NoteVisibility.specified => Icons.mail,
+  };
 
   String _label(NoteVisibility v) => switch (v) {
-        NoteVisibility.public => 'パブリック',
-        NoteVisibility.home => 'ホーム',
-        NoteVisibility.followers => 'フォロワー',
-        NoteVisibility.specified => 'ダイレクト',
-      };
+    NoteVisibility.public => 'パブリック',
+    NoteVisibility.home => 'ホーム',
+    NoteVisibility.followers => 'フォロワー',
+    NoteVisibility.specified => 'ダイレクト',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +221,62 @@ class _VisibilitySelector extends StatelessWidget {
         children: [
           Icon(_icon(value), size: 20),
           const Icon(Icons.arrow_drop_down, size: 16),
+        ],
+      ),
+    );
+  }
+}
+
+/// 返信先・引用元を投稿画面の上部に薄く出す。
+class _TargetPreview extends StatelessWidget {
+  const _TargetPreview({required this.note, required this.isReply});
+
+  final Note note;
+  final bool isReply;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final handle = note.user.host != null
+        ? '@${note.user.username}@${note.user.host}'
+        : '@${note.user.username}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      color: colorScheme.surfaceContainerHighest,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isReply ? Icons.reply : Icons.format_quote,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  '${isReply ? '返信先' : '引用元'}: ${note.user.name ?? note.user.username} $handle',
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (note.text != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              note.text!,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodyMedium,
+            ),
+          ],
         ],
       ),
     );

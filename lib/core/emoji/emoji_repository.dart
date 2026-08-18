@@ -21,7 +21,8 @@ class EmojiRepository {
     try {
       final file = await _cacheFile();
       if (!await file.exists()) return null;
-      final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      final json =
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>;
       return (
         updatedAt: json['updatedAt'] as String?,
         emojis: (json['emojis'] as Map<String, dynamic>).cast<String, String>(),
@@ -35,10 +36,9 @@ class EmojiRepository {
   Future<void> _saveDisk(String updatedAt, Map<String, String> emojis) async {
     try {
       final file = await _cacheFile();
-      await file.writeAsString(jsonEncode({
-        'updatedAt': updatedAt,
-        'emojis': emojis,
-      }));
+      await file.writeAsString(
+        jsonEncode({'updatedAt': updatedAt, 'emojis': emojis}),
+      );
     } catch (_) {}
   }
 
@@ -89,7 +89,10 @@ class EmojiRepository {
     for (final entry in map.entries) {
       final atIndex = entry.key.indexOf('@');
       if (atIndex > 0) {
-        fallbacks.putIfAbsent(entry.key.substring(0, atIndex), () => entry.value);
+        fallbacks.putIfAbsent(
+          entry.key.substring(0, atIndex),
+          () => entry.value,
+        );
       }
     }
     return {...fallbacks, ...map};
