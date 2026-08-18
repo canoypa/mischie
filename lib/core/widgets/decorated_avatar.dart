@@ -1,0 +1,110 @@
+import 'dart:math' as math;
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:mischie/core/widgets/cat_ears.dart';
+import 'package:mischie/features/timeline/domain/user.dart';
+
+/// 猫耳とデコレーションを載せたアイコン。
+///
+/// デコレーションはアイコンからはみ出して描かれるので、置く側では
+/// レイアウト上の大きさ（= size）だけを占める。
+class DecoratedAvatar extends StatelessWidget {
+  const DecoratedAvatar({
+    super.key,
+    required this.avatarUrl,
+    this.size = 40,
+    this.isCat = false,
+    this.decorations = const [],
+    this.borderColor,
+  });
+
+  final String? avatarUrl;
+  final double size;
+  final bool isCat;
+  final List<AvatarDecoration> decorations;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = size / 2;
+    Widget avatar = avatarUrl == null
+        ? CircleAvatar(
+            radius: radius,
+            child: Icon(Icons.person, size: radius),
+          )
+        : CircleAvatar(
+            radius: radius,
+            backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+          );
+
+    if (borderColor != null) {
+      avatar = Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: borderColor!, width: 4),
+        ),
+        child: avatar,
+      );
+    }
+
+    if (!isCat && decorations.isEmpty) return avatar;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (isCat)
+            Positioned(
+              top: -size * 0.34,
+              left: 0,
+              right: 0,
+              child: CatEars(width: size),
+            ),
+          avatar,
+          for (final decoration in decorations)
+            Positioned(
+              // デコレーション画像はアイコンより一回り大きい枠に描く
+              left: -size * 0.25,
+              top: -size * 0.25,
+              child: _Decoration(decoration: decoration, size: size * 1.5),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Decoration extends StatelessWidget {
+  const _Decoration({required this.decoration, required this.size});
+
+  final AvatarDecoration decoration;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    // offset は半径を 1 とした比率、angle は回転数（1 = 一周）
+    return Transform.translate(
+      offset: Offset(
+        decoration.offsetX * size / 2,
+        decoration.offsetY * size / 2,
+      ),
+      child: Transform.rotate(
+        angle: decoration.angle * 2 * math.pi,
+        child: Transform.flip(
+          flipX: decoration.flipH,
+          child: CachedNetworkImage(
+            imageUrl: decoration.url,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            placeholder: (_, _) => SizedBox(width: size, height: size),
+            errorWidget: (_, _, _) => SizedBox(width: size, height: size),
+          ),
+        ),
+      ),
+    );
+  }
+}

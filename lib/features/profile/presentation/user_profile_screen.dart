@@ -4,7 +4,8 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
-import 'package:mischie/core/widgets/cat_ears.dart';
+import 'package:mischie/core/navigation/link_handler.dart';
+import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
@@ -200,7 +201,10 @@ class UserProfileScreen extends ConsumerWidget {
         (username != null ? '@$username' : userId);
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [if (detail != null) _UserMenuButton(detail: detail)],
+      ),
       body: UserProfileView(userId: userId, initialUser: initialUser),
     );
   }
@@ -282,10 +286,12 @@ class _MinimalHeader extends StatelessWidget {
             Positioned(
               left: 16,
               bottom: -40,
-              child: _AvatarRing(
+              child: DecoratedAvatar(
                 avatarUrl: user.avatarUrl,
-                colorScheme: colorScheme,
+                size: 96,
                 isCat: user.isCat,
+                decorations: user.avatarDecorations,
+                borderColor: colorScheme.surface,
               ),
             ),
           ],
@@ -357,10 +363,12 @@ class _FullHeader extends StatelessWidget {
             Positioned(
               left: 16,
               bottom: -40,
-              child: _AvatarRing(
+              child: DecoratedAvatar(
                 avatarUrl: detail.avatarUrl,
-                colorScheme: colorScheme,
+                size: 96,
                 isCat: detail.isCat,
+                decorations: detail.avatarDecorations,
+                borderColor: colorScheme.surface,
               ),
             ),
           ],
@@ -508,56 +516,6 @@ class _FullHeader extends StatelessWidget {
     } catch (_) {
       return createdAt;
     }
-  }
-}
-
-class _AvatarRing extends StatelessWidget {
-  const _AvatarRing({
-    required this.avatarUrl,
-    required this.colorScheme,
-    this.isCat = false,
-  });
-
-  final String? avatarUrl;
-  final ColorScheme colorScheme;
-  final bool isCat;
-
-  @override
-  Widget build(BuildContext context) {
-    const diameter = 96.0; // 半径 44 + 枠 4
-
-    final avatar = Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: colorScheme.surface, width: 4),
-      ),
-      child: CircleAvatar(
-        radius: 44,
-        backgroundImage: avatarUrl != null
-            ? CachedNetworkImageProvider(avatarUrl!)
-            : null,
-        child: avatarUrl == null ? const Icon(Icons.person) : null,
-      ),
-    );
-
-    if (!isCat) return avatar;
-
-    return SizedBox(
-      width: diameter,
-      height: diameter,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Positioned(
-            top: -diameter * 0.34,
-            left: 0,
-            right: 0,
-            child: CatEars(width: diameter),
-          ),
-          avatar,
-        ],
-      ),
-    );
   }
 }
 
@@ -738,5 +696,100 @@ class _FollowButton extends ConsumerWidget {
       icon: const Icon(Icons.person_add_alt, size: 18),
       label: const Text('フォロー'),
     );
+  }
+}
+
+/// プロフィール右上のメニュー。ミュート・ブロックと Web で開く。
+class _UserMenuButton extends ConsumerWidget {
+  const _UserMenuButton({required this.detail});
+
+  final UserDetailed detail;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final myId = ref.watch(profileNotifierProvider).value?.id;
+    final isMe = myId == detail.id;
+    final hidden = ref.watch(
+      hiddenUserIdsProvider.select((ids) => ids.contains(detail.id)),
+    );
+    final isMuted = detail.isMuted || hidden;
+    final isBlocking = detail.isBlocking;
+    return PopupMenuButton<String>(
+      onSelected: (value) => _select(context, ref, value),
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'browser',
+          child: ListTile(
+            leading: Icon(Icons.open_in_browser),
+            title: Text('ブラウザで開く'),
+          ),
+        ),
+        if (!isMe) ...[
+          PopupMenuItem(
+            value: 'mute',
+            child: ListTile(
+              leading: const Icon(Icons.volume_off_outlined),
+              title: Text(isMuted ? 'ミュート解除' : 'ミュート'),
+            ),
+          ),
+          PopupMenuItem(
+            value: 'block',
+            child: ListTile(
+              leading: const Icon(Icons.block),
+              title: Text(isBlocking ? 'ブロック解除' : 'ブロック'),
+            ),
+          ),
+        ],
+      ],
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        child: Icon(Icons.more_vert),
+      ),
+    );
+  }
+
+  Future<void> _select(
+    BuildContext context,
+    WidgetRef ref,
+    String value,
+  ) async {
+    final actions = ref.read(moderationActionsProvider);
+    final hidden = ref.read(hiddenUserIdsProvider).contains(detail.id);
+    final acct = '@${detail.username}';
+
+    try {
+      switch (value) {
+        case 'browser':
+          await openOnServer(
+            ref,
+            detail.host == null
+                ? '/@${detail.username}'
+                : '/@${detail.username}@${detail.host}',
+          );
+        case 'mute':
+          final muted = detail.isMuted || hidden;
+          await actions.setMuted(detail.id, muted: !muted);
+          if (context.mounted) {
+            _toast(context, muted ? '$acct のミュートを解除しました' : '$acct をミュートしました');
+          }
+        case 'block':
+          await actions.setBlocked(detail.id, blocked: !detail.isBlocking);
+          if (context.mounted) {
+            _toast(
+              context,
+              detail.isBlocking ? '$acct のブロックを解除しました' : '$acct をブロックしました',
+            );
+          }
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      _toast(context, resolveErrorMessage(e));
+    }
+  }
+
+  void _toast(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

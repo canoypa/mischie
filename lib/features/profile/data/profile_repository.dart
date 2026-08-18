@@ -27,6 +27,18 @@ class ProfileRepository {
     return UserDetailed.fromJson(data);
   }
 
+  Future<void> mute(String userId) =>
+      _client.postVoid('mute/create', body: {'userId': userId});
+
+  Future<void> unmute(String userId) =>
+      _client.postVoid('mute/delete', body: {'userId': userId});
+
+  Future<void> block(String userId) =>
+      _client.postVoid('blocking/create', body: {'userId': userId});
+
+  Future<void> unblock(String userId) =>
+      _client.postVoid('blocking/delete', body: {'userId': userId});
+
   Future<void> follow(String userId) =>
       _client.postVoid('following/create', body: {'userId': userId});
 

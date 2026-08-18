@@ -23,6 +23,13 @@ _UserDetailed _$UserDetailedFromJson(Map<String, dynamic> json) =>
       isCat: json['isCat'] as bool? ?? false,
       isFollowing: json['isFollowing'] as bool? ?? false,
       isFollowed: json['isFollowed'] as bool? ?? false,
+      isMuted: json['isMuted'] as bool? ?? false,
+      isBlocking: json['isBlocking'] as bool? ?? false,
+      avatarDecorations:
+          (json['avatarDecorations'] as List<dynamic>?)
+              ?.map((e) => AvatarDecoration.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       followersCount: (json['followersCount'] as num?)?.toInt(),
       followingCount: (json['followingCount'] as num?)?.toInt(),
       notesCount: (json['notesCount'] as num?)?.toInt(),
@@ -60,6 +67,9 @@ Map<String, dynamic> _$UserDetailedToJson(_UserDetailed instance) =>
       'isCat': instance.isCat,
       'isFollowing': instance.isFollowing,
       'isFollowed': instance.isFollowed,
+      'isMuted': instance.isMuted,
+      'isBlocking': instance.isBlocking,
+      'avatarDecorations': instance.avatarDecorations,
       'followersCount': instance.followersCount,
       'followingCount': instance.followingCount,
       'notesCount': instance.notesCount,

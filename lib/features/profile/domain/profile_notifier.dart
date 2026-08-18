@@ -81,3 +81,60 @@ class FollowActions {
     }
   }
 }
+
+/// この端末でミュート／ブロックしたユーザー。
+///
+/// サーバー側の絞り込みは次回の取得から効くので、すでに画面にあるノートは
+/// 残ってしまう。押した直後から消えるように、描画側でも伏せる。
+final hiddenUserIdsProvider = NotifierProvider<HiddenUserIds, Set<String>>(
+  HiddenUserIds.new,
+);
+
+class HiddenUserIds extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => {};
+
+  void add(String userId) => state = {...state, userId};
+
+  void remove(String userId) => state = {...state}..remove(userId);
+}
+
+final moderationActionsProvider = Provider<ModerationActions>(
+  ModerationActions.new,
+);
+
+class ModerationActions {
+  ModerationActions(this._ref);
+
+  final Ref _ref;
+
+  ProfileRepository _repo() {
+    final repo = _ref.read(profileRepositoryProvider);
+    if (repo == null) throw Exception('未ログイン');
+    return repo;
+  }
+
+  Future<void> setMuted(String userId, {required bool muted}) async {
+    final repo = _repo();
+    final hidden = _ref.read(hiddenUserIdsProvider.notifier);
+    if (muted) {
+      await repo.mute(userId);
+      hidden.add(userId);
+    } else {
+      await repo.unmute(userId);
+      hidden.remove(userId);
+    }
+  }
+
+  Future<void> setBlocked(String userId, {required bool blocked}) async {
+    final repo = _repo();
+    final hidden = _ref.read(hiddenUserIdsProvider.notifier);
+    if (blocked) {
+      await repo.block(userId);
+      hidden.add(userId);
+    } else {
+      await repo.unblock(userId);
+      hidden.remove(userId);
+    }
+  }
+}

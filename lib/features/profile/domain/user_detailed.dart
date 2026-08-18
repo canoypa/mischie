@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mischie/features/timeline/domain/user.dart';
 
 part 'user_detailed.freezed.dart';
 part 'user_detailed.g.dart';
@@ -21,6 +22,9 @@ sealed class UserDetailed with _$UserDetailed {
     @Default(false) bool isCat,
     @Default(false) bool isFollowing,
     @Default(false) bool isFollowed,
+    @Default(false) bool isMuted,
+    @Default(false) bool isBlocking,
+    @Default([]) List<AvatarDecoration> avatarDecorations,
     int? followersCount,
     int? followingCount,
     int? notesCount,
