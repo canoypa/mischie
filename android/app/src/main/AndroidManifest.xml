@@ -3,6 +3,8 @@
          debug/profile のマニフェストにしか置かないため、リリースビルドだけ
          通信が全て失敗する（ログインがトークン交換で止まる）。 -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ で通知を出すのに必要（設定でプッシュを有効にしたときだけ要求する） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="Mischie"
