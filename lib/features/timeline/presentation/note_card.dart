@@ -382,39 +382,24 @@ class _Reactions extends StatelessWidget {
         final colorScheme = Theme.of(context).colorScheme;
         final isMine = note.myReaction == e.key;
 
-        // 強調するのは「自分が付けたもの」だけ。押せるだけのリアクションまで
-        // 目立たせると、どれが自分のものか読み取れなくなる。
-        // リモートの絵文字は自サーバーへ付け直せないので、Material 3 の
-        // 無効状態（前景 38% / 背景 12%）で「押せない」ことを示す。
-        final (background, foreground) = switch ((isExternal, isMine)) {
-          (true, _) => (
-            colorScheme.onSurface.withValues(alpha: 0.12),
-            colorScheme.onSurface.withValues(alpha: 0.38),
-          ),
-          (false, true) => (
-            colorScheme.primaryContainer,
-            colorScheme.onPrimaryContainer,
-          ),
-          (false, false) => (
-            colorScheme.surfaceContainerHighest,
-            colorScheme.onSurfaceVariant,
-          ),
-        };
+        // リアクションは「誰かが付けた」という事実の表示であり、押せるか
+        // どうかとは別の軸。押せないものを薄くすると、事実の側まで
+        // 弱く見えてしまう。表示は揃えて、区別するのは自分のものだけ。
+        final (background, foreground) = isMine
+            ? (colorScheme.primaryContainer, colorScheme.onPrimaryContainer)
+            : (colorScheme.surfaceContainerHighest, colorScheme.onSurface);
 
         final emojiWidget = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (emojiUrl != null)
-              Opacity(
-                opacity: isExternal ? 0.38 : 1,
-                child: CachedNetworkImage(
-                  imageUrl: emojiUrl,
-                  height: 22,
-                  // 幅を予約しないと、読み込み前は 0 幅で描かれてから
-                  // 画像の到着で広がり、ノート全体がずれる
-                  placeholder: (_, _) => const SizedBox(height: 22, width: 22),
-                  errorWidget: (context, url, error) => Text(e.key),
-                ),
+              CachedNetworkImage(
+                imageUrl: emojiUrl,
+                height: 22,
+                // 幅を予約しないと、読み込み前は 0 幅で描かれてから
+                // 画像の到着で広がり、ノート全体がずれる
+                placeholder: (_, _) => const SizedBox(height: 22, width: 22),
+                errorWidget: (context, url, error) => Text(e.key),
               )
             else
               Text(
@@ -441,8 +426,16 @@ class _Reactions extends StatelessWidget {
           child: emojiWidget,
         );
 
+        // リモートの絵文字は自サーバーへ付け直せない。見た目で伝えるより、
+        // 押したときに理由を返すほうが表示を歪めずに済む。
         if (isExternal) {
-          return Tooltip(message: 'リモートサーバーの絵文字にはリアクションできません', child: chip);
+          return InkWell(
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('リモートサーバーの絵文字にはリアクションできません')),
+            ),
+            borderRadius: BorderRadius.circular(16),
+            child: chip,
+          );
         }
 
         return InkWell(
