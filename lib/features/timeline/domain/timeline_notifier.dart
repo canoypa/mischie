@@ -9,6 +9,8 @@ import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/timeline/data/timeline_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
+import 'package:mischie/features/timeline/domain/timeline_source.dart';
+import 'package:mischie/features/timeline/domain/user_list.dart';
 
 final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
   final clientAsync = ref.watch(misskeyApiClientProvider);
@@ -17,17 +19,22 @@ final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
   return TimelineRepository(client);
 });
 
+/// 自分のリスト一覧。タブに並べるために使う。
+final userListsProvider = FutureProvider<List<UserList>>((ref) async {
+  final repo = ref.watch(timelineRepositoryProvider);
+  if (repo == null) return const [];
+  return repo.fetchLists();
+});
+
 /// 表示中のタイムライン。切り替えると再取得とストリーミング再接続が走る。
-final selectedTimelineKindProvider =
-    NotifierProvider<SelectedTimelineKind, TimelineKind>(
-      SelectedTimelineKind.new,
-    );
+final selectedTimelineProvider =
+    NotifierProvider<SelectedTimeline, TimelineSource>(SelectedTimeline.new);
 
-class SelectedTimelineKind extends Notifier<TimelineKind> {
+class SelectedTimeline extends Notifier<TimelineSource> {
   @override
-  TimelineKind build() => TimelineKind.home;
+  TimelineSource build() => const TimelineSource.builtin(TimelineKind.home);
 
-  set kind(TimelineKind value) => state = value;
+  set source(TimelineSource value) => state = value;
 }
 
 final timelineNotifierProvider =
@@ -38,9 +45,9 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   StreamSubscription<Note>? _subscription;
   final List<Note> _pending = [];
 
-  /// 種類ごとの取得済みノート。タブを戻したときに再取得で待たせないため、
-  /// 表示は即座にキャッシュから復帰させる（新着はストリーミングで届く）。
-  final Map<TimelineKind, List<Note>> _cache = {};
+  /// タイムラインごとの取得済みノート。タブを戻したときに再取得で待たせない
+  /// ため、表示は即座にキャッシュから復帰させる（新着はストリーミングで届く）。
+  final Map<TimelineSource, List<Note>> _cache = {};
 
   /// ストリーミングで届いた未表示ノート数。UI が listen して使う。
   final pendingCount = ValueNotifier<int>(0);
@@ -48,7 +55,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   @override
   Future<List<Note>> build() async {
     final authState = ref.watch(authNotifierProvider).value;
-    final kind = ref.watch(selectedTimelineKindProvider);
+    final source = ref.watch(selectedTimelineProvider);
 
     _subscription?.cancel();
     _streaming?.dispose();
@@ -57,7 +64,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     pendingCount.value = 0;
 
     if (authState is AuthStateAuthenticated) {
-      _startStreaming(authState.host, authState.accessToken, kind);
+      _startStreaming(authState.host, authState.accessToken, source);
     }
 
     ref.onDispose(() {
@@ -65,21 +72,22 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
       _streaming?.dispose();
     });
 
-    final cached = _cache[kind];
+    final cached = _cache[source];
     if (cached != null) return cached;
 
     final repo = ref.watch(timelineRepositoryProvider);
     if (repo == null) return [];
-    final notes = await repo.fetchTimeline(kind);
-    _cache[kind] = notes;
+    final notes = await repo.fetchTimeline(source);
+    _cache[source] = notes;
     return notes;
   }
 
-  void _startStreaming(String host, String accessToken, TimelineKind kind) {
+  void _startStreaming(String host, String accessToken, TimelineSource source) {
     _streaming = StreamingService(
       host: host,
       accessToken: accessToken,
-      channel: kind.streamingChannel,
+      channel: source.streamingChannel,
+      params: source.params,
     );
     _streaming!.connect();
     _subscription = _streaming!.noteStream.listen((note) {
@@ -100,13 +108,13 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   Future<void> refresh() async {
     _pending.clear();
     pendingCount.value = 0;
-    final kind = ref.read(selectedTimelineKindProvider);
+    final source = ref.read(selectedTimelineProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(timelineRepositoryProvider);
       if (repo == null) return [];
-      final notes = await repo.fetchTimeline(kind);
-      _cache[kind] = notes;
+      final notes = await repo.fetchTimeline(source);
+      _cache[source] = notes;
       return notes;
     });
   }
@@ -118,13 +126,13 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     final repo = ref.read(timelineRepositoryProvider);
     if (repo == null) return;
 
-    final kind = ref.read(selectedTimelineKindProvider);
-    final older = await repo.fetchTimeline(kind, untilId: current.last.id);
+    final source = ref.read(selectedTimelineProvider);
+    final older = await repo.fetchTimeline(source, untilId: current.last.id);
     _publish([...current, ...older]);
   }
 
   void _publish(List<Note> notes) {
-    _cache[ref.read(selectedTimelineKindProvider)] = notes;
+    _cache[ref.read(selectedTimelineProvider)] = notes;
     state = AsyncValue.data(notes);
   }
 }

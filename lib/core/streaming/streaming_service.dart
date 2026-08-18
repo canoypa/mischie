@@ -11,13 +11,18 @@ class StreamingService {
     required String host,
     required String accessToken,
     required String channel,
+    Map<String, dynamic> params = const {},
   }) : _host = host,
        _accessToken = accessToken,
-       _channelName = channel;
+       _channelName = channel,
+       _params = params;
 
   final String _host;
   final String _accessToken;
   final String _channelName;
+
+  /// チャンネル固有のパラメータ（リストなら listId など）。
+  final Map<String, dynamic> _params;
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -53,7 +58,7 @@ class StreamingService {
     _channel!.sink.add(
       jsonEncode({
         'type': 'connect',
-        'body': {'channel': _channelName, 'id': _channelId},
+        'body': {'channel': _channelName, 'id': _channelId, ..._params},
       }),
     );
 

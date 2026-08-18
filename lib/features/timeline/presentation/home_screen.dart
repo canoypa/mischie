@@ -10,6 +10,8 @@ import 'package:mischie/features/search/presentation/search_screen.dart';
 import 'package:mischie/features/settings/presentation/settings_screen.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
+import 'package:mischie/features/timeline/domain/timeline_source.dart';
+import 'package:mischie/features/timeline/domain/user_list.dart';
 import 'package:mischie/features/timeline/presentation/timeline_screen.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
@@ -24,7 +26,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   StreamSubscription<List<SharedMediaFile>>? _shareSubscription;
-  late final TabController _tabController;
+  late TabController _tabController;
+
+  /// 上部タブに並べるタイムライン。組み込みの 4 種類に、読み込めたリストを足す。
+  List<TimelineSource> _sources = [
+    for (final kind in TimelineKind.values) TimelineSource.builtin(kind),
+  ];
 
   // ホームは下のタブが種類を示すので、タイトルはアプリ名にする
   static const _titles = ['Mischie', '検索', '通知', 'プロフィール'];
@@ -39,10 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: TimelineKind.values.length,
-      vsync: this,
-    )..addListener(_onTimelineTabChanged);
+    _tabController = _createTabController();
     // 共有を受け取れるのはログイン後だけなので、HomeScreen で購読する。
     // 起動中の共有と、共有から起動された場合の両方を拾う。
     _shareSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(
@@ -54,6 +58,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       // 同じ共有で二重に開かないよう、受け取ったら破棄する
       ReceiveSharingIntent.instance.reset();
     });
+  }
+
+  TabController _createTabController() =>
+      TabController(length: _sources.length, vsync: this)
+        ..addListener(_onTimelineTabChanged);
+
+  /// リストを読み込めたらタブを作り直す。表示中のタイムラインは変えない。
+  void _rebuildTabs(List<UserList> lists) {
+    final sources = <TimelineSource>[
+      for (final kind in TimelineKind.values) TimelineSource.builtin(kind),
+      for (final list in lists)
+        TimelineSource.list(id: list.id, name: list.name),
+    ];
+    if (sources.length == _sources.length) return;
+
+    final previous = _tabController;
+    setState(() {
+      _sources = sources;
+      _tabController = _createTabController()
+        ..index = _timelineTabIndex.clamp(0, sources.length - 1);
+    });
+    previous.dispose();
   }
 
   @override
@@ -70,8 +96,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // 表示が遅れるので、index が動いた時点で切り替える
     if (_tabController.index == _timelineTabIndex) return;
     _timelineTabIndex = _tabController.index;
-    ref.read(selectedTimelineKindProvider.notifier).kind =
-        TimelineKind.values[_timelineTabIndex];
+    ref.read(selectedTimelineProvider.notifier).source =
+        _sources[_timelineTabIndex];
     // 別のタイムラインになるので、読んでいた位置には意味がない
     timelineScreenKey.currentState?.jumpToTop();
   }
@@ -119,6 +145,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(userListsProvider, (_, next) {
+      final lists = next.value;
+      if (lists != null) _rebuildTabs(lists);
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_currentIndex]),
