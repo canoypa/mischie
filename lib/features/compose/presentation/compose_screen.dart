@@ -216,6 +216,77 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
+  /// 添付の説明（alt）とセンシティブ指定。読み上げ環境のために alt は
+  /// 付けられるようにしておく。
+  Future<void> _editAttachment(_Attachment attachment) async {
+    final controller = TextEditingController(text: attachment.alt);
+    var sensitive = attachment.isSensitive;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('画像の設定'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: '説明 (alt)',
+                  hintText: '画像の内容を書く',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('センシティブ'),
+                value: sensitive,
+                onChanged: (v) => setDialogState(() => sensitive = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (saved != true) return;
+
+    final fileId = attachment.fileId;
+    if (fileId == null) return;
+    try {
+      await ref
+          .read(composeRepositoryProvider)!
+          .updateFile(
+            fileId,
+            comment: controller.text.trim(),
+            isSensitive: sensitive,
+          );
+      if (!mounted) return;
+      setState(() {
+        attachment
+          ..alt = controller.text.trim()
+          ..isSensitive = sensitive;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    }
+  }
+
   Future<void> _pickImages() async {
     final picked = await ImagePicker().pickMultiImage(limit: _maxAttachments);
     if (picked.isEmpty) return;
@@ -341,6 +412,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   });
                   _upload(a);
                 },
+                onEdit: _editAttachment,
               ),
             Expanded(
               child: Padding(
@@ -530,6 +602,8 @@ class _Attachment {
   String? fileId;
   bool uploading = true;
   Object? error;
+  String alt = '';
+  bool isSensitive = false;
 }
 
 class _AttachmentStrip extends StatelessWidget {
@@ -537,11 +611,13 @@ class _AttachmentStrip extends StatelessWidget {
     required this.attachments,
     required this.onRemove,
     required this.onRetry,
+    required this.onEdit,
   });
 
   final List<_Attachment> attachments;
   final ValueChanged<_Attachment> onRemove;
   final ValueChanged<_Attachment> onRetry;
+  final ValueChanged<_Attachment> onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -555,26 +631,44 @@ class _AttachmentStrip extends StatelessWidget {
         itemBuilder: (context, index) {
           final attachment = attachments[index];
           return Stack(
+            clipBehavior: Clip.none,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: attachment.path == null
-                    ? Container(
-                        width: 88,
-                        height: 88,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        child: const Icon(Icons.image_outlined),
-                      )
-                    : Image.file(
-                        File(attachment.path!),
-                        width: 88,
-                        height: 88,
-                        fit: BoxFit.cover,
-                        cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
-                      ),
+              // タップで説明とセンシティブ指定を編集する
+              GestureDetector(
+                onTap: attachment.fileId == null
+                    ? null
+                    : () => onEdit(attachment),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: attachment.path == null
+                      ? Container(
+                          width: 88,
+                          height: 88,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          child: const Icon(Icons.image_outlined),
+                        )
+                      : Image.file(
+                          File(attachment.path!),
+                          width: 88,
+                          height: 88,
+                          fit: BoxFit.cover,
+                          cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
+                        ),
+                ),
               ),
+              if (attachment.alt.isNotEmpty || attachment.isSensitive)
+                Positioned(
+                  left: 4,
+                  bottom: 4,
+                  child: Row(
+                    children: [
+                      if (attachment.alt.isNotEmpty) const _Tag(label: 'ALT'),
+                      if (attachment.isSensitive) const _Tag(label: 'NSFW'),
+                    ],
+                  ),
+                ),
               if (attachment.uploading)
                 const Positioned.fill(
                   child: ColoredBox(
@@ -621,6 +715,29 @@ class _AttachmentStrip extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// サムネイルに重ねる小さなラベル（ALT / NSFW）。
+class _Tag extends StatelessWidget {
+  const _Tag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 10),
       ),
     );
   }

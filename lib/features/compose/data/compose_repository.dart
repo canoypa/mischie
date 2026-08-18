@@ -28,6 +28,20 @@ class ComposeRepository {
     await _client.post('notes/create', body: body);
   }
 
+  /// 添付の説明（alt）とセンシティブ指定を更新する。
+  Future<void> updateFile(
+    String fileId, {
+    String? comment,
+    bool? isSensitive,
+  }) => _client.postVoid(
+    'drive/files/update',
+    body: {
+      'fileId': fileId,
+      'comment': comment ?? '',
+      'isSensitive': ?isSensitive,
+    },
+  );
+
   /// 画像をドライブへ上げて、投稿に添付できる DriveFile を返す。
   Future<DriveFile> uploadFile(String path, {String? name}) async {
     final data = await _client.postMultipart(
