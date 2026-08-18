@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/widgets/collapsible_content.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/features/channel/presentation/channel_screen.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
@@ -228,14 +229,23 @@ class _NoteCardState extends ConsumerState<NoteCard>
                             ),
                           ),
                         ],
-                        if (!hasCw || _cwExpanded) ...[
-                          if (displayNote.text != null)
-                            MfmText(displayNote.text!, emojis: emojis),
-                          if (displayNote.files.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            _MediaGrid(files: displayNote.files),
-                          ],
-                        ],
+                        if (!hasCw || _cwExpanded)
+                          // 長いノートは文字数ではなく描画後の高さで畳む。
+                          // 文字で切ると MFM の途中で切れて表現が壊れるため。
+                          CollapsibleContent(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (displayNote.text != null)
+                                  MfmText(displayNote.text!, emojis: emojis),
+                                if (displayNote.files.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _MediaGrid(files: displayNote.files),
+                                ],
+                              ],
+                            ),
+                          ),
                         // 引用リノート: 埋め込みも CW で隠す対象に含める
                         if ((!hasCw || _cwExpanded) &&
                             !isRenote &&
