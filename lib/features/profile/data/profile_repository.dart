@@ -27,6 +27,50 @@ class ProfileRepository {
     return UserDetailed.fromJson(data);
   }
 
+  /// フォロー中 / フォロワーの一覧。Following は followee / follower を
+  /// 内側に持つので、必要な側のユーザーだけ取り出す。
+  Future<List<UserDetailed>> fetchFollowing(
+    String userId, {
+    int limit = 30,
+    String? untilId,
+  }) => _fetchRelations(
+    'users/following',
+    userId,
+    key: 'followee',
+    limit: limit,
+    untilId: untilId,
+  );
+
+  Future<List<UserDetailed>> fetchFollowers(
+    String userId, {
+    int limit = 30,
+    String? untilId,
+  }) => _fetchRelations(
+    'users/followers',
+    userId,
+    key: 'follower',
+    limit: limit,
+    untilId: untilId,
+  );
+
+  Future<List<UserDetailed>> _fetchRelations(
+    String endpoint,
+    String userId, {
+    required String key,
+    required int limit,
+    String? untilId,
+  }) async {
+    final list = await _client.postList(
+      endpoint,
+      body: {'userId': userId, 'limit': limit, 'untilId': ?untilId},
+    );
+    return list
+        .map((e) => e[key])
+        .whereType<Map<String, dynamic>>()
+        .map(UserDetailed.fromJson)
+        .toList();
+  }
+
   Future<void> mute(String userId) =>
       _client.postVoid('mute/create', body: {'userId': userId});
 

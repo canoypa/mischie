@@ -1,12 +1,13 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 import 'package:mischie/features/notification/domain/notification_notifier.dart';
+import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -89,15 +90,59 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color, label) = switch (item.type) {
-      'reaction' => (Icons.add_reaction, Colors.orange, 'リアクション'),
-      'reply' => (Icons.reply, Colors.blue, 'リプライ'),
-      'renote' => (Icons.repeat, Colors.green, 'リノート'),
-      'quote' => (Icons.format_quote, Colors.green, '引用'),
-      'mention' => (Icons.alternate_email, Colors.purple, 'メンション'),
-      'follow' => (Icons.person_add, Colors.teal, 'フォロー'),
-      'followRequestAccepted' => (Icons.how_to_reg, Colors.teal, 'フォロー承認'),
-      _ => (Icons.notifications, Colors.grey, item.type),
+    // 種類の区別はアイコンで付ける。色は Material 3 のカラーロールから
+    // 取り、seed から導かれた調和の中に収める（既製の赤や青を直接使うと
+    // テーマから浮く）。
+    final colorScheme = Theme.of(context).colorScheme;
+    final (icon, badgeColor, onBadgeColor, label) = switch (item.type) {
+      'reaction' => (
+        Icons.add_reaction,
+        colorScheme.tertiary,
+        colorScheme.onTertiary,
+        'リアクション',
+      ),
+      'reply' => (
+        Icons.reply,
+        colorScheme.primary,
+        colorScheme.onPrimary,
+        'リプライ',
+      ),
+      'renote' => (
+        Icons.repeat,
+        colorScheme.secondary,
+        colorScheme.onSecondary,
+        'リノート',
+      ),
+      'quote' => (
+        Icons.format_quote,
+        colorScheme.secondary,
+        colorScheme.onSecondary,
+        '引用',
+      ),
+      'mention' => (
+        Icons.alternate_email,
+        colorScheme.primary,
+        colorScheme.onPrimary,
+        'メンション',
+      ),
+      'follow' => (
+        Icons.person_add,
+        colorScheme.tertiary,
+        colorScheme.onTertiary,
+        'フォロー',
+      ),
+      'followRequestAccepted' => (
+        Icons.how_to_reg,
+        colorScheme.tertiary,
+        colorScheme.onTertiary,
+        'フォロー承認',
+      ),
+      _ => (
+        Icons.notifications,
+        colorScheme.surfaceContainerHighest,
+        colorScheme.onSurfaceVariant,
+        item.type,
+      ),
     };
 
     final username = item.user?.name ?? item.user?.username ?? '不明';
@@ -119,14 +164,20 @@ class _NotificationTile extends StatelessWidget {
         height: 44,
         child: Stack(
           children: [
+            // アイコンからは相手のプロフィールへ。通知そのもののタップ先
+            // （ノート）とは期待される行き先が違う。
             Positioned.fill(
-              child: item.user?.avatarUrl != null
-                  ? CircleAvatar(
-                      backgroundImage: CachedNetworkImageProvider(
-                        item.user!.avatarUrl!,
-                      ),
-                    )
-                  : const CircleAvatar(child: Icon(Icons.person)),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: item.user == null
+                    ? null
+                    : () => _openProfile(context, item.user!),
+                child: DecoratedAvatar(
+                  avatarUrl: item.user?.avatarUrl,
+                  isCat: item.user?.isCat ?? false,
+                  decorations: item.user?.avatarDecorations ?? const [],
+                ),
+              ),
             ),
             Positioned(
               right: 0,
@@ -135,14 +186,11 @@ class _NotificationTile extends StatelessWidget {
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: color,
+                  color: badgeColor,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.surface,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: colorScheme.surface, width: 1.5),
                 ),
-                child: Icon(icon, size: 11, color: Colors.white),
+                child: Icon(icon, size: 11, color: onBadgeColor),
               ),
             ),
           ],
@@ -196,15 +244,16 @@ class _NotificationTile extends StatelessWidget {
           return;
         }
         final user = item.user;
-        if (user != null) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) =>
-                  UserProfileScreen(userId: user.id, initialUser: user),
-            ),
-          );
-        }
+        if (user != null) _openProfile(context, user);
       },
+    );
+  }
+
+  void _openProfile(BuildContext context, User user) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(userId: user.id, initialUser: user),
+      ),
     );
   }
 }

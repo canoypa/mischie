@@ -472,7 +472,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                             : FontWeight.normal,
                       ),
                     ),
-                    const SizedBox(width: 80), // FAB の幅分のスペース
                   ],
                 ),
               ),

@@ -379,54 +379,76 @@ class _Reactions extends StatelessWidget {
         // 外部サーバーの絵文字（name@host 形式）はリアクション不可
         final isExternal = identifier.contains('@');
 
+        final colorScheme = Theme.of(context).colorScheme;
+        final isMine = note.myReaction == e.key;
+
+        // 強調するのは「自分が付けたもの」だけ。押せるだけのリアクションまで
+        // 目立たせると、どれが自分のものか読み取れなくなる。
+        // リモートの絵文字は自サーバーへ付け直せないので、Material 3 の
+        // 無効状態（前景 38% / 背景 12%）で「押せない」ことを示す。
+        final (background, foreground) = switch ((isExternal, isMine)) {
+          (true, _) => (
+            colorScheme.onSurface.withValues(alpha: 0.12),
+            colorScheme.onSurface.withValues(alpha: 0.38),
+          ),
+          (false, true) => (
+            colorScheme.primaryContainer,
+            colorScheme.onPrimaryContainer,
+          ),
+          (false, false) => (
+            colorScheme.surfaceContainerHighest,
+            colorScheme.onSurfaceVariant,
+          ),
+        };
+
         final emojiWidget = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (emojiUrl != null)
-              CachedNetworkImage(
-                imageUrl: emojiUrl,
-                height: 22,
-                errorWidget: (context, url, error) => Text(e.key),
+              Opacity(
+                opacity: isExternal ? 0.38 : 1,
+                child: CachedNetworkImage(
+                  imageUrl: emojiUrl,
+                  height: 22,
+                  // 幅を予約しないと、読み込み前は 0 幅で描かれてから
+                  // 画像の到着で広がり、ノート全体がずれる
+                  placeholder: (_, _) => const SizedBox(height: 22, width: 22),
+                  errorWidget: (context, url, error) => Text(e.key),
+                ),
               )
             else
               Text(
                 isCustomEmoji ? ':$displayName:' : displayName,
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16, color: foreground),
               ),
             const SizedBox(width: 6),
-            Text('${e.value}', style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              '${e.value}',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: foreground),
+            ),
           ],
         );
 
+        final chip = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: background,
+            border: isMine ? Border.all(color: colorScheme.primary) : null,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: emojiWidget,
+        );
+
         if (isExternal) {
-          // 外部サーバーの絵文字: 絵文字は通常表示、ボタンとして無効（タップ不可・枠線を薄く）
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: emojiWidget,
-          );
+          return Tooltip(message: 'リモートサーバーの絵文字にはリアクションできません', child: chip);
         }
 
-        // 現在のサーバーの絵文字: タップ可能なアクティブボタン
-        final isMine = note.myReaction == e.key;
-        final colorScheme = Theme.of(context).colorScheme;
         return InkWell(
           onTap: () => onTap(e.key),
           borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isMine ? colorScheme.primaryContainer : null,
-              border: Border.all(color: colorScheme.primary),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: emojiWidget,
-          ),
+          child: chip,
         );
       }).toList(),
     );
@@ -1067,22 +1089,34 @@ class _QuotedNote extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                DecoratedAvatar(
-                  avatarUrl: note.user.avatarUrl,
-                  size: 20,
-                  isCat: note.user.isCat,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: MfmText(
-                    note.user.name ?? note.user.username,
-                    emojis: emojis,
-                    style: Theme.of(context).textTheme.bodySmall,
+            // 引用の中でも、名前とアイコンからは相手のプロフィールへ
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => UserProfileScreen(
+                    userId: note.user.id,
+                    initialUser: note.user,
                   ),
                 ),
-              ],
+              ),
+              child: Row(
+                children: [
+                  DecoratedAvatar(
+                    avatarUrl: note.user.avatarUrl,
+                    size: 20,
+                    isCat: note.user.isCat,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: MfmText(
+                      note.user.name ?? note.user.username,
+                      emojis: emojis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
             ),
             if (note.text != null) ...[
               const SizedBox(height: 6),

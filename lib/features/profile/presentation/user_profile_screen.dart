@@ -9,6 +9,7 @@ import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
+import 'package:mischie/features/profile/presentation/user_relations_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
@@ -437,8 +438,24 @@ class _FullHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     _StatColumn(count: detail.notesCount, label: 'ノート'),
-                    _StatColumn(count: detail.followingCount, label: 'フォロー'),
-                    _StatColumn(count: detail.followersCount, label: 'フォロワー'),
+                    _StatColumn(
+                      count: detail.followingCount,
+                      label: 'フォロー',
+                      onTap: () => openUserRelations(
+                        context,
+                        userId: detail.id,
+                        relation: UserRelation.following,
+                      ),
+                    ),
+                    _StatColumn(
+                      count: detail.followersCount,
+                      label: 'フォロワー',
+                      onTap: () => openUserRelations(
+                        context,
+                        userId: detail.id,
+                        relation: UserRelation.followers,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -593,15 +610,18 @@ class _RoleChip extends StatelessWidget {
 }
 
 class _StatColumn extends StatelessWidget {
-  const _StatColumn({required this.count, required this.label});
+  const _StatColumn({required this.count, required this.label, this.onTap});
 
   final int? count;
   final String label;
 
+  /// 数字は一覧への入り口。押せるものは押せると分かるようにする。
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 20),
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -619,6 +639,13 @@ class _StatColumn extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (onTap == null) return content;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: content,
     );
   }
 }

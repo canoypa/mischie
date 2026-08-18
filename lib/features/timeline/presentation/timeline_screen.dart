@@ -197,6 +197,8 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   }
 }
 
+/// 新着を知らせるボタン。影や角丸を自前で組まず、Material 3 の
+/// tonal button に任せる（テーマの状態レイヤーや高さもそのまま乗る）。
 class _NewNotesChip extends StatelessWidget {
   const _NewNotesChip({required this.count, required this.onTap});
 
@@ -205,46 +207,11 @@ class _NewNotesChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(40),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.arrow_upward,
-                size: 16,
-                color: colorScheme.onPrimaryContainer,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '新着 $count 件',
-                style: TextStyle(
-                  color: colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return FilledButton.tonalIcon(
+      onPressed: onTap,
+      icon: const Icon(Icons.arrow_upward, size: 18),
+      label: Text('新着 $count 件'),
+      style: FilledButton.styleFrom(elevation: 3),
     );
   }
 }
