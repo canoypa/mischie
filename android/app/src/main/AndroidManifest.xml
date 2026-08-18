@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Misskey の API・ストリーミング・画像取得に必要。Flutter のテンプレートは
+         debug/profile のマニフェストにしか置かないため、リリースビルドだけ
+         通信が全て失敗する（ログインがトークン交換で止まる）。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="Mischie"
         android:name="${applicationName}"
