@@ -41,7 +41,11 @@ dependencies:
   dio: ^5.9.2
   freezed_annotation: ^3.1.0
   json_annotation: ^4.11.0
-  flutter_web_auth_2: ^5.0.2
+  # OAuth is done via the external browser (url_launcher) + a mischie:// deep
+  # link captured by app_links. flutter_web_auth_2 was dropped: its 5.x default
+  # AuthTab callback isn't delivered on some Chrome builds (login hangs), and
+  # 4.x no longer compiles against the current AGP (namespace) toolchain.
+  app_links: ^6.4.1
   crypto: ^3.0.7
   uuid: ^4.5.3
   http: ^1.6.0

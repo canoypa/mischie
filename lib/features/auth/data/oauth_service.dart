@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 const _clientId = 'https://mischie.tepbyte.dev/';
@@ -27,9 +29,9 @@ class OAuthService {
       'code_challenge_method': 'S256',
     });
 
-    final result = await FlutterWebAuth2.authenticate(
-      url: authEndpoint.toString(),
-      callbackUrlScheme: 'mischie',
+    final result = await _authenticateWithSystemBrowser(
+      authEndpoint: authEndpoint,
+      state: state,
     );
 
     final uri = Uri.parse(result);
@@ -66,6 +68,48 @@ class OAuthService {
     }
 
     return (host: host, accessToken: accessToken);
+  }
+
+  /// OAuth callback via the external system browser + OS deep link.
+  ///
+  /// Per RFC 8252 ("OAuth 2.0 for Native Apps") we open the authorize URL in
+  /// the external browser and listen for the `mischie://oauth/callback` deep
+  /// link. This deliberately avoids `flutter_web_auth_2`'s in-app tab: its 5.x
+  /// AuthTab default silently fails to deliver the callback on some Chrome
+  /// builds (login hangs with no error), and 4.x no longer compiles against the
+  /// current Android (AGP namespace) toolchain. The `mischie://` scheme is
+  /// routed to MainActivity (see AndroidManifest) and surfaced through
+  /// `app_links`.
+  Future<String> _authenticateWithSystemBrowser({
+    required Uri authEndpoint,
+    required String state,
+  }) async {
+    final appLinks = AppLinks();
+    final completer = Completer<String>();
+    final subscription = appLinks.uriLinkStream.listen((uri) {
+      if (uri.scheme == 'mischie' && uri.queryParameters['state'] == state) {
+        if (!completer.isCompleted) {
+          completer.complete(uri.toString());
+        }
+      }
+    });
+
+    try {
+      final launched = await launchUrl(
+        authEndpoint,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        throw Exception('Failed to open browser for OAuth');
+      }
+
+      return await completer.future.timeout(
+        const Duration(minutes: 5),
+        onTimeout: () => throw Exception('OAuth timed out'),
+      );
+    } finally {
+      await subscription.cancel();
+    }
   }
 
   @visibleForTesting
