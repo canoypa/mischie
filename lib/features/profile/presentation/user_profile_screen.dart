@@ -11,17 +11,21 @@ import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
-class UserProfileScreen extends ConsumerStatefulWidget {
-  const UserProfileScreen({super.key, required this.userId, this.initialUser});
+/// ユーザーのプロフィールと投稿一覧。
+///
+/// 自分のプロフィールタブからも他人のプロフィール画面からも使うため、
+/// Scaffold は持たない（AppBar の有無は呼び出し側が決める）。
+class UserProfileView extends ConsumerStatefulWidget {
+  const UserProfileView({super.key, required this.userId, this.initialUser});
 
   final String userId;
   final User? initialUser;
 
   @override
-  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
+  ConsumerState<UserProfileView> createState() => _UserProfileViewState();
 }
 
-class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
+class _UserProfileViewState extends ConsumerState<UserProfileView> {
   final _scrollController = ScrollController();
 
   final List<Note> _notes = [];
@@ -105,84 +109,98 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
 
     final initialUser = widget.initialUser;
-    final detail = detailAsync.value;
+
+    return NotificationListener<ScrollUpdateNotification>(
+      onNotification: (n) {
+        _onScroll(n);
+        return false;
+      },
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverToBoxAdapter(
+            child: _ProfileHeader(
+              detailAsync: detailAsync,
+              initialUser: initialUser,
+              serverEmojis: serverEmojis,
+              userId: widget.userId,
+            ),
+          ),
+          if (_loadingNotes && _notes.isEmpty)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            )
+          else if (_notesError && _notes.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        resolveErrorMessage(
+                          _notesErrorObject ?? Exception('エラーが発生しました'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      FilledButton(
+                        onPressed: _fetchInitial,
+                        child: const Text('再試行'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => RepaintBoundary(
+                  child: NoteCard(
+                    note: _notes[index],
+                    serverEmojis: serverEmojis,
+                  ),
+                ),
+                childCount: _notes.length,
+              ),
+            ),
+          SliverToBoxAdapter(
+            child: _loadingMore
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : const SizedBox(height: 80),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 他人のプロフィールを開く画面。AppBar 付きで UserProfileView を包む。
+class UserProfileScreen extends ConsumerWidget {
+  const UserProfileScreen({super.key, required this.userId, this.initialUser});
+
+  final String userId;
+  final User? initialUser;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detail = ref.watch(userDetailProvider(userId)).value;
     final username = detail?.username ?? initialUser?.username;
     final title =
         detail?.name ??
         initialUser?.name ??
-        (username != null ? '@$username' : widget.userId);
+        (username != null ? '@$username' : userId);
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: NotificationListener<ScrollUpdateNotification>(
-        onNotification: (n) {
-          _onScroll(n);
-          return false;
-        },
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverToBoxAdapter(
-              child: _ProfileHeader(
-                detailAsync: detailAsync,
-                initialUser: initialUser,
-                serverEmojis: serverEmojis,
-                userId: widget.userId,
-              ),
-            ),
-            if (_loadingNotes && _notes.isEmpty)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              )
-            else if (_notesError && _notes.isEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          resolveErrorMessage(
-                            _notesErrorObject ?? Exception('エラーが発生しました'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        FilledButton(
-                          onPressed: _fetchInitial,
-                          child: const Text('再試行'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => RepaintBoundary(
-                    child: NoteCard(
-                      note: _notes[index],
-                      serverEmojis: serverEmojis,
-                    ),
-                  ),
-                  childCount: _notes.length,
-                ),
-              ),
-            SliverToBoxAdapter(
-              child: _loadingMore
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : const SizedBox(height: 80),
-            ),
-          ],
-        ),
-      ),
+      body: UserProfileView(userId: userId, initialUser: initialUser),
     );
   }
 }

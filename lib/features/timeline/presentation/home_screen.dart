@@ -6,6 +6,7 @@ import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/notification/presentation/notification_screen.dart';
 import 'package:mischie/features/profile/presentation/profile_screen.dart';
 import 'package:mischie/features/search/presentation/search_screen.dart';
+import 'package:mischie/features/settings/presentation/settings_screen.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/timeline_screen.dart';
@@ -117,6 +118,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(_titles[_currentIndex]),
+        actions: [
+          if (_currentIndex == 3)
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: '設定',
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            ),
+        ],
         bottom: _currentIndex == 0
             ? TabBar(
                 controller: _tabController,
