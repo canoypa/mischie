@@ -67,7 +67,8 @@ class _MfmTextState extends ConsumerState<MfmText> {
 
   @override
   Widget build(BuildContext context) {
-    final linkColor = Theme.of(context).colorScheme.primary;
+    final colorScheme = Theme.of(context).colorScheme;
+    final linkColor = colorScheme.primary;
     return Mfm(
       mfmNode: _parsed,
       style: widget.style,
@@ -77,7 +78,14 @@ class _MfmTextState extends ConsumerState<MfmText> {
         decoration: TextDecoration.underline,
       ),
       hashtagStyle: TextStyle(color: linkColor),
-      mentionStyle: TextStyle(color: linkColor),
+      // 本来はアイコン画像付きのバッジにしたいが、mfm パッケージは
+      // メンションを素の TextSpan で描くのでウィジェットを差し込めない。
+      // 背景色で「押せる名前」だと分かる程度までに留める。
+      mentionStyle: TextStyle(
+        color: colorScheme.onPrimaryContainer,
+        backgroundColor: colorScheme.primaryContainer,
+        fontWeight: FontWeight.w600,
+      ),
       emojiBuilder: _emojiBuilder,
       linkTap: _linkTap,
       hashtagTap: _hashtagTap,
