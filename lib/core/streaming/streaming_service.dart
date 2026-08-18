@@ -33,6 +33,9 @@ class StreamingService {
   bool _disposed = false;
   Timer? _reconnectTimer;
 
+  /// 個別に購読しているノート。再接続時に張り直す。
+  final Set<String> _capturedNotes = {};
+
   static const _reconnectDelay = Duration(seconds: 3);
 
   Stream<Note> get noteStream => _controller.stream;
@@ -62,9 +65,27 @@ class StreamingService {
       }),
     );
 
+    for (final noteId in _capturedNotes) {
+      _send({
+        'type': 'subNote',
+        'body': {'id': noteId},
+      });
+    }
+
     _subscription = _channel!.stream.listen(
       (message) {
         final data = jsonDecode(message as String) as Map<String, dynamic>;
+
+        // ノート個別の更新（リアクションの増減・削除）はチャンネルではなく
+        // 接続そのものに届く
+        if (data['type'] == 'noteUpdated') {
+          final body = data['body'];
+          if (body is Map<String, dynamic>) {
+            _events.add(StreamingEvent(type: 'noteUpdated', body: body));
+          }
+          return;
+        }
+
         if (data['type'] != 'channel' || data['body']?['id'] != _channelId) {
           return;
         }
@@ -82,6 +103,31 @@ class StreamingService {
       onDone: _scheduleReconnect,
       cancelOnError: false,
     );
+  }
+
+  void _send(Map<String, dynamic> message) {
+    try {
+      _channel?.sink.add(jsonEncode(message));
+    } catch (_) {
+      // 切断中なら次の接続で張り直す
+    }
+  }
+
+  /// ノートの更新を受け取るようにする。表示中のノートだけ購読すれば足りる。
+  void captureNote(String noteId) {
+    if (!_capturedNotes.add(noteId)) return;
+    _send({
+      'type': 'subNote',
+      'body': {'id': noteId},
+    });
+  }
+
+  void uncaptureNote(String noteId) {
+    if (!_capturedNotes.remove(noteId)) return;
+    _send({
+      'type': 'unsubNote',
+      'body': {'id': noteId},
+    });
   }
 
   void _scheduleReconnect() {

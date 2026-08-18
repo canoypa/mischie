@@ -696,19 +696,24 @@ class _AttachmentStrip extends StatelessWidget {
                     ),
                   ),
                 ),
+              // 24dp では小さすぎて押し損ねる。見た目は 28dp のままで、
+              // タップ領域だけ 40dp に広げる（はみ出しもやめる）。
               Positioned(
-                top: -6,
-                right: -6,
-                child: IconButton(
-                  icon: const Icon(Icons.cancel, size: 20),
-                  color: Colors.white,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black54,
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(24, 24),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                top: 0,
+                right: 0,
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: IconButton(
+                    icon: const Icon(Icons.cancel, size: 22),
+                    color: Colors.white,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black54,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(28, 28),
+                    ),
+                    onPressed: () => onRemove(attachment),
                   ),
-                  onPressed: () => onRemove(attachment),
                 ),
               ),
             ],

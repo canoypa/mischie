@@ -57,9 +57,29 @@ class NoteCard extends ConsumerStatefulWidget {
 class _NoteCardState extends ConsumerState<NoteCard> {
   bool _cwExpanded = false;
 
+  /// 画面に出ている間だけノートの更新を購読する。keep alive をやめたので、
+  /// カードの寿命がそのまま「表示中かどうか」になる。
+  late final String _capturedNoteId;
+
   // ノート固有の絵文字だけを畳んだ結果をキャッシュする。
   Note? _lastNote;
   Map<String, String> _noteEmojis = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    final note = widget.note;
+    _capturedNoteId = (note.isPureRenote ? note.renote! : note).id;
+    ref
+        .read(noteCaptureProvider)
+        .capture(note.isPureRenote ? note.renote! : note);
+  }
+
+  @override
+  void dispose() {
+    ref.read(noteCaptureProvider).release(_capturedNoteId);
+    super.dispose();
+  }
 
   void _openProfile(User user) {
     Navigator.of(context).push(
@@ -126,7 +146,9 @@ class _NoteCardState extends ConsumerState<NoteCard> {
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap ?? () => openNoteDetail(context, displayNote),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          // 下だけ詰める。アクション行が 48dp のタップ領域を持つので、
+          // ここでも 12 取ると余白が二重になって間延びする。
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -357,8 +379,10 @@ class _Reactions extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Wrap(
-      spacing: 4,
-      runSpacing: 4,
+      // 隣のリアクションを押してしまわないよう、間隔は 8 取る。
+      // 高さは Material 3 のチップに合わせて詰めたままにする。
+      spacing: 8,
+      runSpacing: 8,
       children: sorted.map((e) {
         // `:name:` または `:name@server.tld:` 形式からキーを抽出
         final match = customEmojiPattern.firstMatch(e.key);
@@ -417,7 +441,7 @@ class _Reactions extends StatelessWidget {
         );
 
         final chip = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: background,
             border: isMine ? Border.all(color: colorScheme.primary) : null,
@@ -772,6 +796,7 @@ class _NoteActions extends ConsumerWidget {
         note.visibility != 'specified' && note.visibility != 'followers';
 
     return Row(
+      spacing: 4,
       children: [
         _ActionButton(
           icon: Icons.reply,
@@ -1034,23 +1059,28 @@ class _ActionButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: effectiveColor),
-              if (count != null && count! > 0) ...[
-                const SizedBox(width: 4),
-                Text(
-                  '$count',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: effectiveColor),
-                ),
+        borderRadius: BorderRadius.circular(24),
+        // Material 3 の最小タップ領域は 48x48。返信・リノート・リアクションは
+        // 隣り合うので、ここが小さいと押し間違いが起きる。
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: effectiveColor),
+                if (count != null && count! > 0) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    '$count',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: effectiveColor),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

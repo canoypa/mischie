@@ -8,6 +8,7 @@ import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/timeline/data/timeline_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 import 'package:mischie/features/timeline/domain/timeline_source.dart';
 import 'package:mischie/features/timeline/domain/user_list.dart';
@@ -42,7 +43,12 @@ final timelineNotifierProvider =
 
 class TimelineNotifier extends AsyncNotifier<List<Note>> {
   StreamingService? _streaming;
+
+  /// 表示中のノートを個別購読するために使う。接続前は null。
+  StreamingService? get streaming => _streaming;
+
   StreamSubscription<Note>? _subscription;
+  StreamSubscription<StreamingEvent>? _updateSubscription;
   final List<Note> _pending = [];
 
   /// タイムラインごとの取得済みノート。タブを戻したときに再取得で待たせない
@@ -62,6 +68,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     final source = ref.watch(selectedTimelineProvider);
 
     _subscription?.cancel();
+    _updateSubscription?.cancel();
     _streaming?.dispose();
     _streaming = null;
     _pending.clear();
@@ -73,6 +80,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
 
     ref.onDispose(() {
       _subscription?.cancel();
+      _updateSubscription?.cancel();
       _streaming?.dispose();
     });
 
@@ -97,6 +105,12 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _subscription = _streaming!.noteStream.listen((note) {
       _pending.insert(0, note);
       pendingCount.value = _pending.length;
+    });
+    _updateSubscription?.cancel();
+    _updateSubscription = _streaming!.events.listen((event) {
+      if (event.type == 'noteUpdated') {
+        applyNoteUpdate(ref, event.body);
+      }
     });
   }
 
