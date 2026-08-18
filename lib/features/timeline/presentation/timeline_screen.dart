@@ -154,9 +154,12 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                           final note = notes[index];
                           return RepaintBoundary(
                             key: ValueKey(note.id),
-                            child: NoteCard(
-                              note: note,
-                              serverEmojis: serverEmojis,
+                            child: _NoteAppear(
+                              noteId: note.id,
+                              child: NoteCard(
+                                note: note,
+                                serverEmojis: serverEmojis,
+                              ),
                             ),
                           );
                         },
@@ -242,6 +245,62 @@ class _NewNotesChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 新着ノートを高さ 0 から開いて差し込む。
+///
+/// アニメーション無しで挿入すると、上に要素が生えた分だけ表示が飛んで見える。
+/// 対象は「今回 flush で差し込まれたノート」だけで、最初から並んでいた
+/// ノートやスクロールで作り直されたノートは動かさない。
+class _NoteAppear extends ConsumerStatefulWidget {
+  const _NoteAppear({required this.noteId, required this.child});
+
+  final String noteId;
+  final Widget child;
+
+  @override
+  ConsumerState<_NoteAppear> createState() => _NoteAppearState();
+}
+
+class _NoteAppearState extends ConsumerState<_NoteAppear>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // 判定は生成時の一度きり。以降の再構築で animate が変わって
+    // ウィジェットが差し替わる（＝途中で消える）のを避ける。
+    final isNew = ref
+        .read(timelineNotifierProvider.notifier)
+        .justInserted
+        .remove(widget.noteId);
+    if (!isNew) return;
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null) return widget.child;
+
+    final curve = CurvedAnimation(parent: controller, curve: Curves.easeOut);
+    return SizeTransition(
+      sizeFactor: curve,
+      axisAlignment: -1,
+      child: FadeTransition(opacity: curve, child: widget.child),
     );
   }
 }

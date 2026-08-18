@@ -52,6 +52,10 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   /// ストリーミングで届いた未表示ノート数。UI が listen して使う。
   final pendingCount = ValueNotifier<int>(0);
 
+  /// 直近の flush で差し込んだノートの ID。UI が一度だけ出現アニメーションに
+  /// 使い、消費したら取り除く（既に並んでいたノートは動かさない）。
+  final Set<String> justInserted = {};
+
   @override
   Future<List<Note>> build() async {
     final authState = ref.watch(authNotifierProvider).value;
@@ -100,6 +104,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   void flushPending() {
     if (_pending.isEmpty) return;
     final current = state.value ?? [];
+    justInserted.addAll(_pending.map((note) => note.id));
     _publish([..._pending, ...current]);
     _pending.clear();
     pendingCount.value = 0;
