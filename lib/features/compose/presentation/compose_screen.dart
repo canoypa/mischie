@@ -1,13 +1,31 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
 const _maxLength = 3000;
 
+/// Misskey が 1 ノートに添付できる上限。
+const _maxAttachments = 16;
+
 class ComposeScreen extends ConsumerStatefulWidget {
-  const ComposeScreen({super.key, this.replyTo, this.quoteOf});
+  const ComposeScreen({
+    super.key,
+    this.replyTo,
+    this.quoteOf,
+    this.initialText,
+    this.initialImagePaths = const [],
+  });
+
+  /// 他アプリからの共有で渡された本文。
+  final String? initialText;
+
+  /// 他アプリからの共有で渡された画像のローカルパス。
+  final List<String> initialImagePaths;
 
   /// 返信先のノート。指定すると replyId 付きで投稿する。
   final Note? replyTo;
@@ -25,6 +43,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _showCw = false;
   NoteVisibility _visibility = NoteVisibility.public;
   int _textLength = 0;
+  final List<_Attachment> _attachments = [];
 
   @override
   void initState() {
@@ -40,6 +59,50 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         orElse: () => NoteVisibility.public,
       );
     }
+
+    if (widget.initialText != null) {
+      _textController.text = widget.initialText!;
+    }
+    if (widget.initialImagePaths.isNotEmpty) {
+      _addAttachments(widget.initialImagePaths);
+    }
+  }
+
+  /// 選んだ時点でアップロードを始める。投稿ボタンを押してから
+  /// 全部上げ始めると、その分だけユーザーを待たせることになるため。
+  void _addAttachments(List<String> paths) {
+    final room = _maxAttachments - _attachments.length;
+    if (room <= 0) return;
+    final added = paths.take(room).map(_Attachment.new).toList();
+    setState(() => _attachments.addAll(added));
+    for (final attachment in added) {
+      _upload(attachment);
+    }
+  }
+
+  Future<void> _upload(_Attachment attachment) async {
+    final repo = ref.read(composeRepositoryProvider);
+    if (repo == null) return;
+    try {
+      final file = await repo.uploadFile(attachment.path);
+      if (!mounted) return;
+      setState(() {
+        attachment.fileId = file.id;
+        attachment.uploading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        attachment.uploading = false;
+        attachment.error = e;
+      });
+    }
+  }
+
+  Future<void> _pickImages() async {
+    final picked = await ImagePicker().pickMultiImage(limit: _maxAttachments);
+    if (picked.isEmpty) return;
+    _addAttachments(picked.map((x) => x.path).toList());
   }
 
   @override
@@ -51,7 +114,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<void> _post() async {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _attachments.isEmpty) return;
 
     await ref
         .read(composeNotifierProvider.notifier)
@@ -61,6 +124,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           visibility: _visibility,
           replyId: widget.replyTo?.id,
           renoteId: widget.quoteOf?.id,
+          fileIds: _attachments
+              .map((a) => a.fileId)
+              .whereType<String>()
+              .toList(),
         );
 
     if (mounted) {
@@ -80,6 +147,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final isLoading = ref.watch(composeNotifierProvider).isLoading;
     final remaining = _maxLength - _textLength;
     final isOverLimit = remaining < 0;
+    final isUploading = _attachments.any((a) => a.uploading);
+    final isEmpty = _textLength == 0 && _attachments.isEmpty;
 
     final isReply = widget.replyTo != null;
     final isQuote = widget.quoteOf != null;
@@ -96,7 +165,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: isLoading || isOverLimit ? null : _post,
+        onPressed: isLoading || isOverLimit || isUploading || isEmpty
+            ? null
+            : _post,
         icon: isLoading
             ? const SizedBox(
                 height: 18,
@@ -119,6 +190,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   border: UnderlineInputBorder(),
                 ),
               ),
+            ),
+          if (_attachments.isNotEmpty)
+            _AttachmentStrip(
+              attachments: _attachments,
+              onRemove: (a) => setState(() => _attachments.remove(a)),
+              onRetry: (a) {
+                setState(() {
+                  a.uploading = true;
+                  a.error = null;
+                });
+                _upload(a);
+              },
             ),
           Expanded(
             child: Padding(
@@ -143,6 +226,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
             children: [
+              // 画像添付
+              IconButton(
+                icon: const Icon(Icons.image_outlined),
+                tooltip: '画像を追加',
+                onPressed: _attachments.length >= _maxAttachments
+                    ? null
+                    : _pickImages,
+              ),
               // CW トグル
               IconButton(
                 icon: Icon(
@@ -278,6 +369,102 @@ class _TargetPreview extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// 添付画像 1 枚ぶんの状態。選択した直後にアップロードを開始し、
+/// 完了すると fileId が入る。
+class _Attachment {
+  _Attachment(this.path);
+
+  final String path;
+  String? fileId;
+  bool uploading = true;
+  Object? error;
+}
+
+class _AttachmentStrip extends StatelessWidget {
+  const _AttachmentStrip({
+    required this.attachments,
+    required this.onRemove,
+    required this.onRetry,
+  });
+
+  final List<_Attachment> attachments;
+  final ValueChanged<_Attachment> onRemove;
+  final ValueChanged<_Attachment> onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: attachments.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final attachment = attachments[index];
+          return Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(attachment.path),
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                  cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
+                ),
+              ),
+              if (attachment.uploading)
+                const Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black38,
+                    child: Center(
+                      child: SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (attachment.error != null)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => onRetry(attachment),
+                    child: ColoredBox(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.errorContainer.withValues(alpha: 0.8),
+                      child: const Center(child: Icon(Icons.refresh)),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: -6,
+                right: -6,
+                child: IconButton(
+                  icon: const Icon(Icons.cancel, size: 20),
+                  color: Colors.white,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(24, 24),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: () => onRemove(attachment),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

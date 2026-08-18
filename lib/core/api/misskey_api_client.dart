@@ -34,6 +34,22 @@ class MisskeyApiClient {
     await _dio.post<dynamic>(path, data: body ?? {});
   }
 
+  /// ファイルアップロード用。Misskey のドライブは multipart/form-data を取る。
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String filePath,
+    String? fileName,
+  }) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: fileName ?? filePath.split('/').last,
+      ),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(path, data: form);
+    return response.data!;
+  }
+
   Future<List<Map<String, dynamic>>> postList(
     String path, {
     Map<String, dynamic>? body,

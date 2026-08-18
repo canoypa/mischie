@@ -58,6 +58,11 @@ dependencies:
   mfm_parser: ^1.0.6
   flutter_blurhash: ^0.9.1
   photo_view: ^0.15.0
+  image_picker: ^1.2.3
+  # 他アプリ（Google フォト等）からの共有を受け取る。
+  # 1.9.0 は AGP 9 前提 (kotlin-android を自前で適用せず kotlin{} を使う) で、
+  # Flutter stable が AGP 8 の間はビルドできないため 1.8 系に留める。
+  receive_sharing_intent: ">=1.8.1 <1.9.0"
 
 dev_dependencies:
   flutter_test:

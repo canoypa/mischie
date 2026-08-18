@@ -24,6 +24,7 @@ class ComposeNotifier extends AsyncNotifier<void> {
     NoteVisibility visibility = NoteVisibility.public,
     String? replyId,
     String? renoteId,
+    List<String> fileIds = const [],
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -35,6 +36,7 @@ class ComposeNotifier extends AsyncNotifier<void> {
         visibility: visibility,
         replyId: replyId,
         renoteId: renoteId,
+        fileIds: fileIds,
       );
     });
   }
