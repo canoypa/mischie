@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/error/error_handler.dart';
-import 'package:mischie/core/navigation/link_handler.dart';
-import 'package:mischie/core/widgets/cat_ears.dart';
+import 'package:mischie/core/widgets/decorated_avatar.dart';
+import 'package:mischie/features/channel/presentation/channel_screen.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
@@ -94,6 +94,15 @@ class _NoteCardState extends ConsumerState<NoteCard>
       ),
     );
     if (isDeleted) return const SizedBox.shrink();
+
+    // ミュート／ブロックした相手のノートは、次の取得を待たずその場で消す
+    final isHidden = ref.watch(
+      hiddenUserIdsProvider.select(
+        (ids) =>
+            ids.contains(note.user.id) || ids.contains(displayNote.user.id),
+      ),
+    );
+    if (isHidden) return const SizedBox.shrink();
     final hasCw = displayNote.cw != null;
 
     final emojis = _mergeEmojis(displayNote);
@@ -149,9 +158,10 @@ class _NoteCardState extends ConsumerState<NoteCard>
                 children: [
                   GestureDetector(
                     onTap: () => _openProfile(displayNote.user),
-                    child: _Avatar(
+                    child: DecoratedAvatar(
                       avatarUrl: displayNote.user.avatarUrl,
                       isCat: displayNote.user.isCat,
+                      decorations: displayNote.user.avatarDecorations,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -316,48 +326,6 @@ class _UserName extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
       ],
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.avatarUrl, this.size = 40, this.isCat = false});
-
-  final String? avatarUrl;
-  final double size;
-  final bool isCat;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = size / 2;
-    final avatar = avatarUrl == null
-        ? CircleAvatar(
-            radius: radius,
-            child: Icon(Icons.person, size: radius),
-          )
-        : CircleAvatar(
-            radius: radius,
-            backgroundImage: CachedNetworkImageProvider(avatarUrl!),
-          );
-
-    if (!isCat) return avatar;
-
-    // 猫耳はアバターの上にはみ出すので、Stack の外にレイアウトを広げない
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            top: -size * 0.22,
-            left: 0,
-            right: 0,
-            child: CatEars(width: size),
-          ),
-          avatar,
-        ],
-      ),
     );
   }
 }
@@ -885,6 +853,19 @@ class _NoteActions extends ConsumerWidget {
               title: const Text('ブラウザで開く'),
               onTap: () => Navigator.of(context).pop('browser'),
             ),
+            if (!isMine) ...[
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.volume_off_outlined),
+                title: Text('@${note.user.username} をミュート'),
+                onTap: () => Navigator.of(context).pop('mute'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: Text('@${note.user.username} をブロック'),
+                onTap: () => Navigator.of(context).pop('block'),
+              ),
+            ],
             if (isMine)
               ListTile(
                 leading: Icon(
@@ -917,19 +898,52 @@ class _NoteActions extends ConsumerWidget {
         if (url != null) {
           await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
         }
+      case 'mute':
+        await _run(
+          context,
+          () => ref
+              .read(moderationActionsProvider)
+              .setMuted(note.user.id, muted: true),
+        );
+        if (context.mounted) _toast(context, 'ミュートしました');
+      case 'block':
+        final ok = await _confirm(
+          context,
+          title: 'ブロック',
+          message: '@${note.user.username} をブロックしますか？相手からあなたのノートは見えなくなります。',
+          action: 'ブロック',
+        );
+        if (ok != true || !context.mounted) return;
+        await _run(
+          context,
+          () => ref
+              .read(moderationActionsProvider)
+              .setBlocked(note.user.id, blocked: true),
+        );
+        if (context.mounted) _toast(context, 'ブロックしました');
       case 'delete':
-        final ok = await _confirmDelete(context);
+        final ok = await _confirm(
+          context,
+          title: 'ノートを削除',
+          message: 'この操作は取り消せません。削除しますか？',
+          action: '削除',
+        );
         if (ok != true || !context.mounted) return;
         await _run(context, () => ref.read(noteActionsProvider).delete(note));
         if (context.mounted) _toast(context, '削除しました');
     }
   }
 
-  Future<bool?> _confirmDelete(BuildContext context) => showDialog<bool>(
+  Future<bool?> _confirm(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String action,
+  }) => showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('ノートを削除'),
-      content: const Text('この操作は取り消せません。削除しますか？'),
+      title: Text(title),
+      content: Text(message),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
@@ -937,7 +951,7 @@ class _NoteActions extends ConsumerWidget {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('削除'),
+          child: Text(action),
         ),
       ],
     ),
@@ -1045,7 +1059,7 @@ class _QuotedNote extends StatelessWidget {
           children: [
             Row(
               children: [
-                _Avatar(
+                DecoratedAvatar(
                   avatarUrl: note.user.avatarUrl,
                   size: 20,
                   isCat: note.user.isCat,
@@ -1075,8 +1089,7 @@ class _QuotedNote extends StatelessWidget {
   }
 }
 
-/// チャンネル投稿であることを示すバッジ。チャンネル画面は Mischie に無いので
-/// タップは Web クライアントへ流す。
+/// チャンネル投稿であることを示すバッジ。タップでチャンネル画面を開く。
 class _ChannelBadge extends ConsumerWidget {
   const _ChannelBadge({required this.channel, required this.color});
 
@@ -1089,7 +1102,7 @@ class _ChannelBadge extends ConsumerWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => openOnServer(ref, '/channels/${channel.id}'),
+      onTap: () => openChannel(context, channel.id, name: channel.name),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
