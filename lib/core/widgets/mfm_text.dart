@@ -1,10 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mfm/mfm.dart';
 import 'package:mfm_parser/mfm_parser.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:mischie/core/navigation/link_handler.dart';
 
-class MfmText extends StatefulWidget {
+class MfmText extends ConsumerStatefulWidget {
   const MfmText(this.text, {super.key, this.emojis = const {}, this.style});
 
   final String text;
@@ -12,10 +13,10 @@ class MfmText extends StatefulWidget {
   final TextStyle? style;
 
   @override
-  State<MfmText> createState() => _MfmTextState();
+  ConsumerState<MfmText> createState() => _MfmTextState();
 }
 
-class _MfmTextState extends State<MfmText> {
+class _MfmTextState extends ConsumerState<MfmText> {
   late EmojiBuilder _emojiBuilder;
   late LinkTapCallback _linkTap;
   late HashtagCallback _hashtagTap;
@@ -26,12 +27,11 @@ class _MfmTextState extends State<MfmText> {
   void initState() {
     super.initState();
     _parsed = const MfmParser().parse(widget.text);
-    _linkTap = _launch;
-    _hashtagTap = (tag) => _launch('https://misskey.io/tags/$tag');
-    _mentionTap = (userName, host, acct) {
-      final base = host ?? 'misskey.io';
-      _launch('https://$base/@$userName');
-    };
+    _linkTap = (url) => openLink(context, ref, url);
+    // タグ別タイムラインは未実装なので Web に流す
+    _hashtagTap = (tag) => openOnServer(ref, '/tags/$tag');
+    _mentionTap = (userName, host, acct) =>
+        openUserByAcct(context, ref, username: userName, host: host);
     _emojiBuilder = _buildEmojiBuilder(widget.emojis);
   }
 
@@ -57,18 +57,12 @@ class _MfmTextState extends State<MfmText> {
         imageUrl: url,
         height: fontSize * 1.8,
         fit: BoxFit.contain,
-        placeholder: (_, __) =>
+        placeholder: (_, _) =>
             SizedBox(height: fontSize * 1.8, width: fontSize * 1.8),
         errorWidget: (context, url, error) =>
             Text(':$emojiName:', style: emojiStyle),
       );
     };
-  }
-
-  Future<void> _launch(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override

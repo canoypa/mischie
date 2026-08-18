@@ -18,6 +18,15 @@ class ProfileRepository {
     return UserDetailed.fromJson(data);
   }
 
+  /// `@user` / `@user@host` からユーザーを引く。
+  Future<UserDetailed> fetchUserByAcct(String username, {String? host}) async {
+    final data = await _client.post(
+      'users/show',
+      body: {'username': username, 'host': ?host},
+    );
+    return UserDetailed.fromJson(data);
+  }
+
   Future<void> follow(String userId) =>
       _client.postVoid('following/create', body: {'userId': userId});
 
