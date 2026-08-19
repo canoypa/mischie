@@ -788,18 +788,18 @@ packages:
     dependency: "direct main"
     description:
       name: mfm
-      sha256: "1e7f9e02eb7536d5bd127ba19da568262cb064ea79bf461e11257930d53c5528"
+      sha256: "10ed9e7ab347f89d7f93b98b2785b8f153128e2d04b6e0ba27a5eefd2a75fca7"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.9"
+    version: "1.0.11"
   mfm_parser:
     dependency: "direct main"
     description:
       name: mfm_parser
-      sha256: "733a69d14f75c8c15c5b961f2428bd42c7118bbe0b271c03666a7941435fb691"
+      sha256: e5e71bc5d2e67b28cc5b9196505db22e6597aab8b1868cdf937489a9958c0bcc
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.6"
+    version: "1.0.7"
   mime:
     dependency: transitive
     description:
