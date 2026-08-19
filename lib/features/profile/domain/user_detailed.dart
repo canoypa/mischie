@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
 part 'user_detailed.freezed.dart';
@@ -29,6 +30,9 @@ sealed class UserDetailed with _$UserDetailed {
     int? followingCount,
     int? notesCount,
     @Default([]) List<ProfileField> fields,
+
+    /// 本人が固定した投稿。プロフィールの先頭に出す。
+    @Default([]) List<Note> pinnedNotes,
     @Default([]) List<UserRole> roles,
     @Default({}) Map<String, String> emojis,
   }) = _UserDetailed;

@@ -38,6 +38,11 @@ _UserDetailed _$UserDetailedFromJson(Map<String, dynamic> json) =>
               ?.map((e) => ProfileField.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      pinnedNotes:
+          (json['pinnedNotes'] as List<dynamic>?)
+              ?.map((e) => Note.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       roles:
           (json['roles'] as List<dynamic>?)
               ?.map((e) => UserRole.fromJson(e as Map<String, dynamic>))
@@ -74,6 +79,7 @@ Map<String, dynamic> _$UserDetailedToJson(_UserDetailed instance) =>
       'followingCount': instance.followingCount,
       'notesCount': instance.notesCount,
       'fields': instance.fields,
+      'pinnedNotes': instance.pinnedNotes,
       'roles': instance.roles,
       'emojis': instance.emojis,
     };

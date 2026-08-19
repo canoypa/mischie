@@ -101,7 +101,7 @@ void main() {
       const Scaffold(body: UserProfileView(userId: 'u1')),
       overrides: [
         userDetailProvider('u1').overrideWith(
-          (ref) async => const UserDetailed(
+          (ref) async => UserDetailed(
             id: 'u1',
             username: 'cano',
             name: 'Cano',
@@ -111,6 +111,14 @@ void main() {
             followingCount: 64,
             notesCount: 1024,
             location: '東京',
+            pinnedNotes: [
+              Note(
+                id: 'pinned1',
+                createdAt: '2026-08-19T00:00:00.000Z',
+                user: _user,
+                text: 'ここに固定した投稿が出ます。',
+              ),
+            ],
           ),
         ),
       ],

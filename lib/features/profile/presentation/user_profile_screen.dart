@@ -123,6 +123,19 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
               userId: widget.userId,
             ),
           ),
+          // 本人が固定した投稿は、通常の投稿より先に出す
+          if ((detailAsync.value?.pinnedNotes ?? const []).isNotEmpty)
+            SliverList(
+              delegate: SliverChildListDelegate([
+                const _SectionLabel(icon: Icons.push_pin, label: 'ピン留め'),
+                for (final note in detailAsync.value!.pinnedNotes)
+                  RepaintBoundary(
+                    key: ValueKey('pinned-${note.id}'),
+                    child: NoteCard(note: note, serverEmojis: serverEmojis),
+                  ),
+                const Divider(height: 24),
+              ]),
+            ),
           if (_loadingNotes && _notes.isEmpty)
             const SliverToBoxAdapter(
               child: Padding(
@@ -202,6 +215,34 @@ class UserProfileScreen extends ConsumerWidget {
         actions: [if (detail != null) UserMenuButton(detail: detail)],
       ),
       body: UserProfileView(userId: userId, initialUser: initialUser),
+    );
+  }
+}
+
+/// 一覧の区切り。ピン留めのように、並びの意味が変わるところに置く。
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ],
+      ),
     );
   }
 }
