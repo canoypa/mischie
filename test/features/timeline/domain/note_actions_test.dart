@@ -38,6 +38,12 @@ class _FakeNoteRepository implements NoteRepository {
   }
 
   @override
+  Future<void> vote(String noteId, int choice) async {
+    calls.add('vote:$noteId:$choice');
+    if (shouldFail) throw Exception('失敗');
+  }
+
+  @override
   Future<void> delete(String noteId) async {
     calls.add('delete:$noteId');
     if (shouldFail) throw Exception('失敗');

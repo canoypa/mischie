@@ -38,6 +38,7 @@ class _EmptyAccountStore implements AccountStore {
 
 Note _note({
   String? text = 'ノートの本文です。ここに書いた内容がそのまま出ます。',
+  Poll? poll,
   Map<String, int> reactions = const {},
   String? myReaction,
   String? cw,
@@ -52,6 +53,7 @@ Note _note({
   text: text,
   cw: cw,
   reactions: reactions,
+  poll: poll,
   myReaction: myReaction,
   repliesCount: repliesCount,
   renoteCount: renoteCount,
@@ -124,6 +126,34 @@ void main() {
       find.byType(ListView),
       matchesGoldenFile('note_card.png'),
     );
+  });
+
+  testWidgets('投票', (tester) async {
+    await _pump(tester, [
+      // 未投票は押せるボタン、投票済みと締め切り後は結果として出る
+      _note(
+        text: '投票（未投票）',
+        poll: const Poll(
+          choices: [
+            PollChoice(text: 'きのこ', votes: 3),
+            PollChoice(text: 'たけのこ', votes: 5),
+          ],
+        ),
+      ),
+      _note(
+        text: '投票（投票済み・複数選択可）',
+        poll: const Poll(
+          multiple: true,
+          choices: [
+            PollChoice(text: 'きのこ', votes: 3, isVoted: true),
+            PollChoice(text: 'たけのこ', votes: 5),
+            PollChoice(text: 'どちらでもない', votes: 0),
+          ],
+        ),
+      ),
+    ]);
+
+    await expectLater(find.byType(ListView), matchesGoldenFile('poll.png'));
   });
 
   // ダークでしか出ない問題（色の直書き、コントラスト不足）を拾う

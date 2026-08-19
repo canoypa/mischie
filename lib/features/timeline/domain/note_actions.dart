@@ -115,6 +115,34 @@ class NoteActions {
     }
   }
 
+  /// 投票する。結果は押した時点で反映し、失敗したら戻す。
+  Future<void> vote(Note note, int choice) async {
+    final repo = _repo();
+    final overrides = _ref.read(noteOverridesProvider.notifier);
+    final current = _ref.read(noteOverridesProvider)[note.id] ?? note;
+    final poll = current.poll;
+    if (poll == null) return;
+
+    final choices = [
+      for (var i = 0; i < poll.choices.length; i++)
+        if (i == choice)
+          poll.choices[i].copyWith(
+            votes: poll.choices[i].votes + 1,
+            isVoted: true,
+          )
+        else
+          poll.choices[i],
+    ];
+    overrides.put(current.copyWith(poll: poll.copyWith(choices: choices)));
+
+    try {
+      await repo.vote(note.id, choice);
+    } catch (_) {
+      overrides.put(current);
+      rethrow;
+    }
+  }
+
   Future<void> delete(Note note) async {
     await _repo().delete(note.id);
     _ref.read(deletedNoteIdsProvider.notifier).add(note.id);

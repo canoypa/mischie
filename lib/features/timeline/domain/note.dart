@@ -23,6 +23,7 @@ sealed class Note with _$Note {
     String? url,
     String? channelId,
     NoteChannel? channel,
+    Poll? poll,
     @Default('public') String visibility,
     @Default(false) bool localOnly,
     @Default(0) int repliesCount,
@@ -41,6 +42,43 @@ sealed class Note with _$Note {
   /// 本文も添付もリアクションも持たない、純粋なリノート（引用ではない）。
   bool get isPureRenote =>
       renote != null && (text == null || text!.isEmpty) && files.isEmpty;
+}
+
+/// 投票。締め切りが無い（expiresAt が null）ものもある。
+@freezed
+sealed class Poll with _$Poll {
+  const factory Poll({
+    @Default([]) List<PollChoice> choices,
+    @Default(false) bool multiple,
+    String? expiresAt,
+  }) = _Poll;
+
+  const Poll._();
+
+  factory Poll.fromJson(Map<String, dynamic> json) => _$PollFromJson(json);
+
+  int get totalVotes => choices.fold(0, (sum, choice) => sum + choice.votes);
+
+  bool get isExpired {
+    final at = expiresAt;
+    if (at == null) return false;
+    return DateTime.parse(at).isBefore(DateTime.now());
+  }
+
+  /// すでに投票したか。締め切り後と同じく、結果だけを見せる状態になる。
+  bool get hasVoted => choices.any((choice) => choice.isVoted);
+}
+
+@freezed
+sealed class PollChoice with _$PollChoice {
+  const factory PollChoice({
+    @Default('') String text,
+    @Default(0) int votes,
+    @Default(false) bool isVoted,
+  }) = _PollChoice;
+
+  factory PollChoice.fromJson(Map<String, dynamic> json) =>
+      _$PollChoiceFromJson(json);
 }
 
 /// ノートが投稿されたチャンネル。

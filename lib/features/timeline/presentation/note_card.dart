@@ -19,6 +19,7 @@ import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
+import 'package:mischie/features/timeline/presentation/poll_view.dart';
 import 'package:mischie/features/timeline/presentation/reaction_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -284,6 +285,11 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                               ],
                             ),
                           ),
+                        if ((!hasCw || _cwExpanded) &&
+                            displayNote.poll != null) ...[
+                          const SizedBox(height: 8),
+                          PollView(note: displayNote, poll: displayNote.poll!),
+                        ],
                         // 引用リノート: 埋め込みも CW で隠す対象に含める
                         if ((!hasCw || _cwExpanded) &&
                             !isRenote &&

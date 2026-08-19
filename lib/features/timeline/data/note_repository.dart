@@ -46,6 +46,11 @@ class NoteRepository {
   Future<void> unrenote(String noteId) =>
       _client.postVoid('notes/unrenote', body: {'noteId': noteId});
 
+  Future<void> vote(String noteId, int choice) => _client.postVoid(
+    'notes/polls/vote',
+    body: {'noteId': noteId, 'choice': choice},
+  );
+
   Future<void> delete(String noteId) =>
       _client.postVoid('notes/delete', body: {'noteId': noteId});
 }

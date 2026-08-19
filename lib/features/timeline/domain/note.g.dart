@@ -30,6 +30,9 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   channel: json['channel'] == null
       ? null
       : NoteChannel.fromJson(json['channel'] as Map<String, dynamic>),
+  poll: json['poll'] == null
+      ? null
+      : Poll.fromJson(json['poll'] as Map<String, dynamic>),
   visibility: json['visibility'] as String? ?? 'public',
   localOnly: json['localOnly'] as bool? ?? false,
   repliesCount: (json['repliesCount'] as num?)?.toInt() ?? 0,
@@ -73,6 +76,7 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'url': instance.url,
   'channelId': instance.channelId,
   'channel': instance.channel,
+  'poll': instance.poll,
   'visibility': instance.visibility,
   'localOnly': instance.localOnly,
   'repliesCount': instance.repliesCount,
@@ -83,6 +87,35 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'emojis': instance.emojis,
   'reactionEmojis': instance.reactionEmojis,
 };
+
+_Poll _$PollFromJson(Map<String, dynamic> json) => _Poll(
+  choices:
+      (json['choices'] as List<dynamic>?)
+          ?.map((e) => PollChoice.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  multiple: json['multiple'] as bool? ?? false,
+  expiresAt: json['expiresAt'] as String?,
+);
+
+Map<String, dynamic> _$PollToJson(_Poll instance) => <String, dynamic>{
+  'choices': instance.choices,
+  'multiple': instance.multiple,
+  'expiresAt': instance.expiresAt,
+};
+
+_PollChoice _$PollChoiceFromJson(Map<String, dynamic> json) => _PollChoice(
+  text: json['text'] as String? ?? '',
+  votes: (json['votes'] as num?)?.toInt() ?? 0,
+  isVoted: json['isVoted'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$PollChoiceToJson(_PollChoice instance) =>
+    <String, dynamic>{
+      'text': instance.text,
+      'votes': instance.votes,
+      'isVoted': instance.isVoted,
+    };
 
 _NoteChannel _$NoteChannelFromJson(Map<String, dynamic> json) => _NoteChannel(
   id: json['id'] as String,
