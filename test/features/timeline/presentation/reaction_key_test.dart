@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mischie/features/timeline/presentation/note_card.dart';
+import 'package:mischie/features/timeline/presentation/note/reactions.dart';
 
 void main() {
   group('isRemoteReaction', () {

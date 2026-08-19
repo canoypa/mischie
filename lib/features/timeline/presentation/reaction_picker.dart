@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
-import 'package:mischie/features/timeline/presentation/note_card.dart';
+import 'package:mischie/features/timeline/presentation/note/reactions.dart';
 
 /// 履歴が空のときに出す既定。カスタム絵文字が無いサーバーでも押せる。
 const _defaultReactions = [
