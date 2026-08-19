@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mischie/features/compose/data/draft_store.dart';
 import 'package:mischie/features/compose/domain/draft_notifier.dart';
+import 'package:mischie/core/emoji/emoji_providers.dart';
+import 'package:mischie/features/compose/domain/compose_completion.dart';
 import 'package:mischie/features/compose/presentation/attachments.dart';
+import 'package:mischie/features/compose/presentation/completion_bar.dart';
 import 'package:mischie/features/compose/presentation/poll_editor.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
@@ -54,6 +57,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// 投票を付けているあいだだけ持つ。null なら投票なし。
   PollDraft? _poll;
 
+  /// カーソル位置で補完しようとしているもの。
+  CompletionQuery? _completion;
+
   /// 下書きの同一性。保存し直しても増殖しないように使い回す。
   late final String _draftId =
       widget.draft?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
@@ -61,9 +67,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   @override
   void initState() {
     super.initState();
-    _textController.addListener(
-      () => setState(() => _textLength = _textController.text.length),
-    );
+    _textController.addListener(_onTextChanged);
     // 返信は元ノートの公開範囲を引き継ぐ（元より広く公開しない）
     final source = widget.replyTo;
     if (source != null) {
@@ -93,6 +97,31 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       );
       _attachments.addAll(draft.fileIds.map(Attachment.uploaded));
     }
+  }
+
+  void _onTextChanged() {
+    final selection = _textController.selection;
+    setState(() {
+      _textLength = _textController.text.length;
+      // 選択範囲があるときは補完しない（どこを置き換えるか決まらない）
+      _completion = selection.isCollapsed
+          ? completionAt(_textController.text, selection.baseOffset)
+          : null;
+    });
+  }
+
+  /// 候補を選んだら、記号ごと置き換えてカーソルを末尾へ送る。
+  void _applyCompletion(String replacement) {
+    final query = _completion;
+    if (query == null) return;
+    final text = _textController.text;
+    final next = text.replaceRange(query.start, query.end, replacement);
+    _textController.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(
+        offset: query.start + replacement.length,
+      ),
+    );
   }
 
   bool get _hasContent =>
@@ -449,6 +478,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
               ),
             ),
+            if (_completion case final completion?)
+              CompletionBar(
+                query: completion,
+                emojis: ref.watch(emojiCacheProvider).value ?? const {},
+                onSelected: _applyCompletion,
+              ),
             // 本文を書いてから選択肢を足す並びにする
             if (_poll case final poll?)
               PollEditor(

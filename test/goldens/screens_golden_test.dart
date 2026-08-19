@@ -69,6 +69,25 @@ void main() {
     );
   });
 
+  testWidgets('入力補完', (tester) async {
+    await pumpGolden(
+      tester,
+      const ComposeScreen(),
+      overrides: [draftStoreProvider.overrideWithValue(_EmptyDraftStore())],
+    );
+    await tester.pump();
+
+    // 絵文字候補は画像を読むためテスト環境ではキャッシュ層に触れる。
+    // 候補欄そのものの確認は画像のない MFM の装飾で行う。
+    await tester.enterText(find.byType(TextField).last, r'すごい $[j');
+    await tester.pump();
+
+    await expectLater(
+      find.byType(ComposeScreen),
+      matchesGoldenFile('compose_completion.png'),
+    );
+  });
+
   testWidgets('チャンネル一覧', (tester) async {
     await pumpGolden(
       tester,
