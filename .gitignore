@@ -50,3 +50,6 @@ app.*.map.json
 # Release signing (keep out of version control)
 android/key.properties
 **/*.jks
+
+# Claude Code のスキルは .agents/skills への symlink（実体は個人領域）
+.claude/skills
