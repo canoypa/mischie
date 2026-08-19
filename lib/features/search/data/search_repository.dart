@@ -19,10 +19,14 @@ class SearchRepository {
     return list.map(Note.fromJson).toList();
   }
 
-  Future<List<UserDetailed>> searchUsers(String query, {int limit = 20}) async {
+  Future<List<UserDetailed>> searchUsers(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
     final list = await _client.postList(
       'users/search',
-      body: {'query': query, 'limit': limit},
+      body: {'query': query, 'limit': limit, 'offset': offset},
     );
     return list.map(UserDetailed.fromJson).toList();
   }

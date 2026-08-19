@@ -122,12 +122,22 @@ class _NoteResults extends ConsumerWidget {
           ),
           data: (notes) => notes.isEmpty
               ? const Center(child: Text('見つかりませんでした'))
-              : ListView.builder(
-                  itemCount: notes.length,
-                  itemBuilder: (context, index) => RepaintBoundary(
-                    child: NoteCard(
-                      note: notes[index],
-                      serverEmojis: serverEmojis,
+              // 先頭 20 件で終わりではないので、末尾まで来たら続きを読む
+              : NotificationListener<ScrollUpdateNotification>(
+                  onNotification: (n) {
+                    final pos = n.metrics;
+                    if (pos.pixels >= pos.maxScrollExtent - 200) {
+                      ref.read(noteSearchProvider.notifier).loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.builder(
+                    itemCount: notes.length,
+                    itemBuilder: (context, index) => RepaintBoundary(
+                      child: NoteCard(
+                        note: notes[index],
+                        serverEmojis: serverEmojis,
+                      ),
                     ),
                   ),
                 ),
@@ -157,10 +167,19 @@ class _UserResults extends ConsumerWidget {
           ),
           data: (users) => users.isEmpty
               ? const Center(child: Text('見つかりませんでした'))
-              : ListView.builder(
-                  itemCount: users.length,
-                  itemBuilder: (context, index) =>
-                      _UserTile(user: users[index], emojis: serverEmojis),
+              : NotificationListener<ScrollUpdateNotification>(
+                  onNotification: (n) {
+                    final pos = n.metrics;
+                    if (pos.pixels >= pos.maxScrollExtent - 200) {
+                      ref.read(userSearchProvider.notifier).loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.builder(
+                    itemCount: users.length,
+                    itemBuilder: (context, index) =>
+                        _UserTile(user: users[index], emojis: serverEmojis),
+                  ),
                 ),
         );
   }
