@@ -46,6 +46,19 @@ class NoteRepository {
   Future<void> unrenote(String noteId) =>
       _client.postVoid('notes/unrenote', body: {'noteId': noteId});
 
+  /// このノートをリノート・引用した投稿。誰が広めたかを辿るのに使う。
+  Future<List<Note>> renotes(
+    String noteId, {
+    int limit = 30,
+    String? untilId,
+  }) async {
+    final list = await _client.postList(
+      'notes/renotes',
+      body: {'noteId': noteId, 'limit': limit, 'untilId': ?untilId},
+    );
+    return list.map(Note.fromJson).toList();
+  }
+
   Future<void> vote(String noteId, int choice) => _client.postVoid(
     'notes/polls/vote',
     body: {'noteId': noteId, 'choice': choice},

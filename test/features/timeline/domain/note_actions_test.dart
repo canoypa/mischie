@@ -51,6 +51,13 @@ class _FakeNoteRepository implements NoteRepository {
   }
 
   @override
+  Future<List<Note>> renotes(
+    String noteId, {
+    int limit = 30,
+    String? untilId,
+  }) async => [];
+
+  @override
   Future<List<Note>> children(String noteId, {int limit = 30}) async => [];
 
   @override

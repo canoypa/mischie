@@ -7,6 +7,7 @@ import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
+import 'package:mischie/features/timeline/presentation/renoters_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NoteActionsRow extends ConsumerWidget {
@@ -37,6 +38,10 @@ class NoteActionsRow extends ConsumerWidget {
           icon: Icons.repeat,
           count: note.renoteCount,
           tooltip: 'リノート',
+          // 件数を押したら誰が広めたのかを辿れるようにする
+          onLongPress: note.renoteCount > 0
+              ? () => openRenoters(context, note.id)
+              : null,
           color: canRenote ? null : colorScheme.outlineVariant,
           onPressed: canRenote ? () => _showRenoteMenu(context, ref) : null,
         ),
@@ -117,6 +122,12 @@ class NoteActionsRow extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (note.renoteCount > 0)
+              ListTile(
+                leading: const Icon(Icons.repeat),
+                title: const Text('リノートした人を見る'),
+                onTap: () => Navigator.of(context).pop('renoters'),
+              ),
             ListTile(
               leading: const Icon(Icons.link),
               title: const Text('リンクをコピー'),
@@ -164,6 +175,8 @@ class NoteActionsRow extends ConsumerWidget {
     if (action == null || !context.mounted) return;
 
     switch (action) {
+      case 'renoters':
+        openRenoters(context, note.id);
       case 'copy':
         final link = _noteUrl(ref, note);
         if (link == null) return;
@@ -271,6 +284,7 @@ class _ActionButton extends StatelessWidget {
     required this.onPressed,
     this.count,
     this.color,
+    this.onLongPress,
   });
 
   final IconData icon;
@@ -278,6 +292,7 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final int? count;
   final Color? color;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -288,6 +303,7 @@ class _ActionButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onPressed,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(24),
         // Material 3 の最小タップ領域は 48x48。返信・リノート・リアクションは
         // 隣り合うので、ここが小さいと押し間違いが起きる。
