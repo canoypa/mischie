@@ -51,6 +51,24 @@ void main() {
     );
   });
 
+  testWidgets('投稿画面（投票つき）', (tester) async {
+    await pumpGolden(
+      tester,
+      const ComposeScreen(),
+      overrides: [draftStoreProvider.overrideWithValue(_EmptyDraftStore())],
+    );
+    await tester.pump();
+
+    // ツールバーの投票ボタンを押して編集欄を出す
+    await tester.tap(find.byIcon(Icons.poll_outlined).first);
+    await tester.pump();
+
+    await expectLater(
+      find.byType(ComposeScreen),
+      matchesGoldenFile('compose_poll.png'),
+    );
+  });
+
   testWidgets('チャンネル一覧', (tester) async {
     await pumpGolden(
       tester,

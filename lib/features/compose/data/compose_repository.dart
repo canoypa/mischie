@@ -14,6 +14,9 @@ class ComposeRepository {
     String? replyId,
     String? renoteId,
     List<String> fileIds = const [],
+    List<String> pollChoices = const [],
+    bool pollMultiple = false,
+    Duration? pollDuration,
   }) async {
     final body = <String, dynamic>{
       'visibility': visibility.name,
@@ -23,6 +26,14 @@ class ComposeRepository {
       'replyId': ?replyId,
       'renoteId': ?renoteId,
       if (fileIds.isNotEmpty) 'fileIds': fileIds,
+      // 選択肢は 2 つ以上でないとサーバーが受け取らない
+      if (pollChoices.length >= 2)
+        'poll': {
+          'choices': pollChoices,
+          'multiple': pollMultiple,
+          // expiredAfter はミリ秒。null なら締め切り無し。
+          'expiredAfter': ?pollDuration?.inMilliseconds,
+        },
     };
 
     await _client.post('notes/create', body: body);

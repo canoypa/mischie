@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mischie/features/compose/data/draft_store.dart';
 import 'package:mischie/features/compose/domain/draft_notifier.dart';
 import 'package:mischie/features/compose/presentation/attachments.dart';
+import 'package:mischie/features/compose/presentation/poll_editor.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -50,6 +51,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   int _textLength = 0;
   final List<Attachment> _attachments = [];
 
+  /// 投票を付けているあいだだけ持つ。null なら投票なし。
+  PollDraft? _poll;
+
   /// 下書きの同一性。保存し直しても増殖しないように使い回す。
   late final String _draftId =
       widget.draft?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
@@ -92,7 +96,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   bool get _hasContent =>
-      _textController.text.trim().isNotEmpty || _attachments.isNotEmpty;
+      _textController.text.trim().isNotEmpty ||
+      _attachments.isNotEmpty ||
+      _poll != null;
 
   Future<void> _saveDraft() async {
     await ref
@@ -294,6 +300,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   @override
   void dispose() {
+    _poll?.dispose();
     _textController.dispose();
     _cwController.dispose();
     super.dispose();
@@ -315,6 +322,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               .map((a) => a.fileId)
               .whereType<String>()
               .toList(),
+          pollChoices: _poll?.choices ?? const [],
+          pollMultiple: _poll?.multiple ?? false,
+          pollDuration: _poll?.duration,
         );
 
     if (mounted) {
@@ -336,6 +346,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final remaining = _maxLength - _textLength;
     final isOverLimit = remaining < 0;
     final isUploading = _attachments.any((a) => a.uploading);
+    final pollIncomplete = _poll != null && !_poll!.isValid;
     final isEmpty = _textLength == 0 && _attachments.isEmpty;
 
     final isReply = widget.replyTo != null;
@@ -376,7 +387,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: FilledButton(
-                onPressed: isLoading || isOverLimit || isUploading || isEmpty
+                onPressed:
+                    isLoading ||
+                        isOverLimit ||
+                        isUploading ||
+                        isEmpty ||
+                        pollIncomplete
                     ? null
                     : _post,
                 child: isLoading
@@ -433,6 +449,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
               ),
             ),
+            // 本文を書いてから選択肢を足す並びにする
+            if (_poll case final poll?)
+              PollEditor(
+                draft: poll,
+                onChanged: () => setState(() {}),
+                onRemove: () => setState(() {
+                  _poll?.dispose();
+                  _poll = null;
+                }),
+              ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -445,6 +471,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       onPressed: _attachments.length >= _maxAttachments
                           ? null
                           : _pickImages,
+                    ),
+                    // 投票
+                    IconButton(
+                      icon: Icon(
+                        Icons.poll_outlined,
+                        color: _poll != null
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      tooltip: '投票',
+                      onPressed: () => setState(() {
+                        if (_poll == null) {
+                          _poll = PollDraft();
+                        } else {
+                          _poll!.dispose();
+                          _poll = null;
+                        }
+                      }),
                     ),
                     // CW トグル
                     IconButton(

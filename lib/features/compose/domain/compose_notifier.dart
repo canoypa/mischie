@@ -25,6 +25,9 @@ class ComposeNotifier extends AsyncNotifier<void> {
     String? replyId,
     String? renoteId,
     List<String> fileIds = const [],
+    List<String> pollChoices = const [],
+    bool pollMultiple = false,
+    Duration? pollDuration,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -37,6 +40,9 @@ class ComposeNotifier extends AsyncNotifier<void> {
         replyId: replyId,
         renoteId: renoteId,
         fileIds: fileIds,
+        pollChoices: pollChoices,
+        pollMultiple: pollMultiple,
+        pollDuration: pollDuration,
       );
     });
   }
