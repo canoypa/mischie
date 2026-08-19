@@ -8,7 +8,7 @@ import 'package:mischie/features/timeline/data/note_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
 final noteRepositoryProvider = Provider<NoteRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return NoteRepository(client);
 });

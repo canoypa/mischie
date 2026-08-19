@@ -4,7 +4,7 @@ import 'package:mischie/features/channel/data/channel_repository.dart';
 import 'package:mischie/features/channel/domain/channel.dart';
 
 final channelRepositoryProvider = Provider<ChannelRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return ChannelRepository(client);
 });

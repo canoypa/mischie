@@ -9,11 +9,13 @@ class EmojiRepository {
 
   final MisskeyApiClient _client;
 
-  static const _cacheFileName = 'emoji_cache.json';
-
+  /// 絵文字はサーバーごとに別物なので、キャッシュもホスト別に持つ。
+  /// 共通のファイルに書くと、アカウントを切り替えたときに前のサーバーの
+  /// 絵文字が出てしまう。
   Future<File> _cacheFile() async {
     final dir = await getApplicationCacheDirectory();
-    return File('${dir.path}/$_cacheFileName');
+    final safeHost = _client.host.replaceAll(RegExp(r'[^a-zA-Z0-9.-]'), '_');
+    return File('${dir.path}/emoji_cache_$safeHost.json');
   }
 
   /// ディスクキャッシュを読み込む。失敗時は null を返す。

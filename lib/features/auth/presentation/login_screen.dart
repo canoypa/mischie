@@ -25,7 +25,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _loading = true);
     try {
-      await ref.read(authNotifierProvider.notifier).login(host);
+      await ref.read(accountsProvider.notifier).add(host);
+      // 設定から積んで開いた場合は自分で閉じる。最初のログインでは
+      // ルーターがホームへ差し替えるので、その時は何もしない。
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

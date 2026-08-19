@@ -5,7 +5,7 @@ import 'package:mischie/features/compose/data/compose_repository.dart';
 enum NoteVisibility { public, home, followers, specified }
 
 final composeRepositoryProvider = Provider<ComposeRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return ComposeRepository(client);
 });

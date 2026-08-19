@@ -5,7 +5,7 @@ import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return ProfileRepository(client);
 });

@@ -4,7 +4,7 @@ import 'package:mischie/core/emoji/emoji_repository.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 
 final emojiRepositoryProvider = Provider<EmojiRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return EmojiRepository(client);
 });

@@ -13,7 +13,7 @@ final pushStoreProvider = Provider<PushStore>(
 );
 
 final pushRepositoryProvider = Provider<PushRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return PushRepository(client);
 });
@@ -181,22 +181,10 @@ class PushService {
   }
 
   Future<void> _show(NotificationItem item) async {
-    final name = item.user?.name ?? item.user?.username ?? '通知';
-    final title = switch (item.type) {
-      'reaction' => '$name がリアクション ${item.reaction ?? ''}',
-      'reply' => '$name が返信',
-      'renote' => '$name がリノート',
-      'quote' => '$name が引用',
-      'mention' => '$name がメンション',
-      'follow' => '$name にフォローされました',
-      'followRequestAccepted' => '$name がフォローを承認しました',
-      _ => name,
-    };
-
     await _local.show(
       // 同じ通知が二重に出ないよう ID で束ねる
       id: item.id.hashCode,
-      title: title,
+      title: pushNotificationTitle(item),
       body: item.note?.text,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -208,4 +196,24 @@ class PushService {
       ),
     );
   }
+}
+
+/// プッシュ通知に出す一行。
+///
+/// 通知バーに出る文言はここだけで決まる。実機で届くところまでは手元で
+/// 確かめられないので、せめて文面は固定しておく。
+String pushNotificationTitle(NotificationItem item) {
+  final name = item.user?.name ?? item.user?.username ?? '通知';
+  return switch (item.type) {
+    // リアクションは何を付けられたかまで出す
+    'reaction' when item.reaction != null => '$name がリアクション ${item.reaction}',
+    'reaction' => '$name がリアクション',
+    'reply' => '$name が返信',
+    'renote' => '$name がリノート',
+    'quote' => '$name が引用',
+    'mention' => '$name がメンション',
+    'follow' => '$name にフォローされました',
+    'followRequestAccepted' => '$name がフォローを承認しました',
+    _ => name,
+  };
 }

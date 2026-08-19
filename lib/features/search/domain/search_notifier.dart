@@ -5,7 +5,7 @@ import 'package:mischie/features/search/data/search_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
 final searchRepositoryProvider = Provider<SearchRepository?>((ref) {
-  final client = ref.watch(misskeyApiClientProvider).value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return SearchRepository(client);
 });

@@ -3,8 +3,9 @@ import 'package:mischie/core/api/auth_interceptor.dart';
 
 class MisskeyApiClient {
   MisskeyApiClient({
-    required String host,
+    required this.host,
     required Future<String?> Function() getToken,
+    void Function(String path)? onRequest,
   }) : _dio = Dio(
          BaseOptions(
            baseUrl: 'https://$host/api/',
@@ -12,7 +13,20 @@ class MisskeyApiClient {
          ),
        ) {
     _dio.interceptors.add(AuthInterceptor(getToken));
+    if (onRequest != null) {
+      _dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            onRequest(options.path);
+            handler.next(options);
+          },
+        ),
+      );
+    }
   }
+
+  /// 接続先のサーバー。アカウント別にキャッシュを分けるのに使う。
+  final String host;
 
   final Dio _dio;
 

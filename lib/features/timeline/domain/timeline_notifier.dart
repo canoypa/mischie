@@ -14,8 +14,7 @@ import 'package:mischie/features/timeline/domain/timeline_source.dart';
 import 'package:mischie/features/timeline/domain/user_list.dart';
 
 final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
-  final clientAsync = ref.watch(misskeyApiClientProvider);
-  final client = clientAsync.value;
+  final client = ref.watch(misskeyApiClientProvider);
   if (client == null) return null;
   return TimelineRepository(client);
 });
@@ -55,6 +54,9 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   /// ため、表示は即座にキャッシュから復帰させる（新着はストリーミングで届く）。
   final Map<TimelineSource, List<Note>> _cache = {};
 
+  /// キャッシュがどのサーバーのものか。アカウントを切り替えたら捨てる。
+  String? _cachedHost;
+
   /// ストリーミングで届いた未表示ノート数。UI が listen して使う。
   final pendingCount = ValueNotifier<int>(0);
 
@@ -73,6 +75,12 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _streaming = null;
     _pending.clear();
     pendingCount.value = 0;
+
+    final host = authState is AuthStateAuthenticated ? authState.host : null;
+    if (host != _cachedHost) {
+      _cache.clear();
+      _cachedHost = host;
+    }
 
     if (authState is AuthStateAuthenticated) {
       _startStreaming(authState.host, authState.accessToken, source);

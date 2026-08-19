@@ -1,63 +1,127 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/core/api/misskey_api_client.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/auth/data/oauth_service.dart';
+import 'package:mischie/features/auth/domain/account.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 
 final oauthServiceProvider = Provider<OAuthService>((ref) => OAuthService());
 
-final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
-  AuthNotifier.new,
+/// 保存されている全アカウントと、いま使っているアカウント。
+final accountsProvider = AsyncNotifierProvider<AccountsNotifier, AccountsState>(
+  AccountsNotifier.new,
 );
 
-class AuthNotifier extends AsyncNotifier<AuthState> {
-  @override
-  Future<AuthState> build() async {
-    final storage = ref.watch(tokenStorageProvider);
-    final token = await storage.readAccessToken();
-    final host = await storage.readServerHost();
+class AccountsState {
+  const AccountsState({required this.accounts, this.activeId});
 
-    if (token != null && host != null) {
-      return AuthState.authenticated(host: host, accessToken: token);
+  final List<Account> accounts;
+  final String? activeId;
+
+  Account? get active {
+    if (accounts.isEmpty) return null;
+    for (final account in accounts) {
+      if (account.id == activeId) return account;
     }
-    return const AuthState.unauthenticated();
-  }
-
-  Future<void> login(String host) async {
-    // ここで loading にしない。値を捨てるとルーターからは「認証状態が
-    // まだ分からない」と見え、ログイン中に画面がスプラッシュへ飛ぶ。
-    // ボタンの進行表示はログイン画面が自前で持っている。
-    state = await AsyncValue.guard(() async {
-      final oauth = ref.read(oauthServiceProvider);
-      final result = await oauth.login(host);
-
-      final storage = ref.read(tokenStorageProvider);
-      await storage.writeServerHost(result.host);
-      await storage.writeAccessToken(result.accessToken);
-
-      ref.invalidate(misskeyApiClientProvider);
-
-      return AuthState.authenticated(
-        host: result.host,
-        accessToken: result.accessToken,
-      );
-    });
-    if (state.hasError) {
-      final error = state.error;
-      final stackTrace = state.stackTrace ?? StackTrace.current;
-      Error.throwWithStackTrace(error!, stackTrace);
-    }
-  }
-
-  Future<void> logout() async {
-    final storage = ref.read(tokenStorageProvider);
-    await storage.clear();
-    ref.invalidate(misskeyApiClientProvider);
-    state = const AsyncValue.data(AuthState.unauthenticated());
+    return accounts.first;
   }
 }
+
+class AccountsNotifier extends AsyncNotifier<AccountsState> {
+  @override
+  Future<AccountsState> build() async {
+    final store = ref.watch(accountStoreProvider);
+    final accounts = await store.readAccounts();
+    return AccountsState(
+      accounts: accounts,
+      activeId: await store.readActiveId(),
+    );
+  }
+
+  /// 新しいサーバーにログインして追加する。同じアカウントなら差し替える。
+  Future<void> add(String host) async {
+    final oauth = ref.read(oauthServiceProvider);
+    final result = await oauth.login(host);
+
+    // 表示名とアイコンを持たせておくと、切り替え画面で見分けが付く
+    final account = await _withProfile(
+      Account(host: result.host, accessToken: result.accessToken),
+    );
+
+    final current = state.value?.accounts ?? const <Account>[];
+    final accounts = [...current.where((a) => a.id != account.id), account];
+    await _persist(accounts, activeId: account.id);
+  }
+
+  Future<Account> _withProfile(Account account) async {
+    try {
+      final client = MisskeyApiClient(
+        host: account.host,
+        getToken: () async => account.accessToken,
+      );
+      final me = await client.post('i');
+      return account.copyWith(
+        userId: me['id'] as String?,
+        username: me['username'] as String?,
+        name: me['name'] as String?,
+        avatarUrl: me['avatarUrl'] as String?,
+      );
+    } catch (_) {
+      // 取れなくてもログイン自体は成立する
+      return account;
+    }
+  }
+
+  Future<void> switchTo(String accountId) async {
+    final accounts = state.value?.accounts ?? const <Account>[];
+    if (!accounts.any((a) => a.id == accountId)) return;
+    await _persist(accounts, activeId: accountId);
+  }
+
+  /// 指定したアカウントだけを外す。残りがあればそのまま使い続ける。
+  Future<void> remove(String accountId) async {
+    final current = state.value;
+    if (current == null) return;
+    final accounts = current.accounts.where((a) => a.id != accountId).toList();
+    final activeId = current.activeId == accountId
+        ? (accounts.isEmpty ? null : accounts.first.id)
+        : current.activeId;
+    await _persist(accounts, activeId: activeId);
+  }
+
+  Future<void> _persist(List<Account> accounts, {String? activeId}) async {
+    final store = ref.read(accountStoreProvider);
+    await store.writeAccounts(accounts);
+    await store.writeActiveId(activeId);
+    state = AsyncValue.data(
+      AccountsState(accounts: accounts, activeId: activeId),
+    );
+  }
+}
+
+/// 使用中のアカウントを、これまでどおりの認証状態として見せる。
+///
+/// アカウントに依存する値の入り口をここと [misskeyApiClientProvider] に
+/// 絞っておくことで、リポジトリ層は複数アカウントを意識しなくて済む。
+final authNotifierProvider = Provider<AsyncValue<AuthState>>((ref) {
+  return ref.watch(accountsProvider).whenData((state) {
+    final active = state.active;
+    return active == null
+        ? const AuthState.unauthenticated()
+        : AuthState.authenticated(
+            host: active.host,
+            accessToken: active.accessToken,
+          );
+  });
+});
 
 /// ログイン中のサーバーホスト。ノート URL の組み立てなどに使う。
 final currentHostProvider = Provider<String?>((ref) {
   final state = ref.watch(authNotifierProvider).value;
   return state is AuthStateAuthenticated ? state.host : null;
+});
+
+/// いま使っているアカウント。切り替え UI や表示名に使う。
+final activeAccountProvider = Provider<Account?>((ref) {
+  return ref.watch(accountsProvider).value?.active;
 });
