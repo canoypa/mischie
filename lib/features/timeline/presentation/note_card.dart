@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,6 +74,10 @@ class _NoteCardState extends ConsumerState<NoteCard> {
   /// カードの寿命がそのまま「表示中かどうか」になる。
   late final String _capturedNoteId;
 
+  /// dispose の時点では ref を触れない（BuildContext が無効になっている）ので、
+  /// 購読の解除に使うものは initState で捕まえておく。
+  late final NoteCapture _capture;
+
   // ノート固有の絵文字だけを畳んだ結果をキャッシュする。
   Note? _lastNote;
   Map<String, String> _noteEmojis = const {};
@@ -82,14 +87,13 @@ class _NoteCardState extends ConsumerState<NoteCard> {
     super.initState();
     final note = widget.note;
     _capturedNoteId = (note.isPureRenote ? note.renote! : note).id;
-    ref
-        .read(noteCaptureProvider)
-        .capture(note.isPureRenote ? note.renote! : note);
+    _capture = ref.read(noteCaptureProvider)
+      ..capture(note.isPureRenote ? note.renote! : note);
   }
 
   @override
   void dispose() {
-    ref.read(noteCaptureProvider).release(_capturedNoteId);
+    _capture.release(_capturedNoteId);
     super.dispose();
   }
 
@@ -514,6 +518,7 @@ class _MediaTileState extends State<_MediaTile> {
         children: [
           CachedNetworkImage(
             imageUrl: file.thumbnailUrl ?? file.url,
+            cacheManager: MediaCacheManager.instance,
             fit: BoxFit.cover,
             placeholder: (context, url) => file.blurhash != null
                 ? BlurHash(hash: file.blurhash!)
@@ -665,7 +670,10 @@ class _ImageViewerState extends State<_ImageViewer>
                 builder: (context, index) {
                   final file = widget.images[index];
                   return PhotoViewGalleryPageOptions(
-                    imageProvider: CachedNetworkImageProvider(file.url),
+                    imageProvider: CachedNetworkImageProvider(
+                      file.url,
+                      cacheManager: MediaCacheManager.instance,
+                    ),
                     minScale: PhotoViewComputedScale.contained,
                     maxScale: PhotoViewComputedScale.covered * 3,
                   );
@@ -1236,21 +1244,24 @@ class _ReactionChipState extends State<_ReactionChip>
     return ScaleTransition(
       scale: _pop,
       child: FilterChip(
+        // 画像が無いとき（Unicode 絵文字や読み込み失敗）はラベル側に出す。
+        // avatar は小さな正方形なので、文字を入れると切り詰められる。
         avatar: emojiUrl == null
-            ? Text(widget.fallbackLabel, style: const TextStyle(fontSize: 15))
+            ? null
             : CachedNetworkImage(
                 imageUrl: emojiUrl,
-                height: 22,
+                cacheManager: EmojiCacheManager.instance,
+                height: 18,
                 // 幅を予約しないと、読み込み前は 0 幅で描かれてから
                 // 画像の到着で広がり、ノート全体がずれる
-                placeholder: (_, _) => const SizedBox(height: 22, width: 22),
+                placeholder: (_, _) => const SizedBox(height: 18, width: 18),
                 errorWidget: (_, _, _) => Text(widget.fallbackLabel),
               ),
-        avatarBoxConstraints: const BoxConstraints.tightFor(
-          width: 24,
-          height: 24,
+        label: Text(
+          emojiUrl == null
+              ? '${widget.fallbackLabel} ${widget.count}'
+              : '${widget.count}',
         ),
-        label: Text('${widget.count}'),
         selected: widget.isMine,
         showCheckmark: false,
         visualDensity: VisualDensity.compact,

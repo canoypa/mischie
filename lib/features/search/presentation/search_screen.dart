@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
@@ -7,6 +8,7 @@ import 'package:mischie/core/navigation/link_handler.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
+import 'package:mischie/features/channel/presentation/channel_list.dart';
 import 'package:mischie/features/search/domain/search_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
@@ -25,7 +27,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     // クリアボタンの出し分けのため入力に追従する
     _controller.addListener(() => setState(() {}));
   }
@@ -80,7 +82,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: const [_NoteResults(), _UserResults()],
+            children: [
+              const _NoteResults(),
+              const _UserResults(),
+              // チャンネルは検索語が無くても一覧を出せるので query を渡す
+              Consumer(
+                builder: (context, ref, _) =>
+                    ChannelResults(query: ref.watch(searchQueryProvider)),
+              ),
+            ],
           ),
         ),
       ],
@@ -171,7 +181,10 @@ class _UserTile extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundImage: user.avatarUrl != null
-            ? CachedNetworkImageProvider(user.avatarUrl!)
+            ? CachedNetworkImageProvider(
+                user.avatarUrl!,
+                cacheManager: MediaCacheManager.instance,
+              )
             : null,
         child: user.avatarUrl == null ? const Icon(Icons.person) : null,
       ),

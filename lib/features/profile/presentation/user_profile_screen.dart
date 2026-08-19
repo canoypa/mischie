@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
@@ -356,6 +357,7 @@ class _FullHeader extends StatelessWidget {
               child: detail.bannerUrl != null
                   ? CachedNetworkImage(
                       imageUrl: detail.bannerUrl!,
+                      cacheManager: MediaCacheManager.instance,
                       fit: BoxFit.cover,
                       placeholder: (context, url) =>
                           detail.bannerBlurhash != null
@@ -440,6 +442,8 @@ class _FullHeader extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
+                  // 3 つとも押せるので、隣を踏まないよう間隔を空ける
+                  spacing: 12,
                   children: [
                     _StatColumn(count: detail.notesCount, label: 'ノート'),
                     _StatColumn(
@@ -589,7 +593,10 @@ class _RoleChip extends StatelessWidget {
       avatar: role.iconUrl != null
           ? CircleAvatar(
               radius: 8,
-              backgroundImage: CachedNetworkImageProvider(role.iconUrl!),
+              backgroundImage: CachedNetworkImageProvider(
+                role.iconUrl!,
+                cacheManager: MediaCacheManager.instance,
+              ),
             )
           : null,
       label: Text(role.name),

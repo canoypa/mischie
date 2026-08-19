@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
@@ -190,6 +191,7 @@ class _ChannelHeader extends ConsumerWidget {
             width: double.infinity,
             child: CachedNetworkImage(
               imageUrl: channel.bannerUrl!,
+              cacheManager: MediaCacheManager.instance,
               fit: BoxFit.cover,
               placeholder: (_, _) =>
                   Container(color: colorScheme.surfaceContainerHighest),

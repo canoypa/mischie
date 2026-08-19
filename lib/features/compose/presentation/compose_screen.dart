@@ -372,20 +372,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 tooltip: '下書き',
                 onPressed: _openDrafts,
               ),
+            // 送信はここに置く。下部に浮かせるとキーボード対策で本体末尾へ
+            // 移したツールバーと重なり、文字数カウントが隠れる。
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: FilledButton(
+                onPressed: isLoading || isOverLimit || isUploading || isEmpty
+                    ? null
+                    : _post,
+                child: isLoading
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(isReply ? '返信' : '投稿'),
+              ),
+            ),
           ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: isLoading || isOverLimit || isUploading || isEmpty
-              ? null
-              : _post,
-          icon: isLoading
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.send),
-          label: const Text('投稿'),
         ),
         body: Column(
           children: [
