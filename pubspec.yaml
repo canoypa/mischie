@@ -50,6 +50,8 @@ dependencies:
   uuid: ^4.5.3
   http: ^1.6.0
   cached_network_image: ^3.4.1
+  # 画像キャッシュの上限を用途別に設定するために直接使う
+  flutter_cache_manager: ^3.4.1
   timeago: ^3.7.1
   web_socket_channel: ^3.0.3
   mfm: ^1.0.9

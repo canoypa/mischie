@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
@@ -130,6 +131,7 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
                             padding: const EdgeInsets.all(6),
                             child: CachedNetworkImage(
                               imageUrl: emojis[name]!,
+                              cacheManager: EmojiCacheManager.instance,
                               fit: BoxFit.contain,
                               placeholder: (_, _) =>
                                   const SizedBox(height: 32, width: 32),
@@ -164,6 +166,7 @@ class _QuickPick extends StatelessWidget {
     }
     return CachedNetworkImage(
       imageUrl: url,
+      cacheManager: EmojiCacheManager.instance,
       height: 28,
       placeholder: (_, _) => const SizedBox(height: 28, width: 28),
       errorWidget: (_, _, _) => Text(reaction),

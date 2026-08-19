@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
@@ -35,7 +36,10 @@ class DecoratedAvatar extends StatelessWidget {
           )
         : CircleAvatar(
             radius: radius,
-            backgroundImage: CachedNetworkImageProvider(avatarUrl!),
+            backgroundImage: CachedNetworkImageProvider(
+              avatarUrl!,
+              cacheManager: MediaCacheManager.instance,
+            ),
           );
 
     if (borderColor != null) {
@@ -97,6 +101,7 @@ class _Decoration extends StatelessWidget {
           flipX: decoration.flipH,
           child: CachedNetworkImage(
             imageUrl: decoration.url,
+            cacheManager: MediaCacheManager.instance,
             width: size,
             height: size,
             fit: BoxFit.contain,

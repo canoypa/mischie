@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mfm/mfm.dart';
 import 'package:mfm_parser/mfm_parser.dart';
@@ -55,6 +56,7 @@ class _MfmTextState extends ConsumerState<MfmText> {
       final fontSize = emojiStyle?.fontSize ?? 14.0;
       return CachedNetworkImage(
         imageUrl: url,
+        cacheManager: EmojiCacheManager.instance,
         height: fontSize * 1.8,
         fit: BoxFit.contain,
         placeholder: (_, _) =>
