@@ -8,7 +8,7 @@ import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/timeline/data/timeline_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
-import 'package:mischie/features/timeline/domain/note_actions.dart';
+import 'package:mischie/features/timeline/domain/note_capture.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 import 'package:mischie/features/timeline/domain/timeline_source.dart';
 import 'package:mischie/features/timeline/domain/user_list.dart';

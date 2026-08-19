@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mischie/features/timeline/data/note_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
 /// API を呼ばずに、呼ばれた内容と失敗させるかだけを記録するリポジトリ。

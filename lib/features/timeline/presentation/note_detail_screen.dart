@@ -5,6 +5,7 @@ import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
 /// ノート詳細（会話）を開く。引用や埋め込みからも呼ぶ。

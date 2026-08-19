@@ -9,6 +9,8 @@ import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
+import 'package:mischie/features/timeline/domain/note_capture.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note/actions_row.dart';
 import 'package:mischie/features/timeline/presentation/note/media.dart';
