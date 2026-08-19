@@ -89,7 +89,7 @@ class MinimalHeader extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             SizedBox(
-              height: 150,
+              height: 104,
               width: double.infinity,
               child: Container(color: colorScheme.surfaceContainerHighest),
             ),
@@ -155,7 +155,9 @@ class FullHeader extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             SizedBox(
-              height: 150,
+              // バナーが無いときは低くする。無地の帯を高く取っても
+              // 情報が増えないまま、名前が下へ押しやられるだけ。
+              height: detail.bannerUrl != null ? 150 : 104,
               width: double.infinity,
               child: detail.bannerUrl != null
                   ? CachedNetworkImage(
@@ -214,12 +216,9 @@ class FullHeader extends StatelessWidget {
                     const SizedBox(width: 6),
                     const CompactChip(icon: Icons.smart_toy, label: 'Bot'),
                   ],
-                  if (detail.isCat) ...[
-                    const SizedBox(width: 6),
-                    const CompactChip(icon: Icons.pets, label: 'Cat'),
-                  ],
                 ],
               ),
+              const SizedBox(height: 2),
               Text(
                 handle,
                 style: textTheme.bodyMedium?.copyWith(
