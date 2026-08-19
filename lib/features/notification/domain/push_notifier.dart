@@ -41,6 +41,31 @@ final pushEnabledProvider = AsyncNotifierProvider<PushEnabled, bool>(
   PushEnabled.new,
 );
 
+/// プッシュ購読の状態。届かないときにどこで止まっているかを見るために使う。
+///
+/// 経路は「配信アプリ → 購読先 URL → サーバーへ登録」と長く、どこが
+/// 欠けても症状は同じ「通知が来ない」になる。切り分けられるようにしておく。
+final pushDiagnosticsProvider = FutureProvider<PushDiagnostics>((ref) async {
+  // 有効・無効の切り替えに追従させる
+  ref.watch(pushEnabledProvider);
+  final endpoint = await ref.read(pushStoreProvider).readEndpoint();
+  final vapid = await ref.read(pushRepositoryProvider)?.fetchVapidKey();
+  return PushDiagnostics(endpoint: endpoint, serverSupportsPush: vapid != null);
+});
+
+class PushDiagnostics {
+  const PushDiagnostics({
+    required this.endpoint,
+    required this.serverSupportsPush,
+  });
+
+  /// 配信アプリから受け取った購読先。null なら配信アプリまで届いていない。
+  final String? endpoint;
+
+  /// サーバーが Web Push の鍵を持っているか。無ければ何をしても届かない。
+  final bool serverSupportsPush;
+}
+
 class PushEnabled extends AsyncNotifier<bool> {
   @override
   Future<bool> build() => ref.read(pushStoreProvider).readEnabled();

@@ -121,6 +121,7 @@ class _PushTile extends ConsumerWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
+        if (enabled) const _PushDiagnostics(),
       ],
     );
   }
@@ -231,6 +232,65 @@ class _AccountsSection extends ConsumerWidget {
           onTap: () => Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => const LoginScreen())),
+        ),
+      ],
+    );
+  }
+}
+
+/// 通知が届かないときに、どこで止まっているかを見るための表示。
+///
+/// 経路は「配信アプリ → 購読先 URL → サーバーへ登録」と長く、どこが
+/// 欠けても症状は同じ「来ない」になる。切り分けの手がかりを出しておく。
+class _PushDiagnostics extends ConsumerWidget {
+  const _PushDiagnostics();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final diagnostics = ref.watch(pushDiagnosticsProvider).value;
+    if (diagnostics == null) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final ok = colorScheme.primary;
+    final ng = colorScheme.error;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Line(
+            label: 'サーバーの対応',
+            value: diagnostics.serverSupportsPush ? '対応' : '鍵が未設定',
+            color: diagnostics.serverSupportsPush ? ok : ng,
+          ),
+          _Line(
+            label: '配信アプリ',
+            value: diagnostics.endpoint == null ? '未接続' : '接続済み',
+            color: diagnostics.endpoint == null ? ng : ok,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Line extends StatelessWidget {
+  const _Line({required this.label, required this.value, required this.color});
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
         ),
       ],
     );
