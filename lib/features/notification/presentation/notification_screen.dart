@@ -7,6 +7,7 @@ import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
+import 'package:mischie/features/notification/domain/notification_label.dart';
 import 'package:mischie/features/notification/domain/notification_notifier.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
@@ -91,58 +92,23 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 種類の区別はアイコンで付ける。色は Material 3 のカラーロールから
-    // 取り、seed から導かれた調和の中に収める（既製の赤や青を直接使うと
-    // テーマから浮く）。
     final colorScheme = Theme.of(context).colorScheme;
-    final (icon, badgeColor, onBadgeColor, label) = switch (item.type) {
-      'reaction' => (
-        Icons.add_reaction,
-        colorScheme.tertiary,
-        colorScheme.onTertiary,
-        'リアクション',
-      ),
-      'reply' => (
-        Icons.reply,
-        colorScheme.primary,
-        colorScheme.onPrimary,
-        'リプライ',
-      ),
-      'renote' => (
-        Icons.repeat,
+    final label = notificationLabel(item.type);
+    // 種類の区別はアイコンで付ける。色は Material 3 のカラーロールから
+    // 取り、seed から導かれた調和の中に収める。
+    final (badgeColor, onBadgeColor) = switch (label.role) {
+      NotificationRole.primary => (colorScheme.primary, colorScheme.onPrimary),
+      NotificationRole.secondary => (
         colorScheme.secondary,
         colorScheme.onSecondary,
-        'リノート',
       ),
-      'quote' => (
-        Icons.format_quote,
-        colorScheme.secondary,
-        colorScheme.onSecondary,
-        '引用',
-      ),
-      'mention' => (
-        Icons.alternate_email,
-        colorScheme.primary,
-        colorScheme.onPrimary,
-        'メンション',
-      ),
-      'follow' => (
-        Icons.person_add,
+      NotificationRole.tertiary => (
         colorScheme.tertiary,
         colorScheme.onTertiary,
-        'フォロー',
       ),
-      'followRequestAccepted' => (
-        Icons.how_to_reg,
-        colorScheme.tertiary,
-        colorScheme.onTertiary,
-        'フォロー承認',
-      ),
-      _ => (
-        Icons.notifications,
+      NotificationRole.neutral => (
         colorScheme.surfaceContainerHighest,
         colorScheme.onSurfaceVariant,
-        item.type,
       ),
     };
 
@@ -190,33 +156,40 @@ class _NotificationTile extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: colorScheme.surface, width: 1.5),
                 ),
-                child: Icon(icon, size: 11, color: onBadgeColor),
+                child: Icon(label.icon, size: 11, color: onBadgeColor),
               ),
             ),
           ],
         ),
       ),
-      title: Row(
-        children: [
-          Flexible(
-            child: MfmText(
-              username,
-              emojis: serverEmojis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (handle != null)
-            Text(
-              ' $handle',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          Text(' が $label', style: Theme.of(context).textTheme.bodyMedium),
-        ],
-      ),
+      // 相手のいない通知（投票の終了・実績など）では名前を出さない。
+      // 付けると「Cano が 投票が終了しました」のように文が壊れる。
+      title: label.hasActor
+          ? Row(
+              children: [
+                Flexible(
+                  child: MfmText(
+                    username,
+                    emojis: serverEmojis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (handle != null)
+                  Text(
+                    ' $handle',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                Text(
+                  ' ${label.text}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            )
+          : Text(label.text, style: Theme.of(context).textTheme.bodyMedium),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

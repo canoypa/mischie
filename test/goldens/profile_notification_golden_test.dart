@@ -57,6 +57,9 @@ void main() {
             _item('renote', note: _note('リノートされたノート')),
             _item('mention', note: _note('@cano めんしょん')),
             _item('follow'),
+            // 相手のいない通知でも文が壊れないこと
+            _item('pollEnded'),
+            _item('achievementEarned'),
           ]),
         ),
       ],
@@ -83,6 +86,9 @@ void main() {
             _item('reply', note: _note('返信の本文')),
             _item('renote', note: _note('リノートされたノート')),
             _item('follow'),
+            // 相手のいない通知でも文が壊れないこと
+            _item('pollEnded'),
+            _item('achievementEarned'),
           ]),
         ),
       ],

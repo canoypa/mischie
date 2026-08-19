@@ -6,6 +6,7 @@ import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/core/storage/push_store.dart';
 import 'package:mischie/features/notification/data/push_repository.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
+import 'package:mischie/features/notification/domain/notification_label.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
 final pushStoreProvider = Provider<PushStore>(
@@ -209,7 +210,7 @@ class PushService {
     await _local.show(
       // 同じ通知が二重に出ないよう ID で束ねる
       id: item.id.hashCode,
-      title: pushNotificationTitle(item),
+      title: notificationSummary(item),
       body: item.note?.text,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -221,24 +222,4 @@ class PushService {
       ),
     );
   }
-}
-
-/// プッシュ通知に出す一行。
-///
-/// 通知バーに出る文言はここだけで決まる。実機で届くところまでは手元で
-/// 確かめられないので、せめて文面は固定しておく。
-String pushNotificationTitle(NotificationItem item) {
-  final name = item.user?.name ?? item.user?.username ?? '通知';
-  return switch (item.type) {
-    // リアクションは何を付けられたかまで出す
-    'reaction' when item.reaction != null => '$name がリアクション ${item.reaction}',
-    'reaction' => '$name がリアクション',
-    'reply' => '$name が返信',
-    'renote' => '$name がリノート',
-    'quote' => '$name が引用',
-    'mention' => '$name がメンション',
-    'follow' => '$name にフォローされました',
-    'followRequestAccepted' => '$name がフォローを承認しました',
-    _ => name,
-  };
 }

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
-import 'package:mischie/features/notification/domain/push_notifier.dart';
+import 'package:mischie/features/notification/domain/notification_label.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
 NotificationItem _item(String type, {String? reaction, User? user}) =>
@@ -13,34 +13,34 @@ NotificationItem _item(String type, {String? reaction, User? user}) =>
     );
 
 void main() {
-  group('pushNotificationTitle', () {
+  group('notificationSummary', () {
     test('リアクションは内容まで出す', () {
       expect(
-        pushNotificationTitle(_item('reaction', reaction: '👍')),
+        notificationSummary(_item('reaction', reaction: '👍')),
         'Cano がリアクション 👍',
       );
     });
 
     test('リアクションの内容が無くても末尾が空かない', () {
       // 以前は '${item.reaction ?? ''}' で末尾に空白が残っていた
-      expect(pushNotificationTitle(_item('reaction')), 'Cano がリアクション');
+      expect(notificationSummary(_item('reaction')), 'Cano がリアクション');
     });
 
     test('種別ごとの文言', () {
-      expect(pushNotificationTitle(_item('reply')), 'Cano が返信');
-      expect(pushNotificationTitle(_item('renote')), 'Cano がリノート');
-      expect(pushNotificationTitle(_item('quote')), 'Cano が引用');
-      expect(pushNotificationTitle(_item('mention')), 'Cano がメンション');
-      expect(pushNotificationTitle(_item('follow')), 'Cano にフォローされました');
+      expect(notificationSummary(_item('reply')), 'Cano が返信');
+      expect(notificationSummary(_item('renote')), 'Cano がリノート');
+      expect(notificationSummary(_item('quote')), 'Cano が引用');
+      expect(notificationSummary(_item('mention')), 'Cano がメンション');
+      expect(notificationSummary(_item('follow')), 'Cano にフォローされました');
       expect(
-        pushNotificationTitle(_item('followRequestAccepted')),
+        notificationSummary(_item('followRequestAccepted')),
         'Cano がフォローを承認しました',
       );
     });
 
     test('表示名が無ければユーザー名を使う', () {
       expect(
-        pushNotificationTitle(
+        notificationSummary(
           _item(
             'reply',
             user: const User(id: 'u1', username: 'cano'),
@@ -50,8 +50,15 @@ void main() {
       );
     });
 
-    test('知らない種別でも名前だけは出す', () {
-      expect(pushNotificationTitle(_item('achievementEarned')), 'Cano');
+    test('相手のいない通知は名前を付けない', () {
+      // 「Cano が 投票が終了しました」では文が壊れる
+      expect(notificationSummary(_item('pollEnded')), '投票が終了しました');
+      expect(notificationSummary(_item('achievementEarned')), '実績を獲得しました');
+    });
+
+    test('訳の無い種別でも識別子を出さない', () {
+      // 以前は 'roleAssignedTo' のような英語がそのまま画面に出ていた
+      expect(notificationSummary(_item('somethingNew')), '通知');
     });
   });
 
