@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 import '../support/golden_support.dart';
+import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
@@ -15,6 +16,7 @@ import 'package:mischie/features/timeline/domain/user.dart';
 Note _note({
   String? text = 'ノートの本文です。ここに書いた内容がそのまま出ます。',
   Poll? poll,
+  List<DriveFile> files = const [],
   Map<String, int> reactions = const {},
   String? myReaction,
   String? cw,
@@ -30,6 +32,7 @@ Note _note({
   cw: cw,
   reactions: reactions,
   poll: poll,
+  files: files,
   myReaction: myReaction,
   repliesCount: repliesCount,
   renoteCount: renoteCount,
@@ -69,6 +72,46 @@ void main() {
     await expectLater(
       find.byType(ListView),
       matchesGoldenFile('note_card.png'),
+    );
+  });
+
+  testWidgets('画像以外の添付', (tester) async {
+    // 画像しか出していなかったため、動画や音声だけのノートは添付が
+    // 無かったことになっていた
+    await _pumpNotes(tester, [
+      _note(
+        text: '動画つき',
+        files: const [
+          DriveFile(
+            id: 'f1',
+            type: 'video/mp4',
+            url: 'https://example.com/v.mp4',
+            name: '海.mp4',
+          ),
+        ],
+      ),
+      _note(
+        text: '音声とファイル',
+        files: const [
+          DriveFile(
+            id: 'f2',
+            type: 'audio/mpeg',
+            url: 'https://example.com/a.mp3',
+            name: 'demo.mp3',
+          ),
+          DriveFile(
+            id: 'f3',
+            type: 'application/pdf',
+            url: 'https://example.com/d.pdf',
+            name: '資料.pdf',
+          ),
+        ],
+      ),
+    ]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('attachments.png'),
     );
   });
 

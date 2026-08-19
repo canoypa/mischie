@@ -5,6 +5,7 @@ import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NoteMediaGrid extends StatelessWidget {
   const NoteMediaGrid({super.key, required this.files});
@@ -14,8 +15,27 @@ class NoteMediaGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final images = files.where((f) => f.type.startsWith('image/')).toList();
-    if (images.isEmpty) return const SizedBox.shrink();
+    // 画像以外（動画・音声・その他のファイル）は自前では開けないが、
+    // 何も出さないと添付があること自体が伝わらない。行として出して
+    // タップで外部へ渡す。
+    final others = files.where((f) => !f.type.startsWith('image/')).toList();
 
+    if (images.isEmpty) {
+      return others.isEmpty
+          ? const SizedBox.shrink()
+          : Column(children: [for (final file in others) FileRow(file: file)]);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _imageGrid(context, images),
+        for (final file in others) FileRow(file: file),
+      ],
+    );
+  }
+
+  Widget _imageGrid(BuildContext context, List<DriveFile> images) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: images.length == 1
@@ -46,6 +66,60 @@ class NoteMediaGrid extends StatelessWidget {
                     .toList(),
               ),
             ),
+    );
+  }
+}
+
+/// 画像以外の添付。Mischie では再生・表示できないので、外部に渡す。
+class FileRow extends StatelessWidget {
+  const FileRow({super.key, required this.file});
+
+  final DriveFile file;
+
+  IconData get _icon {
+    if (file.type.startsWith('video/')) return Icons.videocam_outlined;
+    if (file.type.startsWith('audio/')) return Icons.audiotrack_outlined;
+    return Icons.insert_drive_file_outlined;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: InkWell(
+        onTap: () => launchUrl(
+          Uri.parse(file.url),
+          mode: LaunchMode.externalApplication,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(_icon, size: 20, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  file.name ?? file.type,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              Icon(
+                Icons.open_in_new,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
