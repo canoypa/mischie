@@ -48,6 +48,7 @@ class QuotedNote extends StatelessWidget {
                     avatarUrl: note.user.avatarUrl,
                     size: 20,
                     isCat: note.user.isCat,
+                    avatarBlurhash: note.user.avatarBlurhash,
                   ),
                   const SizedBox(width: 6),
                   Flexible(

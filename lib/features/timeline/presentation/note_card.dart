@@ -181,6 +181,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                     child: DecoratedAvatar(
                       avatarUrl: displayNote.user.avatarUrl,
                       isCat: displayNote.user.isCat,
+                      avatarBlurhash: displayNote.user.avatarBlurhash,
                       decorations: displayNote.user.avatarDecorations,
                     ),
                   ),

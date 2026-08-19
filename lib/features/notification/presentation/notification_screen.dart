@@ -141,6 +141,7 @@ class _NotificationTile extends StatelessWidget {
                 child: DecoratedAvatar(
                   avatarUrl: item.user?.avatarUrl,
                   isCat: item.user?.isCat ?? false,
+                  avatarBlurhash: item.user?.avatarBlurhash,
                   decorations: item.user?.avatarDecorations ?? const [],
                 ),
               ),

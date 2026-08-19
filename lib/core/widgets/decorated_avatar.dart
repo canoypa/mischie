@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
+import 'package:mischie/core/widgets/blurhash_color.dart';
 import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
@@ -20,6 +21,7 @@ class DecoratedAvatar extends StatelessWidget {
     required this.avatarUrl,
     this.size = 40,
     this.isCat = false,
+    this.avatarBlurhash,
     this.decorations = const [],
     this.borderColor,
   });
@@ -27,6 +29,9 @@ class DecoratedAvatar extends StatelessWidget {
   final String? avatarUrl;
   final double size;
   final bool isCat;
+
+  /// 猫耳の色をここから取る。
+  final String? avatarBlurhash;
   final List<AvatarDecoration> decorations;
   final Color? borderColor;
 
@@ -74,7 +79,10 @@ class DecoratedAvatar extends StatelessWidget {
               top: -size * 0.34,
               left: 0,
               right: 0,
-              child: CatEars(width: size),
+              child: CatEars(
+                width: size,
+                color: averageColorOfBlurhash(avatarBlurhash),
+              ),
             ),
           avatar,
           for (final decoration in decorations)

@@ -19,7 +19,7 @@ void main() {
                     top: -40,
                     left: 0,
                     right: 0,
-                    child: CatEars(width: 120),
+                    child: CatEars(width: 120, color: Color(0xFF6B4E3D)),
                   ),
                   Container(
                     decoration: const BoxDecoration(

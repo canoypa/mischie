@@ -10,6 +10,9 @@ sealed class User with _$User {
     required String username,
     String? name,
     String? avatarUrl,
+
+    /// アイコンのぼかし表現。猫耳の色をここから取る。
+    String? avatarBlurhash,
     String? host,
     @Default(false) bool isCat,
     @Default(false) bool isBot,
