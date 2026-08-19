@@ -14,6 +14,11 @@ _DriveFile _$DriveFileFromJson(Map<String, dynamic> json) => _DriveFile(
   name: json['name'] as String?,
   blurhash: json['blurhash'] as String?,
   comment: json['comment'] as String?,
+  properties: json['properties'] == null
+      ? null
+      : DriveFileProperties.fromJson(
+          json['properties'] as Map<String, dynamic>,
+        ),
   isSensitive: json['isSensitive'] as bool? ?? false,
 );
 
@@ -26,5 +31,16 @@ Map<String, dynamic> _$DriveFileToJson(_DriveFile instance) =>
       'name': instance.name,
       'blurhash': instance.blurhash,
       'comment': instance.comment,
+      'properties': instance.properties,
       'isSensitive': instance.isSensitive,
     };
+
+_DriveFileProperties _$DriveFilePropertiesFromJson(Map<String, dynamic> json) =>
+    _DriveFileProperties(
+      width: (json['width'] as num?)?.toDouble(),
+      height: (json['height'] as num?)?.toDouble(),
+    );
+
+Map<String, dynamic> _$DriveFilePropertiesToJson(
+  _DriveFileProperties instance,
+) => <String, dynamic>{'width': instance.width, 'height': instance.height};

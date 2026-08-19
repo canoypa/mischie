@@ -61,15 +61,27 @@ void applyNoteUpdate(Ref ref, Map<String, dynamic> event) {
   final body = event['body'];
   if (body is! Map<String, dynamic>) return;
 
-  // 自分の操作は押した時点で反映済み。ここで足すと二重に数えてしまう。
-  final myId = ref.read(profileNotifierProvider).value?.id;
-  if (myId != null && body['userId'] == myId) return;
-
   final reaction = body['reaction'] as String?;
   if (reaction == null) return;
 
   final base = ref.read(noteCaptureProvider).baseOf(noteId);
   if (base == null) return;
+
+  // 自分のリアクションかどうかで扱いが変わる。
+  //
+  // 同じ端末で押したぶんは既に反映済みなので二重に数えない。一方、
+  // 別の端末で押したぶんはここで初めて届くので、件数だけでなく
+  // 「自分が付けた」ことも反映しないと他人のリアクションに見える。
+  // どちらも同じイベントとして届くため、いま持っている myReaction と
+  // 突き合わせて、まだ反映していないものだけを当てる。
+  final myId = ref.read(profileNotifierProvider).value?.id;
+  final isMine = myId != null && body['userId'] == myId;
+  if (isMine) {
+    final alreadyApplied = type == 'reacted'
+        ? base.myReaction == reaction
+        : base.myReaction == null;
+    if (alreadyApplied) return;
+  }
 
   final reactions = {...base.reactions};
   if (type == 'reacted') {

@@ -10,6 +10,10 @@ import 'package:mischie/features/timeline/domain/user.dart';
 ///
 /// デコレーションはアイコンからはみ出して描かれるので、置く側では
 /// レイアウト上の大きさ（= size）だけを占める。
+/// アイコンの下地。読み込み前と透過部分に見える色。
+Color _placeholderColor(BuildContext context) =>
+    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12);
+
 class DecoratedAvatar extends StatelessWidget {
   const DecoratedAvatar({
     super.key,
@@ -30,12 +34,17 @@ class DecoratedAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = size / 2;
     Widget avatar = avatarUrl == null
+        // 下地は無彩色にする。既定の primary 系だと、透過部分のある
+        // アイコンがテーマ色に染まって本来の見た目にならない。
         ? CircleAvatar(
             radius: radius,
+            backgroundColor: _placeholderColor(context),
+            foregroundColor: Theme.of(context).colorScheme.surface,
             child: Icon(Icons.person, size: radius),
           )
         : CircleAvatar(
             radius: radius,
+            backgroundColor: _placeholderColor(context),
             backgroundImage: CachedNetworkImageProvider(
               avatarUrl!,
               cacheManager: MediaCacheManager.instance,

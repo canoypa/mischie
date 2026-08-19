@@ -16,6 +16,7 @@ import 'package:mischie/features/timeline/domain/user.dart';
 Note _note({
   String? text = 'ノートの本文です。ここに書いた内容がそのまま出ます。',
   Poll? poll,
+  Note? renote,
   List<DriveFile> files = const [],
   Map<String, int> reactions = const {},
   String? myReaction,
@@ -32,6 +33,7 @@ Note _note({
   cw: cw,
   reactions: reactions,
   poll: poll,
+  renote: renote,
   files: files,
   myReaction: myReaction,
   repliesCount: repliesCount,
@@ -72,6 +74,32 @@ void main() {
     await expectLater(
       find.byType(ListView),
       matchesGoldenFile('note_card.png'),
+    );
+  });
+
+  testWidgets('リノートと引用', (tester) async {
+    final original = Note(
+      id: 'orig',
+      createdAt: DateTime.now().toIso8601String(),
+      user: const User(id: 'u2', username: 'other', name: '元の人'),
+      text: '元のノートの本文',
+    );
+
+    await _pumpNotes(tester, [
+      // 本文なしの純粋なリノート
+      _note(text: null, renote: original),
+      // 本文つき = 引用。元ノートを埋め込んで出す
+      _note(text: 'これは引用です', renote: original),
+      // 引用ノートをリノートした場合。引用元まで辿れないと文脈が切れる
+      _note(
+        text: null,
+        renote: _note(text: '引用のコメント', renote: original),
+      ),
+    ]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('renote_quote.png'),
     );
   });
 

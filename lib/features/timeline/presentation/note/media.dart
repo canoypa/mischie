@@ -40,7 +40,8 @@ class NoteMediaGrid extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: images.length == 1
           ? AspectRatio(
-              aspectRatio: 16 / 9,
+              // 縦長の写真を 16:9 に切ると、何が写っているか分からなくなる
+              aspectRatio: images.first.displayAspectRatio,
               child: _MediaTile(file: images.first, images: images, index: 0),
             )
           : AspectRatio(

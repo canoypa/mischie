@@ -160,7 +160,15 @@ class _QuickPick extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match = customEmojiPattern.firstMatch(reaction);
-    final url = match == null ? null : emojis[match.group(1)];
+    final identifier = match?.group(1);
+    // 履歴には `:name@.:`（ローカル）の形も入る。フルキーで引けなければ
+    // ホストを落とした短縮名で引き直す。これをしないと絵文字が出ず、
+    // `:name@.:` という文字列がそのまま並ぶ。
+    var url = identifier == null ? null : emojis[identifier];
+    if (url == null && identifier != null) {
+      final atIndex = identifier.indexOf('@');
+      if (atIndex > 0) url = emojis[identifier.substring(0, atIndex)];
+    }
     if (url == null) {
       return Text(reaction, style: const TextStyle(fontSize: 26));
     }

@@ -189,9 +189,15 @@ class FullHeader extends StatelessWidget {
         // アバターがバナーへ食い込んだ分の余白を、右側でボタンに使う
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FollowButton(detail: detail),
+          // アイコンはバナーから下へはみ出しており、この行がその分の高さを
+          // 支えている。自分のプロフィールではフォローボタンが消えるため、
+          // 高さを確保しておかないと名前がアイコンに重なる。
+          child: SizedBox(
+            height: 40,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FollowButton(detail: detail),
+            ),
           ),
         ),
         const SizedBox(height: 8),

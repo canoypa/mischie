@@ -7,11 +7,22 @@ import 'package:mfm_parser/mfm_parser.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
 
 class MfmText extends ConsumerStatefulWidget {
-  const MfmText(this.text, {super.key, this.emojis = const {}, this.style});
+  const MfmText(
+    this.text, {
+    super.key,
+    this.emojis = const {},
+    this.style,
+    this.maxLines,
+    this.overflow,
+  });
 
   final String text;
   final Map<String, String> emojis;
   final TextStyle? style;
+
+  /// 名前のように 1 行に収めたい場所で使う。
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   @override
   ConsumerState<MfmText> createState() => _MfmTextState();
@@ -53,14 +64,15 @@ class _MfmTextState extends ConsumerState<MfmText> {
       if (url == null) {
         return Text(':$emojiName:', style: emojiStyle);
       }
-      final fontSize = emojiStyle?.fontSize ?? 14.0;
+      // 文字より一回り大きい程度に収める。1.8 倍では絵文字が主役になり、
+      // 名前や本文が読み取りにくくなる。
+      final fontSize = (emojiStyle?.fontSize ?? 14.0) * 1.25;
       return CachedNetworkImage(
         imageUrl: url,
         cacheManager: EmojiCacheManager.instance,
-        height: fontSize * 1.8,
+        height: fontSize,
         fit: BoxFit.contain,
-        placeholder: (_, _) =>
-            SizedBox(height: fontSize * 1.8, width: fontSize * 1.8),
+        placeholder: (_, _) => SizedBox(height: fontSize, width: fontSize),
         errorWidget: (context, url, error) =>
             Text(':$emojiName:', style: emojiStyle),
       );
@@ -74,6 +86,8 @@ class _MfmTextState extends ConsumerState<MfmText> {
     return Mfm(
       mfmNode: _parsed,
       style: widget.style,
+      maxLines: widget.maxLines,
+      overflow: widget.overflow,
       isUseAnimation: false,
       linkStyle: TextStyle(
         color: linkColor,

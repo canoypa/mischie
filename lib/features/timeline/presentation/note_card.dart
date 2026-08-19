@@ -270,13 +270,15 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                           const SizedBox(height: 8),
                           PollView(note: displayNote, poll: displayNote.poll!),
                         ],
-                        // 引用リノート: 埋め込みも CW で隠す対象に含める
+                        // 引用リノート: 埋め込みも CW で隠す対象に含める。
+                        // 判定は表示しているノートで行う。外側で見ると、
+                        // 引用ノートをリノートしたときに引用元が消える。
                         if ((!hasCw || _cwExpanded) &&
-                            !isRenote &&
-                            note.renote != null) ...[
+                            !displayNote.isPureRenote &&
+                            displayNote.renote != null) ...[
                           const SizedBox(height: 8),
                           QuotedNote(
-                            note: note.renote!,
+                            note: displayNote.renote!,
                             serverEmojis: widget.serverEmojis,
                           ),
                         ],
@@ -342,22 +344,34 @@ class _UserName extends StatelessWidget {
         ? '@${user.username}@${user.host}'
         : '@${user.username}';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // 通知一覧と揃えて横並びにする。縦積みだと同じ情報が画面ごとに
+    // 違う形で出てしまう。幅を超えたら名前側を省略する（折り返すと
+    // カードの高さが揃わず、一覧が読みにくくなる）。
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
-        MfmText(
-          displayName,
-          emojis: emojis,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          handle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Flexible(
+          child: MfmText(
+            displayName,
+            emojis: emojis,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            handle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ],
     );
