@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mischie/features/compose/data/draft_store.dart';
 import 'package:mischie/features/compose/domain/draft_notifier.dart';
+import 'package:mischie/features/compose/presentation/attachments.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -49,7 +48,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _showCw = false;
   NoteVisibility _visibility = NoteVisibility.public;
   int _textLength = 0;
-  final List<_Attachment> _attachments = [];
+  final List<Attachment> _attachments = [];
 
   /// 下書きの同一性。保存し直しても増殖しないように使い回す。
   late final String _draftId =
@@ -88,7 +87,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         (v) => v.name == draft.visibility,
         orElse: () => NoteVisibility.public,
       );
-      _attachments.addAll(draft.fileIds.map(_Attachment.uploaded));
+      _attachments.addAll(draft.fileIds.map(Attachment.uploaded));
     }
   }
 
@@ -189,14 +188,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   void _addAttachments(List<String> paths) {
     final room = _maxAttachments - _attachments.length;
     if (room <= 0) return;
-    final added = paths.take(room).map(_Attachment.new).toList();
+    final added = paths.take(room).map(Attachment.new).toList();
     setState(() => _attachments.addAll(added));
     for (final attachment in added) {
       _upload(attachment);
     }
   }
 
-  Future<void> _upload(_Attachment attachment) async {
+  Future<void> _upload(Attachment attachment) async {
     final repo = ref.read(composeRepositoryProvider);
     final path = attachment.path;
     if (repo == null || path == null) return;
@@ -218,7 +217,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   /// 添付の説明（alt）とセンシティブ指定。読み上げ環境のために alt は
   /// 付けられるようにしておく。
-  Future<void> _editAttachment(_Attachment attachment) async {
+  Future<void> _editAttachment(Attachment attachment) async {
     final controller = TextEditingController(text: attachment.alt);
     var sensitive = attachment.isSensitive;
 
@@ -406,7 +405,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 ),
               ),
             if (_attachments.isNotEmpty)
-              _AttachmentStrip(
+              AttachmentStrip(
                 attachments: _attachments,
                 onRemove: (a) => setState(() => _attachments.remove(a)),
                 onRetry: (a) {
@@ -588,164 +587,6 @@ class _TargetPreview extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// 添付画像 1 枚ぶんの状態。選択した直後にアップロードを開始し、
-/// 完了すると fileId が入る。
-class _Attachment {
-  _Attachment(this.path);
-
-  /// 下書きから戻したぶん。アップロードは済んでいるのでローカルパスを持たない。
-  _Attachment.uploaded(String id) : path = null, fileId = id, uploading = false;
-
-  final String? path;
-  String? fileId;
-  bool uploading = true;
-  Object? error;
-  String alt = '';
-  bool isSensitive = false;
-}
-
-class _AttachmentStrip extends StatelessWidget {
-  const _AttachmentStrip({
-    required this.attachments,
-    required this.onRemove,
-    required this.onRetry,
-    required this.onEdit,
-  });
-
-  final List<_Attachment> attachments;
-  final ValueChanged<_Attachment> onRemove;
-  final ValueChanged<_Attachment> onRetry;
-  final ValueChanged<_Attachment> onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 104,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: attachments.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final attachment = attachments[index];
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // タップで説明とセンシティブ指定を編集する
-              GestureDetector(
-                onTap: attachment.fileId == null
-                    ? null
-                    : () => onEdit(attachment),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: attachment.path == null
-                      ? Container(
-                          width: 88,
-                          height: 88,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.image_outlined),
-                        )
-                      : Image.file(
-                          File(attachment.path!),
-                          width: 88,
-                          height: 88,
-                          fit: BoxFit.cover,
-                          cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
-                        ),
-                ),
-              ),
-              if (attachment.alt.isNotEmpty || attachment.isSensitive)
-                Positioned(
-                  left: 4,
-                  bottom: 4,
-                  child: Row(
-                    children: [
-                      if (attachment.alt.isNotEmpty) const _Tag(label: 'ALT'),
-                      if (attachment.isSensitive) const _Tag(label: 'NSFW'),
-                    ],
-                  ),
-                ),
-              if (attachment.uploading)
-                const Positioned.fill(
-                  child: ColoredBox(
-                    color: Colors.black38,
-                    child: Center(
-                      child: SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              if (attachment.error != null)
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () => onRetry(attachment),
-                    child: ColoredBox(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.errorContainer.withValues(alpha: 0.8),
-                      child: const Center(child: Icon(Icons.refresh)),
-                    ),
-                  ),
-                ),
-              // 24dp では小さすぎて押し損ねる。見た目は 28dp のままで、
-              // タップ領域だけ 40dp に広げる（はみ出しもやめる）。
-              Positioned(
-                top: 0,
-                right: 0,
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: IconButton(
-                    icon: const Icon(Icons.cancel, size: 22),
-                    color: Colors.white,
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(28, 28),
-                    ),
-                    onPressed: () => onRemove(attachment),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// サムネイルに重ねる小さなラベル（ALT / NSFW）。
-class _Tag extends StatelessWidget {
-  const _Tag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(color: Colors.white, fontSize: 10),
       ),
     );
   }

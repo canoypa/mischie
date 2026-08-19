@@ -10,6 +10,7 @@ import 'package:mischie/core/navigation/link_handler.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
+import 'package:mischie/features/profile/presentation/profile_parts.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/profile/presentation/user_relations_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -409,11 +410,11 @@ class _FullHeader extends StatelessWidget {
                   ),
                   if (detail.isBot) ...[
                     const SizedBox(width: 6),
-                    const _CompactChip(icon: Icons.smart_toy, label: 'Bot'),
+                    const CompactChip(icon: Icons.smart_toy, label: 'Bot'),
                   ],
                   if (detail.isCat) ...[
                     const SizedBox(width: 6),
-                    const _CompactChip(icon: Icons.pets, label: 'Cat'),
+                    const CompactChip(icon: Icons.pets, label: 'Cat'),
                   ],
                 ],
               ),
@@ -427,7 +428,7 @@ class _FullHeader extends StatelessWidget {
               // ここでは「相手からフォローされている」ことだけ出す
               if (detail.isFollowed) ...[
                 const SizedBox(height: 8),
-                const _RelationshipChip(label: 'フォローされています'),
+                const RelationshipChip(label: 'フォローされています'),
               ],
               if (detail.roles.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -435,7 +436,7 @@ class _FullHeader extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: detail.roles
-                      .map((role) => _RoleChip(role: role))
+                      .map((role) => RoleChip(role: role))
                       .toList(),
                 ),
               ],
@@ -445,8 +446,8 @@ class _FullHeader extends StatelessWidget {
                   // 3 つとも押せるので、隣を踏まないよう間隔を空ける
                   spacing: 12,
                   children: [
-                    _StatColumn(count: detail.notesCount, label: 'ノート'),
-                    _StatColumn(
+                    StatColumn(count: detail.notesCount, label: 'ノート'),
+                    StatColumn(
                       count: detail.followingCount,
                       label: 'フォロー',
                       onTap: () => openUserRelations(
@@ -455,7 +456,7 @@ class _FullHeader extends StatelessWidget {
                         relation: UserRelation.following,
                       ),
                     ),
-                    _StatColumn(
+                    StatColumn(
                       count: detail.followersCount,
                       label: 'フォロワー',
                       onTap: () => openUserRelations(
@@ -506,14 +507,14 @@ class _FullHeader extends StatelessWidget {
                 ),
               const SizedBox(height: 4),
               if (detail.location != null && detail.location!.isNotEmpty)
-                _MetaRow(icon: Icons.location_on, text: detail.location!),
+                MetaRow(icon: Icons.location_on, text: detail.location!),
               if (detail.birthday != null)
-                _MetaRow(
+                MetaRow(
                   icon: Icons.cake,
                   text: _formatBirthday(detail.birthday!),
                 ),
               if (detail.createdAt != null)
-                _MetaRow(
+                MetaRow(
                   icon: Icons.calendar_today,
                   text: _formatCreatedAt(detail.createdAt!),
                 ),
@@ -545,156 +546,6 @@ class _FullHeader extends StatelessWidget {
   }
 }
 
-class _CompactChip extends StatelessWidget {
-  const _CompactChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      avatar: Icon(icon, size: 14),
-      label: Text(label),
-      labelStyle: const TextStyle(fontSize: 11),
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-}
-
-class _RelationshipChip extends StatelessWidget {
-  const _RelationshipChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text(label),
-      labelStyle: const TextStyle(fontSize: 12),
-      visualDensity: VisualDensity.compact,
-      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-      side: BorderSide.none,
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({required this.role});
-
-  final UserRole role;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _parseHexColor(role.color);
-    return Chip(
-      avatar: role.iconUrl != null
-          ? CircleAvatar(
-              radius: 8,
-              backgroundImage: CachedNetworkImageProvider(
-                role.iconUrl!,
-                cacheManager: MediaCacheManager.instance,
-              ),
-            )
-          : null,
-      label: Text(role.name),
-      labelStyle: const TextStyle(fontSize: 12),
-      visualDensity: VisualDensity.compact,
-      side: color != null ? BorderSide(color: color) : null,
-    );
-  }
-
-  Color? _parseHexColor(String? hex) {
-    if (hex == null) return null;
-    var value = hex.trim();
-    if (value.startsWith('#')) value = value.substring(1);
-    if (value.length == 3) {
-      value = value.split('').map((c) => '$c$c').join();
-    }
-    if (value.length != 6) return null;
-    final intValue = int.tryParse(value, radix: 16);
-    if (intValue == null) return null;
-    return Color(0xFF000000 | intValue);
-  }
-}
-
-class _StatColumn extends StatelessWidget {
-  const _StatColumn({required this.count, required this.label, this.onTap});
-
-  final int? count;
-  final String label;
-
-  /// 数字は一覧への入り口。押せるものは押せると分かるようにする。
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            count?.toString() ?? '-',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return content;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: content,
-    );
-  }
-}
-
-class _MetaRow extends StatelessWidget {
-  const _MetaRow({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// フォロー / フォロー解除ボタン。自分自身のプロフィールでは何も出さない。
 class _FollowButton extends ConsumerWidget {
   const _FollowButton({required this.detail});
 
