@@ -37,7 +37,10 @@ class DecoratedAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = size / 2;
+    // 猫耳を箱の中に収めるぶん、アイコンをわずかに小さくする。
+    // 箱の大きさは変えないので、並びの高さは猫かどうかで変わらない。
+    final diameter = isCat ? size * 0.78 : size;
+    final radius = diameter / 2;
     Widget avatar = avatarUrl == null
         // 下地は無彩色にする。既定の primary 系だと、透過部分のある
         // アイコンがテーマ色に染まって本来の見た目にならない。
@@ -74,9 +77,12 @@ class DecoratedAvatar extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
+          // 箱の外へはみ出して描くと、親のどこかでクリップされて耳や
+          // アイコンが切れる。箱の中に収め、耳はアイコンの後ろから
+          // 覗く形にする。
           if (isCat)
             Positioned(
-              top: -size * 0.34,
+              top: 0,
               left: 0,
               right: 0,
               child: CatEars(
@@ -84,7 +90,7 @@ class DecoratedAvatar extends StatelessWidget {
                 color: averageColorOfBlurhash(avatarBlurhash),
               ),
             ),
-          avatar,
+          Align(alignment: Alignment.bottomCenter, child: avatar),
           for (final decoration in decorations)
             Positioned(
               // デコレーション画像はアイコンより一回り大きい枠に描く

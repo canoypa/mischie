@@ -20,7 +20,7 @@ class CatEars extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final base = color ?? colorScheme.surfaceContainerHighest;
     return CustomPaint(
-      size: Size(width, width * 0.42),
+      size: Size(width, width * 0.44),
       painter: CatEarsPainter(
         color: base,
         // 内側は少し明るく。同系色のまま濃淡で耳の内外を描き分ける。
