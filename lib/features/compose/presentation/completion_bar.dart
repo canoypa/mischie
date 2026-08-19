@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/features/compose/domain/compose_completion.dart';
 
@@ -7,16 +8,20 @@ import 'package:mischie/features/compose/domain/compose_completion.dart';
 ///
 /// 候補はサーバーの絵文字一覧と MFM の装飾名から作るので、打鍵ごとの
 /// 通信は起きない。
-class CompletionBar extends StatelessWidget {
+class CompletionBar extends ConsumerWidget {
   const CompletionBar({
     super.key,
     required this.query,
     required this.emojis,
+    required this.mentionQuery,
     required this.onSelected,
   });
 
   final CompletionQuery query;
   final Map<String, String> emojis;
+
+  /// 間引き後のメンション検索語。呼び出し側が打鍵を落ち着かせてから渡す。
+  final String mentionQuery;
 
   /// 置き換える文字列（`:name:` や `$[fn ` の形）を返す。
   final ValueChanged<String> onSelected;
@@ -24,8 +29,8 @@ class CompletionBar extends StatelessWidget {
   static const _maxItems = 30;
 
   @override
-  Widget build(BuildContext context) {
-    final items = _items();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = _items(ref);
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -67,7 +72,7 @@ class CompletionBar extends StatelessWidget {
     );
   }
 
-  List<_Item> _items() {
+  List<_Item> _items(WidgetRef ref) {
     final needle = query.query.toLowerCase();
 
     return switch (query.kind) {
@@ -86,8 +91,20 @@ class CompletionBar extends StatelessWidget {
           // 装飾は対象の文字が要るので、開いた形で差し込む
           _Item(label: fn, replacement: '\$[$fn '),
       ],
-      // メンションは打鍵ごとに検索が要るので、ここでは出さない
-      CompletionKind.mention => const [],
+      CompletionKind.mention => [
+        for (final user
+            in ref.watch(mentionSuggestionsProvider(mentionQuery)).value ??
+                const [])
+          _Item(
+            label: user.host == null
+                ? '@${user.username}'
+                : '@${user.username}@${user.host}',
+            replacement: user.host == null
+                ? '@${user.username} '
+                : '@${user.username}@${user.host} ',
+            imageUrl: user.avatarUrl,
+          ),
+      ],
     };
   }
 }

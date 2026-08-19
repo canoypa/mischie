@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -60,6 +61,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// カーソル位置で補完しようとしているもの。
   CompletionQuery? _completion;
 
+  /// メンション検索へ渡す語。打鍵が落ち着いてから更新する。
+  String _mentionQuery = '';
+  Timer? _mentionDebounce;
+
   /// 下書きの同一性。保存し直しても増殖しないように使い回す。
   late final String _draftId =
       widget.draft?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
@@ -107,6 +112,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _completion = selection.isCollapsed
           ? completionAt(_textController.text, selection.baseOffset)
           : null;
+    });
+    _scheduleMentionSearch();
+  }
+
+  /// メンションだけはサーバーに聞くしかないので、打鍵が止まってから投げる。
+  /// 1 文字ごとに検索すると、サーバーに無駄な負荷をかける。
+  void _scheduleMentionSearch() {
+    final completion = _completion;
+    if (completion == null || completion.kind != CompletionKind.mention) {
+      _mentionDebounce?.cancel();
+      if (_mentionQuery.isNotEmpty) setState(() => _mentionQuery = '');
+      return;
+    }
+    if (completion.query == _mentionQuery) return;
+
+    _mentionDebounce?.cancel();
+    _mentionDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _mentionQuery = completion.query);
     });
   }
 
@@ -329,6 +352,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   @override
   void dispose() {
+    _mentionDebounce?.cancel();
     _poll?.dispose();
     _textController.dispose();
     _cwController.dispose();
@@ -482,6 +506,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               CompletionBar(
                 query: completion,
                 emojis: ref.watch(emojiCacheProvider).value ?? const {},
+                mentionQuery: _mentionQuery,
                 onSelected: _applyCompletion,
               ),
             // 本文を書いてから選択肢を足す並びにする

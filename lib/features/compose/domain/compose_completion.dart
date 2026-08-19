@@ -1,3 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/features/profile/domain/user_detailed.dart';
+import 'package:mischie/features/search/domain/search_notifier.dart';
+
 /// 入力中のトークンの種類。
 enum CompletionKind {
   /// `:name` — カスタム絵文字
@@ -100,3 +104,15 @@ const mfmFunctions = [
   'tada',
   'twitch',
 ];
+
+/// メンション候補の検索。打鍵ごとに投げないよう、呼ぶ側で間引く。
+///
+/// 絵文字と MFM は手元のデータで済むが、メンションはサーバーに聞くしかない。
+/// 1 文字打つたびに検索すると、開発用サーバーにも本番にも無駄な負荷をかける。
+final mentionSuggestionsProvider = FutureProvider.autoDispose
+    .family<List<UserDetailed>, String>((ref, query) async {
+      if (query.isEmpty) return const [];
+      final repo = ref.watch(searchRepositoryProvider);
+      if (repo == null) return const [];
+      return repo.searchUsers(query, limit: 10);
+    });
