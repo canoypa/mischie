@@ -12,6 +12,9 @@ sealed class DriveFile with _$DriveFile {
     String? thumbnailUrl,
     String? name,
     String? blurhash,
+
+    /// 画像の説明（alt）。読み上げと、内容を確かめたいときに使う。
+    String? comment,
     @Default(false) bool isSensitive,
   }) = _DriveFile;
 

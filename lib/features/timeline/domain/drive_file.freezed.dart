@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DriveFile {
 
- String get id; String get type; String get url; String? get thumbnailUrl; String? get name; String? get blurhash; bool get isSensitive;
+ String get id; String get type; String get url; String? get thumbnailUrl; String? get name; String? get blurhash;/// 画像の説明（alt）。読み上げと、内容を確かめたいときに使う。
+ String? get comment; bool get isSensitive;
 /// Create a copy of DriveFile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +29,16 @@ $DriveFileCopyWith<DriveFile> get copyWith => _$DriveFileCopyWithImpl<DriveFile>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriveFile&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.url, url) || other.url == url)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.name, name) || other.name == name)&&(identical(other.blurhash, blurhash) || other.blurhash == blurhash)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriveFile&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.url, url) || other.url == url)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.name, name) || other.name == name)&&(identical(other.blurhash, blurhash) || other.blurhash == blurhash)&&(identical(other.comment, comment) || other.comment == comment)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,url,thumbnailUrl,name,blurhash,isSensitive);
+int get hashCode => Object.hash(runtimeType,id,type,url,thumbnailUrl,name,blurhash,comment,isSensitive);
 
 @override
 String toString() {
-  return 'DriveFile(id: $id, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, name: $name, blurhash: $blurhash, isSensitive: $isSensitive)';
+  return 'DriveFile(id: $id, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, name: $name, blurhash: $blurhash, comment: $comment, isSensitive: $isSensitive)';
 }
 
 
@@ -48,7 +49,7 @@ abstract mixin class $DriveFileCopyWith<$Res>  {
   factory $DriveFileCopyWith(DriveFile value, $Res Function(DriveFile) _then) = _$DriveFileCopyWithImpl;
 @useResult
 $Res call({
- String id, String type, String url, String? thumbnailUrl, String? name, String? blurhash, bool isSensitive
+ String id, String type, String url, String? thumbnailUrl, String? name, String? blurhash, String? comment, bool isSensitive
 });
 
 
@@ -65,7 +66,7 @@ class _$DriveFileCopyWithImpl<$Res>
 
 /// Create a copy of DriveFile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? url = null,Object? thumbnailUrl = freezed,Object? name = freezed,Object? blurhash = freezed,Object? isSensitive = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? url = null,Object? thumbnailUrl = freezed,Object? name = freezed,Object? blurhash = freezed,Object? comment = freezed,Object? isSensitive = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -73,6 +74,7 @@ as String,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nul
 as String,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,blurhash: freezed == blurhash ? _self.blurhash : blurhash // ignore: cast_nullable_to_non_nullable
+as String?,comment: freezed == comment ? _self.comment : comment // ignore: cast_nullable_to_non_nullable
 as String?,isSensitive: null == isSensitive ? _self.isSensitive : isSensitive // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -156,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String type,  String url,  String? thumbnailUrl,  String? name,  String? blurhash,  bool isSensitive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String type,  String url,  String? thumbnailUrl,  String? name,  String? blurhash,  String? comment,  bool isSensitive)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DriveFile() when $default != null:
-return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_that.blurhash,_that.isSensitive);case _:
+return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_that.blurhash,_that.comment,_that.isSensitive);case _:
   return orElse();
 
 }
@@ -177,10 +179,10 @@ return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String type,  String url,  String? thumbnailUrl,  String? name,  String? blurhash,  bool isSensitive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String type,  String url,  String? thumbnailUrl,  String? name,  String? blurhash,  String? comment,  bool isSensitive)  $default,) {final _that = this;
 switch (_that) {
 case _DriveFile():
-return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_that.blurhash,_that.isSensitive);}
+return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_that.blurhash,_that.comment,_that.isSensitive);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -194,10 +196,10 @@ return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String type,  String url,  String? thumbnailUrl,  String? name,  String? blurhash,  bool isSensitive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String type,  String url,  String? thumbnailUrl,  String? name,  String? blurhash,  String? comment,  bool isSensitive)?  $default,) {final _that = this;
 switch (_that) {
 case _DriveFile() when $default != null:
-return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_that.blurhash,_that.isSensitive);case _:
+return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_that.blurhash,_that.comment,_that.isSensitive);case _:
   return null;
 
 }
@@ -209,7 +211,7 @@ return $default(_that.id,_that.type,_that.url,_that.thumbnailUrl,_that.name,_tha
 @JsonSerializable()
 
 class _DriveFile implements DriveFile {
-  const _DriveFile({required this.id, required this.type, required this.url, this.thumbnailUrl, this.name, this.blurhash, this.isSensitive = false});
+  const _DriveFile({required this.id, required this.type, required this.url, this.thumbnailUrl, this.name, this.blurhash, this.comment, this.isSensitive = false});
   factory _DriveFile.fromJson(Map<String, dynamic> json) => _$DriveFileFromJson(json);
 
 @override final  String id;
@@ -218,6 +220,8 @@ class _DriveFile implements DriveFile {
 @override final  String? thumbnailUrl;
 @override final  String? name;
 @override final  String? blurhash;
+/// 画像の説明（alt）。読み上げと、内容を確かめたいときに使う。
+@override final  String? comment;
 @override@JsonKey() final  bool isSensitive;
 
 /// Create a copy of DriveFile
@@ -233,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriveFile&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.url, url) || other.url == url)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.name, name) || other.name == name)&&(identical(other.blurhash, blurhash) || other.blurhash == blurhash)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriveFile&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.url, url) || other.url == url)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.name, name) || other.name == name)&&(identical(other.blurhash, blurhash) || other.blurhash == blurhash)&&(identical(other.comment, comment) || other.comment == comment)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,url,thumbnailUrl,name,blurhash,isSensitive);
+int get hashCode => Object.hash(runtimeType,id,type,url,thumbnailUrl,name,blurhash,comment,isSensitive);
 
 @override
 String toString() {
-  return 'DriveFile(id: $id, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, name: $name, blurhash: $blurhash, isSensitive: $isSensitive)';
+  return 'DriveFile(id: $id, type: $type, url: $url, thumbnailUrl: $thumbnailUrl, name: $name, blurhash: $blurhash, comment: $comment, isSensitive: $isSensitive)';
 }
 
 
@@ -253,7 +257,7 @@ abstract mixin class _$DriveFileCopyWith<$Res> implements $DriveFileCopyWith<$Re
   factory _$DriveFileCopyWith(_DriveFile value, $Res Function(_DriveFile) _then) = __$DriveFileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String type, String url, String? thumbnailUrl, String? name, String? blurhash, bool isSensitive
+ String id, String type, String url, String? thumbnailUrl, String? name, String? blurhash, String? comment, bool isSensitive
 });
 
 
@@ -270,7 +274,7 @@ class __$DriveFileCopyWithImpl<$Res>
 
 /// Create a copy of DriveFile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? url = null,Object? thumbnailUrl = freezed,Object? name = freezed,Object? blurhash = freezed,Object? isSensitive = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? url = null,Object? thumbnailUrl = freezed,Object? name = freezed,Object? blurhash = freezed,Object? comment = freezed,Object? isSensitive = null,}) {
   return _then(_DriveFile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -278,6 +282,7 @@ as String,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nul
 as String,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,blurhash: freezed == blurhash ? _self.blurhash : blurhash // ignore: cast_nullable_to_non_nullable
+as String?,comment: freezed == comment ? _self.comment : comment // ignore: cast_nullable_to_non_nullable
 as String?,isSensitive: null == isSensitive ? _self.isSensitive : isSensitive // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

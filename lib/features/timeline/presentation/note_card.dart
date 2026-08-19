@@ -511,25 +511,35 @@ class _MediaTileState extends State<_MediaTile> {
     final file = widget.file;
     final showOverlay = file.isSensitive && !_revealed;
 
+    final alt = file.comment;
+
     return GestureDetector(
       onTap: showOverlay ? null : _openViewer,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          CachedNetworkImage(
-            imageUrl: file.thumbnailUrl ?? file.url,
-            cacheManager: MediaCacheManager.instance,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => file.blurhash != null
-                ? BlurHash(hash: file.blurhash!)
-                : Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                  ),
-            errorWidget: (context, url, error) =>
-                const Center(child: Icon(Icons.broken_image)),
+          // 投稿側で alt を書けるようにしたのに読み上げへ渡していなかった。
+          // 説明の無い画像は、読み上げ環境では存在しないのと同じになる。
+          Semantics(
+            image: true,
+            label: alt ?? file.name ?? '画像',
+            child: CachedNetworkImage(
+              imageUrl: file.thumbnailUrl ?? file.url,
+              cacheManager: MediaCacheManager.instance,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => file.blurhash != null
+                  ? BlurHash(hash: file.blurhash!)
+                  : Container(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                    ),
+              errorWidget: (context, url, error) =>
+                  const Center(child: Icon(Icons.broken_image)),
+            ),
           ),
+          if (alt != null && alt.isNotEmpty && !showOverlay)
+            Positioned(left: 6, bottom: 6, child: _AltBadge(text: alt)),
           if (showOverlay)
             GestureDetector(
               onTap: () => setState(() => _revealed = true),
@@ -1267,6 +1277,50 @@ class _ReactionChipState extends State<_ReactionChip>
         visualDensity: VisualDensity.compact,
         labelPadding: const EdgeInsets.only(left: 4, right: 2),
         onSelected: (_) => _handleTap(),
+      ),
+    );
+  }
+}
+
+/// 説明（alt）が付いていることを示すバッジ。押すと本文を読める。
+///
+/// 画像が見えていても、説明が付いているかどうかは見た目では分からない。
+/// 付けた側の意図が届くよう、目でも辿れるようにしておく。
+class _AltBadge extends StatelessWidget {
+  const _AltBadge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '画像の説明を読む',
+      child: GestureDetector(
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('画像の説明'),
+            content: SingleChildScrollView(child: Text(text)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Text(
+            'ALT',
+            style: TextStyle(color: Colors.white, fontSize: 10),
+          ),
+        ),
       ),
     );
   }
