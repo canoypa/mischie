@@ -1,12 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mischie/core/providers/core_providers.dart';
-import 'package:mischie/core/storage/account_store.dart';
-import 'package:mischie/features/auth/domain/account.dart';
+import '../support/golden_support.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 import 'package:mischie/features/notification/domain/notification_notifier.dart';
 import 'package:mischie/features/notification/presentation/notification_screen.dart';
@@ -15,22 +9,8 @@ import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 /// プロフィールと通知の見た目。更新: flutter test test/goldens --update-goldens
-class _EmptyAccountStore implements AccountStore {
-  @override
-  Future<List<Account>> readAccounts() async => const [];
-  @override
-  Future<String?> readActiveId() async => null;
-  @override
-  Future<void> writeAccounts(List<Account> accounts) async {}
-  @override
-  Future<void> writeActiveId(String? id) async {}
-  @override
-  Future<void> clear() async {}
-}
-
 /// 通知一覧は取得せず、渡したものをそのまま出す。
 class _StubNotifications extends NotificationNotifier {
   _StubNotifications(this.items);
@@ -39,14 +19,6 @@ class _StubNotifications extends NotificationNotifier {
 
   @override
   Future<List<NotificationItem>> build() async => items;
-}
-
-Future<void> _loadFont(String family, String path) async {
-  final file = File(path);
-  if (!await file.exists()) return;
-  final loader = FontLoader(family)
-    ..addFont(file.readAsBytes().then((b) => ByteData.view(b.buffer)));
-  await loader.load();
 }
 
 const _user = User(id: 'u1', username: 'cano', name: 'Cano', isCat: true);
@@ -70,47 +42,11 @@ Note _note(String text) => Note(
   text: text,
 );
 
-Future<void> _pump(
-  WidgetTester tester,
-  Widget child, {
-  List<dynamic> overrides = const [],
-  Brightness brightness = Brightness.light,
-}) async {
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        accountStoreProvider.overrideWithValue(_EmptyAccountStore()),
-        ...overrides.cast(),
-      ],
-      child: MaterialApp(
-        theme: ThemeData(
-          useMaterial3: true,
-          colorSchemeSeed: const Color(0xFFA8E800),
-          brightness: brightness,
-        ),
-        home: child,
-      ),
-    ),
-  );
-  await tester.pump();
-}
-
 void main() {
-  setUpAll(() async {
-    timeago.setLocaleMessages('ja', timeago.JaMessages());
-    await _loadFont('Roboto', '/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc');
-    final flutterRoot = Platform.environment['FLUTTER_ROOT'];
-    if (flutterRoot != null) {
-      await _loadFont(
-        'MaterialIcons',
-        '$flutterRoot/bin/cache/artifacts/material_fonts/'
-            'MaterialIcons-Regular.otf',
-      );
-    }
-  });
+  setUpAll(loadGoldenFonts);
 
   testWidgets('通知の種別表示', (tester) async {
-    await _pump(
+    await pumpGolden(
       tester,
       const Scaffold(body: NotificationScreen()),
       overrides: [
@@ -136,7 +72,7 @@ void main() {
   // 種別バッジは primary / tertiary の上に onPrimary / onTertiary を置く。
   // 暗所でコントラストが崩れないかを見る。
   testWidgets('通知の種別表示 / ダーク', (tester) async {
-    await _pump(
+    await pumpGolden(
       tester,
       const Scaffold(body: NotificationScreen()),
       brightness: Brightness.dark,
@@ -160,7 +96,7 @@ void main() {
   });
 
   testWidgets('プロフィールのヘッダー', (tester) async {
-    await _pump(
+    await pumpGolden(
       tester,
       const Scaffold(body: UserProfileView(userId: 'u1')),
       overrides: [

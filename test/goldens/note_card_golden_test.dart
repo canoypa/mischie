@@ -1,16 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mischie/core/providers/core_providers.dart';
-import 'package:mischie/core/storage/account_store.dart';
-import 'package:mischie/features/auth/domain/account.dart';
+import 'package:mischie/features/timeline/presentation/note_card.dart';
+import '../support/golden_support.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
-import 'package:mischie/features/timeline/presentation/note_card.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 /// 実機を繋がずにノートの見た目を確かめるためのゴールデン。
 ///
@@ -19,23 +12,6 @@ import 'package:timeago/timeago.dart' as timeago;
 /// 動くので、プロバイダーを差し替えれば素のまま描ける。
 ///
 /// 更新するとき: flutter test test/goldens --update-goldens
-class _EmptyAccountStore implements AccountStore {
-  @override
-  Future<List<Account>> readAccounts() async => const [];
-
-  @override
-  Future<String?> readActiveId() async => null;
-
-  @override
-  Future<void> writeAccounts(List<Account> accounts) async {}
-
-  @override
-  Future<void> writeActiveId(String? id) async {}
-
-  @override
-  Future<void> clear() async {}
-}
-
 Note _note({
   String? text = 'ノートの本文です。ここに書いた内容がそのまま出ます。',
   Poll? poll,
@@ -59,60 +35,28 @@ Note _note({
   renoteCount: renoteCount,
 );
 
-Future<void> _pump(
+/// ノートを並べて描く。カード自体の見た目を見るためのもの。
+Future<void> _pumpNotes(
   WidgetTester tester,
   List<Note> notes, {
   Brightness brightness = Brightness.light,
-}) async {
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [accountStoreProvider.overrideWithValue(_EmptyAccountStore())],
-      child: MaterialApp(
-        theme: ThemeData(
-          useMaterial3: true,
-          colorSchemeSeed: const Color(0xFFA8E800),
-          brightness: brightness,
-        ),
-        home: Scaffold(
-          body: ListView(
-            children: [
-              for (final note in notes)
-                NoteCard(note: note, serverEmojis: const {}),
-            ],
-          ),
-        ),
-      ),
+}) => pumpGolden(
+  tester,
+  Scaffold(
+    body: ListView(
+      children: [
+        for (final note in notes) NoteCard(note: note, serverEmojis: const {}),
+      ],
     ),
-  );
-  await tester.pump();
-}
-
-Future<void> _loadFont(String family, String path) async {
-  final file = File(path);
-  if (!await file.exists()) return;
-  final loader = FontLoader(family)
-    ..addFont(file.readAsBytes().then((b) => ByteData.view(b.buffer)));
-  await loader.load();
-}
+  ),
+  brightness: brightness,
+);
 
 void main() {
-  setUpAll(() async {
-    timeago.setLocaleMessages('ja', timeago.JaMessages());
-    // テスト環境は既定でフォントを持たず、文字もアイコンも黒い箱になる。
-    // 見た目の確認にならないので、本文用とアイコン用を読み込ませる。
-    await _loadFont('Roboto', '/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc');
-    final flutterRoot = Platform.environment['FLUTTER_ROOT'];
-    if (flutterRoot != null) {
-      await _loadFont(
-        'MaterialIcons',
-        '$flutterRoot/bin/cache/artifacts/material_fonts/'
-            'MaterialIcons-Regular.otf',
-      );
-    }
-  });
+  setUpAll(loadGoldenFonts);
 
   testWidgets('ノートの基本形', (tester) async {
-    await _pump(tester, [
+    await _pumpNotes(tester, [
       _note(repliesCount: 3, renoteCount: 2),
       _note(
         text: 'リアクション付き',
@@ -129,7 +73,7 @@ void main() {
   });
 
   testWidgets('投票', (tester) async {
-    await _pump(tester, [
+    await _pumpNotes(tester, [
       // 未投票は押せるボタン、投票済みと締め切り後は結果として出る
       _note(
         text: '投票（未投票）',
@@ -158,7 +102,7 @@ void main() {
 
   // ダークでしか出ない問題（色の直書き、コントラスト不足）を拾う
   testWidgets('ノートの基本形 / ダーク', (tester) async {
-    await _pump(tester, [
+    await _pumpNotes(tester, [
       _note(repliesCount: 3, renoteCount: 2),
       _note(
         text: 'リアクション付き',

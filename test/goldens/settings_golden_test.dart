@@ -1,11 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../support/golden_support.dart';
 import 'package:mischie/core/providers/core_providers.dart';
-import 'package:mischie/core/storage/account_store.dart';
 import 'package:mischie/core/storage/push_store.dart';
 import 'package:mischie/features/auth/domain/account.dart';
 import 'package:mischie/features/notification/domain/push_notifier.dart';
@@ -31,19 +28,6 @@ const _accounts = [
   ),
 ];
 
-class _StubAccountStore implements AccountStore {
-  @override
-  Future<List<Account>> readAccounts() async => _accounts;
-  @override
-  Future<String?> readActiveId() async => _accounts.first.id;
-  @override
-  Future<void> writeAccounts(List<Account> accounts) async {}
-  @override
-  Future<void> writeActiveId(String? id) async {}
-  @override
-  Future<void> clear() async {}
-}
-
 class _StubPushStore implements PushStore {
   @override
   Future<bool> readEnabled() async => false;
@@ -55,32 +39,16 @@ class _StubPushStore implements PushStore {
   Future<void> writeEndpoint(String? endpoint) async {}
 }
 
-Future<void> _loadFont(String family, String path) async {
-  final file = File(path);
-  if (!await file.exists()) return;
-  final loader = FontLoader(family)
-    ..addFont(file.readAsBytes().then((b) => ByteData.view(b.buffer)));
-  await loader.load();
-}
-
 void main() {
-  setUpAll(() async {
-    await _loadFont('Roboto', '/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc');
-    final flutterRoot = Platform.environment['FLUTTER_ROOT'];
-    if (flutterRoot != null) {
-      await _loadFont(
-        'MaterialIcons',
-        '$flutterRoot/bin/cache/artifacts/material_fonts/'
-            'MaterialIcons-Regular.otf',
-      );
-    }
-  });
+  setUpAll(loadGoldenFonts);
 
   testWidgets('設定（アカウント切り替え）', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          accountStoreProvider.overrideWithValue(_StubAccountStore()),
+          accountStoreProvider.overrideWithValue(
+            FakeAccountStore(accounts: _accounts),
+          ),
           pushStoreProvider.overrideWithValue(_StubPushStore()),
         ],
         child: MaterialApp(
