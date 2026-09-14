@@ -21,7 +21,6 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           const _AccountsSection(),
           const Divider(),
-          const Divider(),
           const _PushTile(),
           const Divider(),
           // 設定・ドライブ・Play など Mischie が持たない画面は Web に任せる
