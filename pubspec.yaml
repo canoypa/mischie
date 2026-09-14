@@ -61,6 +61,9 @@ dependencies:
   flutter_blurhash: ^0.9.1
   photo_view: ^0.15.0
   image_picker: ^1.2.3
+  # 動画をアプリ内で再生する。外部アプリへ渡すと、見終わったあとに
+  # タイムラインの位置へ戻れない
+  video_player: ^2.11.1
   # プッシュ通知。Misskey は FCM ではなく Web Push (VAPID) を話すため、
   # 配信は UnifiedPush のディストリビュータ経由で受け取る（復号は
   # コネクタ側が RFC 8291 に従って行う）。

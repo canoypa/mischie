@@ -4,6 +4,7 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:mischie/features/timeline/presentation/note/video_viewer.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -90,10 +91,12 @@ class FileRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: InkWell(
-        onTap: () => launchUrl(
-          Uri.parse(file.url),
-          mode: LaunchMode.externalApplication,
-        ),
+        onTap: () => file.type.startsWith('video/')
+            ? openVideo(context, file)
+            : launchUrl(
+                Uri.parse(file.url),
+                mode: LaunchMode.externalApplication,
+              ),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -113,7 +116,10 @@ class FileRow extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.open_in_new,
+                // 動画はアプリ内で開くので、外部リンクの印は出さない
+                file.type.startsWith('video/')
+                    ? Icons.play_circle_outline
+                    : Icons.open_in_new,
                 size: 16,
                 color: colorScheme.onSurfaceVariant,
               ),
