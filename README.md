@@ -52,3 +52,7 @@ flutter build apk --release
 ## OAuth
 
 サーバーへのログインは OAuth 2.0（PKCE）で、`client_id` は `docs/` を GitHub Pages で公開した https://mischie.tepbyte.dev/ を使う。このページがリダイレクト先の `mischie://oauth/callback` を宣言している。
+
+## ライセンス
+
+[AGPL-3.0](LICENSE)
