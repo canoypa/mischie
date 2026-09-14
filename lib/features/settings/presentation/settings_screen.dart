@@ -5,7 +5,6 @@ import 'package:mischie/core/navigation/link_handler.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/presentation/login_screen.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
-import 'package:mischie/features/notification/domain/push_notifier.dart';
 import 'package:mischie/features/settings/presentation/request_log_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -20,8 +19,6 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           const _AccountsSection(),
-          const Divider(),
-          const _PushTile(),
           const Divider(),
           // 設定・ドライブ・Play など Mischie が持たない画面は Web に任せる
           ListTile(
@@ -85,106 +82,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-/// プッシュ通知の切り替え。
-///
-/// Android の標準は FCM だが Misskey は FCM を話さないため、配信は
-/// UnifiedPush のディストリビュータ（ntfy など）に任せる。どれを使うかは
-/// ユーザーの選択なので、ここで選ばせる。
-class _PushTile extends ConsumerWidget {
-  const _PushTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabledAsync = ref.watch(pushEnabledProvider);
-    final enabled = enabledAsync.value ?? false;
-
-    return Column(
-      children: [
-        SwitchListTile(
-          secondary: const Icon(Icons.notifications_active_outlined),
-          title: const Text('プッシュ通知'),
-          subtitle: Text(
-            enabled ? 'アプリを開いていなくても通知を受け取ります' : '受け取るには配信アプリ（ntfy など）が必要です',
-          ),
-          value: enabled,
-          onChanged: enabledAsync.isLoading
-              ? null
-              : (value) => _toggle(context, ref, value: value),
-        ),
-        if (enabledAsync.hasError)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              // 例外の toString をそのまま出す（表示用の文言を持たせてある）
-              '${enabledAsync.error}',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        if (enabled) const _PushDiagnostics(),
-      ],
-    );
-  }
-
-  Future<void> _toggle(
-    BuildContext context,
-    WidgetRef ref, {
-    required bool value,
-  }) async {
-    if (!value) {
-      await ref.read(pushEnabledProvider.notifier).set(enabled: false);
-      return;
-    }
-
-    final distributors = await ref
-        .read(pushServiceProvider)
-        .availableDistributors();
-    if (!context.mounted) return;
-
-    if (distributors.isEmpty) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('配信アプリが見つかりません'),
-          content: const Text(
-            'Misskey は FCM ではなく Web Push を使います。通知を受け取るには '
-            'UnifiedPush に対応した配信アプリ（ntfy など）を入れてください。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('閉じる'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    final selected = distributors.length == 1
-        ? distributors.first
-        : await showDialog<String>(
-            context: context,
-            builder: (context) => SimpleDialog(
-              title: const Text('配信アプリを選ぶ'),
-              children: [
-                for (final distributor in distributors)
-                  SimpleDialogOption(
-                    onPressed: () => Navigator.pop(context, distributor),
-                    child: Text(distributor),
-                  ),
-              ],
-            ),
-          );
-    if (selected == null) return;
-
-    // enable は notifier 経由でだけ呼ぶ。直接呼ぶと二重に購読され、
-    // 失敗もエラー表示に乗らない。
-    await ref
-        .read(pushEnabledProvider.notifier)
-        .set(enabled: true, distributor: selected);
-  }
-}
-
 /// 登録済みアカウントの一覧と切り替え。
 ///
 /// 普段使いのサーバーと開発用サーバーを行き来できるようにするためのもの。
@@ -231,65 +128,6 @@ class _AccountsSection extends ConsumerWidget {
           onTap: () => Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => const LoginScreen())),
-        ),
-      ],
-    );
-  }
-}
-
-/// 通知が届かないときに、どこで止まっているかを見るための表示。
-///
-/// 経路は「配信アプリ → 購読先 URL → サーバーへ登録」と長く、どこが
-/// 欠けても症状は同じ「来ない」になる。切り分けの手がかりを出しておく。
-class _PushDiagnostics extends ConsumerWidget {
-  const _PushDiagnostics();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final diagnostics = ref.watch(pushDiagnosticsProvider).value;
-    if (diagnostics == null) return const SizedBox.shrink();
-
-    final colorScheme = Theme.of(context).colorScheme;
-    final ok = colorScheme.primary;
-    final ng = colorScheme.error;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Line(
-            label: 'サーバーの対応',
-            value: diagnostics.serverSupportsPush ? '対応' : '鍵が未設定',
-            color: diagnostics.serverSupportsPush ? ok : ng,
-          ),
-          _Line(
-            label: '配信アプリ',
-            value: diagnostics.endpoint == null ? '未接続' : '接続済み',
-            color: diagnostics.endpoint == null ? ng : ok,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Line extends StatelessWidget {
-  const _Line({required this.label, required this.value, required this.color});
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
         ),
       ],
     );

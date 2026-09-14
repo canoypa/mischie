@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../support/golden_support.dart';
 import 'package:mischie/core/providers/core_providers.dart';
-import 'package:mischie/core/storage/push_store.dart';
 import 'package:mischie/features/auth/domain/account.dart';
-import 'package:mischie/features/notification/domain/push_notifier.dart';
 import 'package:mischie/features/settings/presentation/settings_screen.dart';
 
 /// 設定画面の見た目。アカウント切り替えは新しく足したところなので、
@@ -28,17 +26,6 @@ const _accounts = [
   ),
 ];
 
-class _StubPushStore implements PushStore {
-  @override
-  Future<bool> readEnabled() async => false;
-  @override
-  Future<void> writeEnabled({required bool enabled}) async {}
-  @override
-  Future<String?> readEndpoint() async => null;
-  @override
-  Future<void> writeEndpoint(String? endpoint) async {}
-}
-
 void main() {
   setUpAll(loadGoldenFonts);
 
@@ -49,7 +36,6 @@ void main() {
           accountStoreProvider.overrideWithValue(
             FakeAccountStore(accounts: _accounts),
           ),
-          pushStoreProvider.overrideWithValue(_StubPushStore()),
         ],
         child: MaterialApp(
           theme: ThemeData(

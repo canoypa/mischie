@@ -64,11 +64,6 @@ dependencies:
   # 動画をアプリ内で再生する。外部アプリへ渡すと、見終わったあとに
   # タイムラインの位置へ戻れない
   video_player: ^2.11.1
-  # プッシュ通知。Misskey は FCM ではなく Web Push (VAPID) を話すため、
-  # 配信は UnifiedPush のディストリビュータ経由で受け取る（復号は
-  # コネクタ側が RFC 8291 に従って行う）。
-  unifiedpush: ^6.2.0
-  flutter_local_notifications: ^22.3.0
   # 他アプリ（Google フォト等）からの共有を受け取る。
   # 1.9.0 は AGP 9 前提 (kotlin-android を自前で適用せず kotlin{} を使う) で、
   # Flutter stable が AGP 8 の間はビルドできないため 1.8 系に留める。

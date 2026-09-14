@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mischie/features/notification/domain/notification_item.dart';
 
 /// 通知の種別を、人が読む形に変える。
 ///
@@ -126,15 +125,3 @@ NotificationLabel notificationLabel(String type) => switch (type) {
     hasActor: false,
   ),
 };
-
-/// プッシュの通知バーに出す一行。
-String notificationSummary(NotificationItem item) {
-  final label = notificationLabel(item.type);
-  if (!label.hasActor) return label.text;
-
-  final name = item.user?.name ?? item.user?.username ?? '通知';
-  final reaction = item.type == 'reaction' ? item.reaction : null;
-  return reaction == null
-      ? '$name ${label.text}'
-      : '$name ${label.text} $reaction';
-}

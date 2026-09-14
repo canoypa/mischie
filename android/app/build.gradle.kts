@@ -13,12 +13,6 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
-// UnifiedPush が JVM 版 tink を、flutter_secure_storage が tink-android を
-// 引き込み、同じクラスが二重になってビルドが落ちる。Android 版に寄せる。
-configurations.all {
-    exclude(group = "com.google.crypto.tink", module = "tink")
-}
-
 android {
     namespace = "dev.tepbyte.mischie"
     compileSdk = flutter.compileSdkVersion
@@ -27,8 +21,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // flutter_local_notifications が要求する
-        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -72,8 +64,4 @@ android {
 
 flutter {
     source = "../.."
-}
-
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
