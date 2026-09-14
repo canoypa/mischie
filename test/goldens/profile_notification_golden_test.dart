@@ -120,7 +120,11 @@ void main() {
             pinnedNotes: [
               Note(
                 id: 'pinned1',
-                createdAt: '2026-08-19T00:00:00.000Z',
+                // 固定日時にすると相対時刻の表示が日ごとに変わり、
+                // 見た目が同じでもゴールデンが落ちる
+                createdAt: DateTime.now()
+                    .subtract(const Duration(hours: 4))
+                    .toIso8601String(),
                 user: _user,
                 text: 'ここに固定した投稿が出ます。',
               ),
