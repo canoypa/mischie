@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NotificationItem {
 
- String get id; String get createdAt; String get type; User? get user; Note? get note; String? get reaction;
+ String get id; String get createdAt; String get type; User? get user; Note? get note; String? get reaction;/// `reaction:grouped` の中身。同じノートへの連続したリアクションを
+/// まとめたもので、新しい順に入る。
+ List<GroupedReaction>? get reactions;/// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
+/// 新しい順にまとめたもの。
+ List<User>? get users;
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +32,16 @@ $NotificationItemCopyWith<NotificationItem> get copyWith => _$NotificationItemCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction)&&const DeepCollectionEquality().equals(other.reactions, reactions)&&const DeepCollectionEquality().equals(other.users, users));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,type,user,note,reaction);
+int get hashCode => Object.hash(runtimeType,id,createdAt,type,user,note,reaction,const DeepCollectionEquality().hash(reactions),const DeepCollectionEquality().hash(users));
 
 @override
 String toString() {
-  return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction)';
+  return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction, reactions: $reactions, users: $users)';
 }
 
 
@@ -48,7 +52,7 @@ abstract mixin class $NotificationItemCopyWith<$Res>  {
   factory $NotificationItemCopyWith(NotificationItem value, $Res Function(NotificationItem) _then) = _$NotificationItemCopyWithImpl;
 @useResult
 $Res call({
- String id, String createdAt, String type, User? user, Note? note, String? reaction
+ String id, String createdAt, String type, User? user, Note? note, String? reaction, List<GroupedReaction>? reactions, List<User>? users
 });
 
 
@@ -65,7 +69,7 @@ class _$NotificationItemCopyWithImpl<$Res>
 
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? type = null,Object? user = freezed,Object? note = freezed,Object? reaction = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? type = null,Object? user = freezed,Object? note = freezed,Object? reaction = freezed,Object? reactions = freezed,Object? users = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -73,7 +77,9 @@ as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non
 as String,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as User?,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as Note?,reaction: freezed == reaction ? _self.reaction : reaction // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,reactions: freezed == reactions ? _self.reactions : reactions // ignore: cast_nullable_to_non_nullable
+as List<GroupedReaction>?,users: freezed == users ? _self.users : users // ignore: cast_nullable_to_non_nullable
+as List<User>?,
   ));
 }
 /// Create a copy of NotificationItem
@@ -179,10 +185,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String createdAt,  String type,  User? user,  Note? note,  String? reaction)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String createdAt,  String type,  User? user,  Note? note,  String? reaction,  List<GroupedReaction>? reactions,  List<User>? users)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationItem() when $default != null:
-return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.reaction);case _:
+return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.reaction,_that.reactions,_that.users);case _:
   return orElse();
 
 }
@@ -200,10 +206,10 @@ return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String createdAt,  String type,  User? user,  Note? note,  String? reaction)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String createdAt,  String type,  User? user,  Note? note,  String? reaction,  List<GroupedReaction>? reactions,  List<User>? users)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationItem():
-return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.reaction);}
+return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.reaction,_that.reactions,_that.users);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -217,10 +223,10 @@ return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String createdAt,  String type,  User? user,  Note? note,  String? reaction)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String createdAt,  String type,  User? user,  Note? note,  String? reaction,  List<GroupedReaction>? reactions,  List<User>? users)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationItem() when $default != null:
-return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.reaction);case _:
+return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.reaction,_that.reactions,_that.users);case _:
   return null;
 
 }
@@ -232,7 +238,7 @@ return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.
 @JsonSerializable()
 
 class _NotificationItem implements NotificationItem {
-  const _NotificationItem({required this.id, required this.createdAt, required this.type, this.user, this.note, this.reaction});
+  const _NotificationItem({required this.id, required this.createdAt, required this.type, this.user, this.note, this.reaction, final  List<GroupedReaction>? reactions, final  List<User>? users}): _reactions = reactions,_users = users;
   factory _NotificationItem.fromJson(Map<String, dynamic> json) => _$NotificationItemFromJson(json);
 
 @override final  String id;
@@ -241,6 +247,32 @@ class _NotificationItem implements NotificationItem {
 @override final  User? user;
 @override final  Note? note;
 @override final  String? reaction;
+/// `reaction:grouped` の中身。同じノートへの連続したリアクションを
+/// まとめたもので、新しい順に入る。
+ final  List<GroupedReaction>? _reactions;
+/// `reaction:grouped` の中身。同じノートへの連続したリアクションを
+/// まとめたもので、新しい順に入る。
+@override List<GroupedReaction>? get reactions {
+  final value = _reactions;
+  if (value == null) return null;
+  if (_reactions is EqualUnmodifiableListView) return _reactions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+/// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
+/// 新しい順にまとめたもの。
+ final  List<User>? _users;
+/// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
+/// 新しい順にまとめたもの。
+@override List<User>? get users {
+  final value = _users;
+  if (value == null) return null;
+  if (_users is EqualUnmodifiableListView) return _users;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
@@ -255,16 +287,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction)&&const DeepCollectionEquality().equals(other._reactions, _reactions)&&const DeepCollectionEquality().equals(other._users, _users));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,type,user,note,reaction);
+int get hashCode => Object.hash(runtimeType,id,createdAt,type,user,note,reaction,const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_users));
 
 @override
 String toString() {
-  return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction)';
+  return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction, reactions: $reactions, users: $users)';
 }
 
 
@@ -275,7 +307,7 @@ abstract mixin class _$NotificationItemCopyWith<$Res> implements $NotificationIt
   factory _$NotificationItemCopyWith(_NotificationItem value, $Res Function(_NotificationItem) _then) = __$NotificationItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String createdAt, String type, User? user, Note? note, String? reaction
+ String id, String createdAt, String type, User? user, Note? note, String? reaction, List<GroupedReaction>? reactions, List<User>? users
 });
 
 
@@ -292,7 +324,7 @@ class __$NotificationItemCopyWithImpl<$Res>
 
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? type = null,Object? user = freezed,Object? note = freezed,Object? reaction = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? type = null,Object? user = freezed,Object? note = freezed,Object? reaction = freezed,Object? reactions = freezed,Object? users = freezed,}) {
   return _then(_NotificationItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -300,7 +332,9 @@ as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non
 as String,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as User?,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as Note?,reaction: freezed == reaction ? _self.reaction : reaction // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,reactions: freezed == reactions ? _self._reactions : reactions // ignore: cast_nullable_to_non_nullable
+as List<GroupedReaction>?,users: freezed == users ? _self._users : users // ignore: cast_nullable_to_non_nullable
+as List<User>?,
   ));
 }
 
@@ -327,6 +361,284 @@ $NoteCopyWith<$Res>? get note {
 
   return $NoteCopyWith<$Res>(_self.note!, (value) {
     return _then(_self.copyWith(note: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$GroupedReaction {
+
+ User get user; String get reaction;
+/// Create a copy of GroupedReaction
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GroupedReactionCopyWith<GroupedReaction> get copyWith => _$GroupedReactionCopyWithImpl<GroupedReaction>(this as GroupedReaction, _$identity);
+
+  /// Serializes this GroupedReaction to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupedReaction&&(identical(other.user, user) || other.user == user)&&(identical(other.reaction, reaction) || other.reaction == reaction));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,user,reaction);
+
+@override
+String toString() {
+  return 'GroupedReaction(user: $user, reaction: $reaction)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GroupedReactionCopyWith<$Res>  {
+  factory $GroupedReactionCopyWith(GroupedReaction value, $Res Function(GroupedReaction) _then) = _$GroupedReactionCopyWithImpl;
+@useResult
+$Res call({
+ User user, String reaction
+});
+
+
+$UserCopyWith<$Res> get user;
+
+}
+/// @nodoc
+class _$GroupedReactionCopyWithImpl<$Res>
+    implements $GroupedReactionCopyWith<$Res> {
+  _$GroupedReactionCopyWithImpl(this._self, this._then);
+
+  final GroupedReaction _self;
+  final $Res Function(GroupedReaction) _then;
+
+/// Create a copy of GroupedReaction
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? user = null,Object? reaction = null,}) {
+  return _then(_self.copyWith(
+user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+as User,reaction: null == reaction ? _self.reaction : reaction // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+/// Create a copy of GroupedReaction
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$UserCopyWith<$Res> get user {
+  
+  return $UserCopyWith<$Res>(_self.user, (value) {
+    return _then(_self.copyWith(user: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [GroupedReaction].
+extension GroupedReactionPatterns on GroupedReaction {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GroupedReaction value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GroupedReaction() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GroupedReaction value)  $default,){
+final _that = this;
+switch (_that) {
+case _GroupedReaction():
+return $default(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GroupedReaction value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GroupedReaction() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( User user,  String reaction)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GroupedReaction() when $default != null:
+return $default(_that.user,_that.reaction);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( User user,  String reaction)  $default,) {final _that = this;
+switch (_that) {
+case _GroupedReaction():
+return $default(_that.user,_that.reaction);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( User user,  String reaction)?  $default,) {final _that = this;
+switch (_that) {
+case _GroupedReaction() when $default != null:
+return $default(_that.user,_that.reaction);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GroupedReaction implements GroupedReaction {
+  const _GroupedReaction({required this.user, required this.reaction});
+  factory _GroupedReaction.fromJson(Map<String, dynamic> json) => _$GroupedReactionFromJson(json);
+
+@override final  User user;
+@override final  String reaction;
+
+/// Create a copy of GroupedReaction
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GroupedReactionCopyWith<_GroupedReaction> get copyWith => __$GroupedReactionCopyWithImpl<_GroupedReaction>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GroupedReactionToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupedReaction&&(identical(other.user, user) || other.user == user)&&(identical(other.reaction, reaction) || other.reaction == reaction));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,user,reaction);
+
+@override
+String toString() {
+  return 'GroupedReaction(user: $user, reaction: $reaction)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GroupedReactionCopyWith<$Res> implements $GroupedReactionCopyWith<$Res> {
+  factory _$GroupedReactionCopyWith(_GroupedReaction value, $Res Function(_GroupedReaction) _then) = __$GroupedReactionCopyWithImpl;
+@override @useResult
+$Res call({
+ User user, String reaction
+});
+
+
+@override $UserCopyWith<$Res> get user;
+
+}
+/// @nodoc
+class __$GroupedReactionCopyWithImpl<$Res>
+    implements _$GroupedReactionCopyWith<$Res> {
+  __$GroupedReactionCopyWithImpl(this._self, this._then);
+
+  final _GroupedReaction _self;
+  final $Res Function(_GroupedReaction) _then;
+
+/// Create a copy of GroupedReaction
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? user = null,Object? reaction = null,}) {
+  return _then(_GroupedReaction(
+user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+as User,reaction: null == reaction ? _self.reaction : reaction // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+/// Create a copy of GroupedReaction
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$UserCopyWith<$Res> get user {
+  
+  return $UserCopyWith<$Res>(_self.user, (value) {
+    return _then(_self.copyWith(user: value));
   });
 }
 }

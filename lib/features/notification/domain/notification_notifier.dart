@@ -8,6 +8,7 @@ import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/notification/data/notification_repository.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
+import 'package:mischie/features/notification/domain/notification_merge.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 
@@ -69,7 +70,7 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
       final item = NotificationItem.fromJson(event.body);
       final current = state.value;
       if (current != null) {
-        state = AsyncValue.data([item, ...current]);
+        state = AsyncValue.data(mergeIncomingNotification(item, current));
       }
       unreadCount.value++;
     });

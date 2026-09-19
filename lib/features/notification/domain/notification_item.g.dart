@@ -18,6 +18,12 @@ _NotificationItem _$NotificationItemFromJson(Map<String, dynamic> json) =>
           ? null
           : Note.fromJson(json['note'] as Map<String, dynamic>),
       reaction: json['reaction'] as String?,
+      reactions: (json['reactions'] as List<dynamic>?)
+          ?.map((e) => GroupedReaction.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      users: (json['users'] as List<dynamic>?)
+          ?.map((e) => User.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$NotificationItemToJson(_NotificationItem instance) =>
@@ -28,4 +34,15 @@ Map<String, dynamic> _$NotificationItemToJson(_NotificationItem instance) =>
       'user': instance.user,
       'note': instance.note,
       'reaction': instance.reaction,
+      'reactions': instance.reactions,
+      'users': instance.users,
     };
+
+_GroupedReaction _$GroupedReactionFromJson(Map<String, dynamic> json) =>
+    _GroupedReaction(
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      reaction: json['reaction'] as String,
+    );
+
+Map<String, dynamic> _$GroupedReactionToJson(_GroupedReaction instance) =>
+    <String, dynamic>{'user': instance.user, 'reaction': instance.reaction};

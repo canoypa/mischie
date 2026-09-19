@@ -31,6 +31,18 @@ NotificationLabel notificationLabel(String type) => switch (type) {
     text: 'がリアクション',
     role: NotificationRole.tertiary,
   ),
+  // まとめ表示（reaction:grouped / renote:grouped）は行の文言を画面側で
+  // 組み立てるが、バッジのアイコン・色は単発の種別と揃える。
+  'reaction:grouped' => const NotificationLabel(
+    icon: Icons.add_reaction,
+    text: 'がリアクション',
+    role: NotificationRole.tertiary,
+  ),
+  'renote:grouped' => const NotificationLabel(
+    icon: Icons.repeat,
+    text: 'がリノート',
+    role: NotificationRole.secondary,
+  ),
   'reply' => const NotificationLabel(
     icon: Icons.reply,
     text: 'が返信',

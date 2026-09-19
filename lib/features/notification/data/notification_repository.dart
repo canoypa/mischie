@@ -13,7 +13,9 @@ class NotificationRepository {
     final body = <String, dynamic>{'limit': limit};
     if (untilId != null) body['untilId'] = untilId;
 
-    final list = await _client.postList('i/notifications', body: body);
+    // -grouped は同じ i/notifications のパラメータを取り、連続した
+    // reaction/renote を reaction:grouped / renote:grouped にまとめて返す。
+    final list = await _client.postList('i/notifications-grouped', body: body);
     return list.map(NotificationItem.fromJson).toList();
   }
 }
