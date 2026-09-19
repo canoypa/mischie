@@ -5,6 +5,7 @@ import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/presentation/profile_header.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
@@ -53,6 +54,7 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
     try {
       final notes = await repo.fetchUserNotes(widget.userId);
       if (!mounted) return;
+      ref.read(noteOverridesProvider.notifier).evictFetched(notes);
       setState(() {
         _notes
           ..clear()
@@ -79,6 +81,7 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
         untilId: _notes.last.id,
       );
       if (!mounted) return;
+      ref.read(noteOverridesProvider.notifier).evictFetched(notes);
       setState(() {
         _notes.addAll(notes);
         _loadingMore = false;

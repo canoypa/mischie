@@ -7,6 +7,7 @@ import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 
 /// このノートをリノート・引用した投稿の一覧。
@@ -19,7 +20,9 @@ final renotersProvider = FutureProvider.family<List<Note>, String>((
 ) async {
   final repo = ref.watch(noteRepositoryProvider);
   if (repo == null) return const [];
-  return repo.renotes(noteId);
+  final notes = await repo.renotes(noteId);
+  ref.read(noteOverridesProvider.notifier).evictFetched(notes);
+  return notes;
 });
 
 void openRenoters(BuildContext context, String noteId) {

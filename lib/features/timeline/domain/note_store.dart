@@ -19,6 +19,23 @@ class NoteOverrides extends Notifier<Map<String, Note>> {
   void put(Note note) => state = {...state, note.id: note};
 
   void remove(String noteId) => state = {...state}..remove(noteId);
+
+  /// ネットワークから新しく取得したノート群について、対応する上書きを外す。
+  /// これが無いと、リアクション後にタイムラインを更新しても件数が
+  /// セッション中ずっと固まって見える。renote 先の上書きも対象にする。
+  void evictFetched(Iterable<Note> notes) {
+    if (state.isEmpty) return;
+    final idsToEvict = <String>{};
+    for (final note in notes) {
+      if (state.containsKey(note.id)) idsToEvict.add(note.id);
+      final renoteId = note.renote?.id;
+      if (renoteId != null && state.containsKey(renoteId)) {
+        idsToEvict.add(renoteId);
+      }
+    }
+    if (idsToEvict.isEmpty) return;
+    state = {...state}..removeWhere((id, _) => idsToEvict.contains(id));
+  }
 }
 
 /// 削除されたノートの ID。リストから抜くのではなく描画側で伏せる。

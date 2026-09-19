@@ -9,6 +9,7 @@ import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/timeline/data/timeline_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_capture.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 import 'package:mischie/features/timeline/domain/timeline_source.dart';
 import 'package:mischie/features/timeline/domain/user_list.dart';
@@ -64,6 +65,10 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   /// 使い、消費したら取り除く（既に並んでいたノートは動かさない）。
   final Set<String> justInserted = {};
 
+  /// loadMore の多重実行を防ぐ。スクロールの通知は連発するので、UI 側の
+  /// フラグだけでは間に入るタブ切り替えなどをすり抜けることがある。
+  bool _loadingMore = false;
+
   @override
   Future<List<Note>> build() async {
     final authState = ref.watch(authNotifierProvider).value;
@@ -98,6 +103,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     final repo = ref.watch(timelineRepositoryProvider);
     if (repo == null) return [];
     final notes = await repo.fetchTimeline(source);
+    ref.read(noteOverridesProvider.notifier).evictFetched(notes);
     _cache[source] = notes;
     return notes;
   }
@@ -141,21 +147,45 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
       final repo = ref.read(timelineRepositoryProvider);
       if (repo == null) return [];
       final notes = await repo.fetchTimeline(source);
+      ref.read(noteOverridesProvider.notifier).evictFetched(notes);
       _cache[source] = notes;
       return notes;
     });
   }
 
   Future<void> loadMore() async {
+    if (_loadingMore) return;
     final current = state.value;
     if (current == null || current.isEmpty) return;
 
     final repo = ref.read(timelineRepositoryProvider);
     if (repo == null) return;
 
+    // タブ切り替えは await の間にも起きるので、書き込み先は最初に読んだ
+    // このタブ（source）に固定する。「今選ばれているタブ」を都度読むと、
+    // 別タブへ切り替えた後に古いタブのノートがそこへ紛れ込む。
     final source = ref.read(selectedTimelineProvider);
-    final older = await repo.fetchTimeline(source, untilId: current.last.id);
-    _publish([...current, ...older]);
+    _loadingMore = true;
+    try {
+      final older = await repo.fetchTimeline(source, untilId: current.last.id);
+      ref.read(noteOverridesProvider.notifier).evictFetched(older);
+
+      // 積む先は取得前のコピー（current）ではなく、このタブの「今の」
+      // キャッシュ。await の間に flushPending が届いていると、取得前の
+      // コピーに積んでしまってその分が消える。
+      final latest = _cache[source] ?? current;
+      final existingIds = latest.map((note) => note.id).toSet();
+      final merged = [
+        ...latest,
+        ...older.where((note) => !existingIds.contains(note.id)),
+      ];
+      _cache[source] = merged;
+      if (ref.read(selectedTimelineProvider) == source) {
+        state = AsyncValue.data(merged);
+      }
+    } finally {
+      _loadingMore = false;
+    }
   }
 
   void _publish(List<Note> notes) {

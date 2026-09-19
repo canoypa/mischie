@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/profile/data/profile_repository.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository?>((ref) {
@@ -16,7 +17,10 @@ final userDetailProvider = FutureProvider.family<UserDetailed, String>((
 ) async {
   final repo = ref.watch(profileRepositoryProvider);
   if (repo == null) throw Exception('未ログイン');
-  return repo.fetchUser(userId);
+  final detail = await repo.fetchUser(userId);
+  // pinnedNotes も NoteCard 経由で resolveNote を通るので対象にする
+  ref.read(noteOverridesProvider.notifier).evictFetched(detail.pinnedNotes);
+  return detail;
 });
 
 final profileNotifierProvider = AsyncNotifierProvider<ProfileNotifier, User?>(

@@ -8,6 +8,8 @@ import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/notification/data/notification_repository.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
+import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 
 final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final client = ref.watch(misskeyApiClientProvider);
@@ -27,6 +29,13 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
   /// 未読の通知数。通知タブを開いたら 0 に戻す。
   final unreadCount = ValueNotifier<int>(0);
 
+  /// loadMore の多重実行を防ぐガード。
+  bool _loadingMore = false;
+
+  /// 末尾まで読み終えたか。これが立った後は、スクロールが末尾付近に
+  /// 留まる間ずっと同じリクエストを送り続けてしまうのを防ぐ。
+  bool _hasMore = true;
+
   @override
   Future<List<NotificationItem>> build() async {
     final authState = ref.watch(authNotifierProvider).value;
@@ -34,6 +43,7 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
     _subscription?.cancel();
     _streaming?.dispose();
     _streaming = null;
+    _hasMore = true;
 
     if (authState is AuthStateAuthenticated) {
       _startStreaming(authState.host, authState.accessToken);
@@ -70,19 +80,33 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
   Future<List<NotificationItem>> _fetch({String? untilId}) async {
     final repo = ref.read(notificationRepositoryProvider);
     if (repo == null) throw Exception('未ログイン');
-    return repo.fetchNotifications(untilId: untilId);
+    final items = await repo.fetchNotifications(untilId: untilId);
+    final notes = items.map((item) => item.note).whereType<Note>();
+    ref.read(noteOverridesProvider.notifier).evictFetched(notes);
+    return items;
   }
 
   Future<void> refresh() async {
+    _hasMore = true;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(_fetch);
     markAllRead();
   }
 
   Future<void> loadMore() async {
+    if (_loadingMore || !_hasMore) return;
     final current = state.value;
     if (current == null || current.isEmpty) return;
-    final more = await _fetch(untilId: current.last.id);
-    state = AsyncValue.data([...current, ...more]);
+    _loadingMore = true;
+    try {
+      final more = await _fetch(untilId: current.last.id);
+      if (more.isEmpty) {
+        _hasMore = false;
+        return;
+      }
+      state = AsyncValue.data([...current, ...more]);
+    } finally {
+      _loadingMore = false;
+    }
   }
 }

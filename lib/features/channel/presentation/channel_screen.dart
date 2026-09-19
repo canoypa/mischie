@@ -8,6 +8,7 @@ import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/channel/domain/channel.dart';
 import 'package:mischie/features/channel/domain/channel_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
 void openChannel(BuildContext context, String channelId, {String? name}) {
@@ -58,6 +59,7 @@ class _ChannelScreenState extends ConsumerState<ChannelScreen> {
     try {
       final notes = await repo.timeline(widget.channelId);
       if (!mounted) return;
+      ref.read(noteOverridesProvider.notifier).evictFetched(notes);
       setState(() {
         _notes
           ..clear()
@@ -83,6 +85,7 @@ class _ChannelScreenState extends ConsumerState<ChannelScreen> {
         untilId: _notes.last.id,
       );
       if (!mounted) return;
+      ref.read(noteOverridesProvider.notifier).evictFetched(older);
       setState(() => _notes.addAll(older));
     } catch (_) {
       // 追加読み込みの失敗は黙って諦める（先頭は読めているため）

@@ -91,8 +91,17 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   Future<void> _loadMore() async {
     _loadingMore.value = true;
-    await ref.read(timelineNotifierProvider.notifier).loadMore();
-    if (mounted) _loadingMore.value = false;
+    try {
+      await ref.read(timelineNotifierProvider.notifier).loadMore();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+      }
+    } finally {
+      if (mounted) _loadingMore.value = false;
+    }
   }
 
   @override

@@ -25,8 +25,17 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   Future<void> _loadMore() async {
     if (_loadingMore) return;
     setState(() => _loadingMore = true);
-    await ref.read(notificationNotifierProvider.notifier).loadMore();
-    if (mounted) setState(() => _loadingMore = false);
+    try {
+      await ref.read(notificationNotifierProvider.notifier).loadMore();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
   }
 
   @override

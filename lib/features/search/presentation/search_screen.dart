@@ -11,6 +11,32 @@ import 'package:mischie/features/channel/presentation/channel_list.dart';
 import 'package:mischie/features/search/domain/search_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
+/// スクロールでの追い読みは fire-and-forget で呼ぶため、ここで拾わないと
+/// 失敗がハンドルされない Future として残ってしまう。
+Future<void> _loadMoreNotes(BuildContext context, WidgetRef ref) async {
+  try {
+    await ref.read(noteSearchProvider.notifier).loadMore();
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    }
+  }
+}
+
+Future<void> _loadMoreUsers(BuildContext context, WidgetRef ref) async {
+  try {
+    await ref.read(userSearchProvider.notifier).loadMore();
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    }
+  }
+}
+
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -126,7 +152,7 @@ class _NoteResults extends ConsumerWidget {
                   onNotification: (n) {
                     final pos = n.metrics;
                     if (pos.pixels >= pos.maxScrollExtent - 200) {
-                      ref.read(noteSearchProvider.notifier).loadMore();
+                      _loadMoreNotes(context, ref);
                     }
                     return false;
                   },
@@ -170,7 +196,7 @@ class _UserResults extends ConsumerWidget {
                   onNotification: (n) {
                     final pos = n.metrics;
                     if (pos.pixels >= pos.maxScrollExtent - 200) {
-                      ref.read(userSearchProvider.notifier).loadMore();
+                      _loadMoreUsers(context, ref);
                     }
                     return false;
                   },

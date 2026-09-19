@@ -53,10 +53,18 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         repo.children(widget.note.id),
       ]);
       if (!mounted) return;
+      // conversation は新しい順で返るので、時系列に直す
+      final ancestors = results[0].reversed.toList();
+      final children = results[1];
+      // 中心のノート（widget.note）は取り直していない一覧側の値なので、
+      // その上書きは残す。
+      ref.read(noteOverridesProvider.notifier).evictFetched([
+        ...ancestors,
+        ...children,
+      ]);
       setState(() {
-        // conversation は新しい順で返るので、時系列に直す
-        _ancestors = results[0].reversed.toList();
-        _children = results[1];
+        _ancestors = ancestors;
+        _children = children;
         _loading = false;
       });
     } catch (e) {
