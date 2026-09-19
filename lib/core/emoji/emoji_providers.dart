@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/storage/prefs_store.dart';
 import 'package:mischie/core/emoji/emoji_repository.dart';
 import 'package:mischie/core/providers/core_providers.dart';
+import 'package:mischie/features/timeline/domain/reaction_key.dart';
 
 final emojiRepositoryProvider = Provider<EmojiRepository?>((ref) {
   final client = ref.watch(misskeyApiClientProvider);
@@ -32,16 +33,28 @@ class ReactionHistory extends AsyncNotifier<List<String>> {
   @override
   Future<List<String>> build() async {
     final saved = await ref.read(prefsStoreProvider).read<List<dynamic>>(_key);
-    return saved?.cast<String>() ?? const [];
+    final raw = saved?.cast<String>() ?? const <String>[];
+    return _dedupe(raw.map(normalizeReactionKey));
   }
 
   Future<void> record(String reaction) async {
-    final current = state.value ?? const <String>[];
-    final updated = [
-      reaction,
-      ...current.where((e) => e != reaction),
-    ].take(_limit).toList();
+    final key = normalizeReactionKey(reaction);
+    // build() の完了前に呼ばれることがある（既存チップからの1回目の
+    // リアクション）。state.value を直接読むと未完了時は空のままで、
+    // 後から build() の結果が上書きして今の記録が消えてしまうため、
+    // 読み込み結果そのものを待つ。
+    final loaded = await future;
+    final updated = _dedupe([key, ...loaded]);
     state = AsyncValue.data(updated);
     await ref.read(prefsStoreProvider).write(_key, updated);
+  }
+
+  List<String> _dedupe(Iterable<String> reactions) {
+    final seen = <String>{};
+    final result = <String>[];
+    for (final reaction in reactions) {
+      if (seen.add(reaction)) result.add(reaction);
+    }
+    return result.take(_limit).toList();
   }
 }

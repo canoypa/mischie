@@ -4,12 +4,15 @@ import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/widgets/custom_emoji_image.dart';
+import 'package:mischie/features/timeline/domain/reaction_key.dart';
 import 'package:mischie/features/timeline/presentation/note/reactions.dart';
 
 /// 履歴が空のときに出す既定。カスタム絵文字が無いサーバーでも押せる。
+/// サーバーが返すキーと突き合わせられるよう、あらかじめ正規化した
+/// 形（VS16 無し）で持つ。
 const _defaultReactions = [
   '👍',
-  '❤️',
+  '❤',
   '😆',
   '🤔',
   '😮',
@@ -136,8 +139,9 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final name = filtered[index];
+                      final key = normalizeReactionKey(':$name:');
                       return InkWell(
-                        onTap: () => Navigator.of(context).pop(':$name:'),
+                        onTap: () => Navigator.of(context).pop(key),
                         borderRadius: BorderRadius.circular(8),
                         child: Tooltip(
                           message: ':$name:',

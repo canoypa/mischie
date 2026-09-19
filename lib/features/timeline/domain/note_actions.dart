@@ -4,6 +4,7 @@ import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/timeline/data/note_repository.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
+import 'package:mischie/features/timeline/domain/reaction_key.dart';
 
 final noteRepositoryProvider = Provider<NoteRepository?>((ref) {
   final client = ref.watch(misskeyApiClientProvider);
@@ -31,26 +32,35 @@ class NoteActions {
 
   /// 同じリアクションなら取り消し、違うリアクションなら付け替える。
   Future<void> toggleReaction(Note note, String reaction) async {
+    final key = normalizeReactionKey(reaction);
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
     final current = _current(note);
     final previous = current;
 
-    final isSame = current.myReaction == reaction;
+    final isSame = current.myReaction == key;
     overrides.put(
       isSame
           ? _withReactionRemoved(current)
-          : _withReaction(_withReactionRemoved(current), reaction),
+          : _withReaction(_withReactionRemoved(current), key),
     );
 
+    // 付け替え (A→B) で unreact(A) までは成功したが react(B) が失敗した
+    // 場合、サーバーにはもう A が無い。previous（A が付いた状態）へ戻すと
+    // ローカルとサーバーがずれるので、unreact が成功済みかどうかで
+    // 戻し先を変える。
+    var unreacted = false;
     try {
-      if (current.myReaction != null) await repo.unreact(note.id);
+      if (current.myReaction != null) {
+        await repo.unreact(note.id);
+        unreacted = true;
+      }
       if (!isSame) {
-        await repo.react(note.id, reaction);
-        await _ref.read(reactionHistoryProvider.notifier).record(reaction);
+        await repo.react(note.id, key);
+        await _ref.read(reactionHistoryProvider.notifier).record(key);
       }
     } catch (_) {
-      overrides.put(previous);
+      overrides.put(unreacted ? _withReactionRemoved(current) : previous);
       rethrow;
     }
   }

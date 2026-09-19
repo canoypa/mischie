@@ -3,6 +3,7 @@ import 'package:mischie/core/streaming/streaming_service.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
+import 'package:mischie/features/timeline/domain/reaction_key.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 
 /// 表示中のノートを個別購読して、他の人のリアクションを届いた時点で反映する。
@@ -61,40 +62,46 @@ void applyNoteUpdate(Ref ref, Map<String, dynamic> event) {
   final body = event['body'];
   if (body is! Map<String, dynamic>) return;
 
-  final reaction = body['reaction'] as String?;
-  if (reaction == null) return;
+  final rawReaction = body['reaction'] as String?;
+  if (rawReaction == null) return;
+  final reaction = normalizeReactionKey(rawReaction);
+
+  if (type != 'reacted' && type != 'unreacted') return;
 
   final base = ref.read(noteCaptureProvider).baseOf(noteId);
   if (base == null) return;
 
   // 自分のリアクションかどうかで扱いが変わる。
   //
-  // 同じ端末で押したぶんは既に反映済みなので二重に数えない。一方、
-  // 別の端末で押したぶんはここで初めて届くので、件数だけでなく
-  // 「自分が付けた」ことも反映しないと他人のリアクションに見える。
-  // どちらも同じイベントとして届くため、いま持っている myReaction と
-  // 突き合わせて、まだ反映していないものだけを当てる。
+  // 同じ端末で押した／外したぶんは楽観的更新で既に反映済みなので、
+  // 素直に +1/-1 すると二重に数える。一方、別の端末で操作したぶんは
+  // ここで初めて届くので、件数だけでなく myReaction も更新しないと
+  // 他人のリアクションに見えたり、自分の chip が消えないままになる。
+  // どちらのイベントも同じ形で届くため、いま持っている myReaction と
+  // 突き合わせて「まだ反映していない」方だけを当てる。
+  var nextMyReaction = base.myReaction;
   final myId = ref.read(profileNotifierProvider).value?.id;
   final isMine = myId != null && body['userId'] == myId;
   if (isMine) {
-    final alreadyApplied = type == 'reacted'
-        ? base.myReaction == reaction
-        : base.myReaction == null;
-    if (alreadyApplied) return;
+    if (type == 'reacted') {
+      if (base.myReaction == reaction) return; // 楽観的更新済み
+      nextMyReaction = reaction;
+    } else {
+      if (base.myReaction != reaction) return; // 楽観的更新済み
+      nextMyReaction = null;
+    }
   }
 
   final reactions = {...base.reactions};
   if (type == 'reacted') {
     reactions[reaction] = (reactions[reaction] ?? 0) + 1;
-  } else if (type == 'unreacted') {
+  } else {
     final next = (reactions[reaction] ?? 1) - 1;
     if (next <= 0) {
       reactions.remove(reaction);
     } else {
       reactions[reaction] = next;
     }
-  } else {
-    return;
   }
 
   // カスタム絵文字は URL が付いてくるので、描画できるよう取り込む
@@ -108,5 +115,11 @@ void applyNoteUpdate(Ref ref, Map<String, dynamic> event) {
 
   ref
       .read(noteOverridesProvider.notifier)
-      .put(base.copyWith(reactions: reactions, reactionEmojis: reactionEmojis));
+      .put(
+        base.copyWith(
+          reactions: reactions,
+          reactionEmojis: reactionEmojis,
+          myReaction: nextMyReaction,
+        ),
+      );
 }

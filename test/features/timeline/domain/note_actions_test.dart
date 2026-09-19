@@ -67,6 +67,15 @@ class _FakeNoteRepository implements NoteRepository {
   Future<Note> show(String noteId) async => _note();
 }
 
+/// unreact だけ成功させ、react を必ず失敗させる（付け替え中の片側失敗を再現）。
+class _FailAfterUnreactRepository extends _FakeNoteRepository {
+  @override
+  Future<void> react(String noteId, String reaction) async {
+    calls.add('react:$noteId:$reaction');
+    throw Exception('失敗');
+  }
+}
+
 Note _note({
   Map<String, int> reactions = const {},
   String? myReaction,
@@ -95,12 +104,12 @@ void main() {
       final container = _container(repo);
       final note = _note(reactions: {'👍': 2});
 
-      await container.read(noteActionsProvider).toggleReaction(note, '❤️');
+      await container.read(noteActionsProvider).toggleReaction(note, '❤');
 
       final updated = container.read(noteOverridesProvider)['note1']!;
-      expect(updated.myReaction, '❤️');
-      expect(updated.reactions, {'👍': 2, '❤️': 1});
-      expect(repo.calls, ['react:note1:❤️']);
+      expect(updated.myReaction, '❤');
+      expect(updated.reactions, {'👍': 2, '❤': 1});
+      expect(repo.calls, ['react:note1:❤']);
     });
 
     test('同じリアクションをもう一度 → 取り消す', () async {
@@ -132,14 +141,14 @@ void main() {
     test('別のリアクションへ付け替える', () async {
       final repo = _FakeNoteRepository();
       final container = _container(repo);
-      final note = _note(reactions: {'👍': 2, '❤️': 1}, myReaction: '👍');
+      final note = _note(reactions: {'👍': 2, '❤': 1}, myReaction: '👍');
 
-      await container.read(noteActionsProvider).toggleReaction(note, '❤️');
+      await container.read(noteActionsProvider).toggleReaction(note, '❤');
 
       final updated = container.read(noteOverridesProvider)['note1']!;
-      expect(updated.myReaction, '❤️');
-      expect(updated.reactions, {'👍': 1, '❤️': 2});
-      expect(repo.calls, ['unreact:note1', 'react:note1:❤️']);
+      expect(updated.myReaction, '❤');
+      expect(updated.reactions, {'👍': 1, '❤': 2});
+      expect(repo.calls, ['unreact:note1', 'react:note1:❤']);
     });
 
     test('API が失敗したら元の状態に戻す', () async {
@@ -148,13 +157,45 @@ void main() {
       final note = _note(reactions: {'👍': 2});
 
       await expectLater(
-        container.read(noteActionsProvider).toggleReaction(note, '❤️'),
+        container.read(noteActionsProvider).toggleReaction(note, '❤'),
         throwsA(isA<Exception>()),
       );
 
       final updated = container.read(noteOverridesProvider)['note1']!;
       expect(updated.myReaction, isNull);
       expect(updated.reactions, {'👍': 2});
+    });
+
+    test('付け替えで unreact 後に react が失敗したら無リアクションへ戻す', () async {
+      final repo = _FailAfterUnreactRepository();
+      final container = _container(repo);
+      final note = _note(reactions: {'👍': 2, '❤': 1}, myReaction: '👍');
+
+      await expectLater(
+        container.read(noteActionsProvider).toggleReaction(note, '❤'),
+        throwsA(isA<Exception>()),
+      );
+
+      // unreact(👍) は成功済みなので、巻き戻し先は「自分の 👍 だけ外れ、
+      // ❤ は付いていない」状態（👍 の残り 1 は他人の分）。
+      final updated = container.read(noteOverridesProvider)['note1']!;
+      expect(updated.myReaction, isNull);
+      expect(updated.reactions, {'👍': 1, '❤': 1});
+    });
+
+    test('ピッカーの :kawaii: がサーバーの :kawaii@.: と同じチップになる', () async {
+      final repo = _FakeNoteRepository();
+      final container = _container(repo);
+      final note = _note(reactions: {':kawaii@.:': 3});
+
+      await container
+          .read(noteActionsProvider)
+          .toggleReaction(note, ':kawaii:');
+
+      final updated = container.read(noteOverridesProvider)['note1']!;
+      expect(updated.myReaction, ':kawaii@.:');
+      expect(updated.reactions, {':kawaii@.:': 4});
+      expect(repo.calls, ['react:note1::kawaii@.:']);
     });
   });
 
