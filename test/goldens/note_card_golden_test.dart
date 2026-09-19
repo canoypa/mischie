@@ -103,6 +103,106 @@ void main() {
     );
   });
 
+  final longNameQuote = Note(
+    id: 'q1',
+    createdAt: DateTime.now().toIso8601String(),
+    user: const User(
+      id: 'u3',
+      username: 'remote',
+      name: 'とても長い表示名でここが省略されて見えるかを確かめる人',
+      host: 'misskey.example',
+    ),
+    text: '短い本文',
+  );
+  final imagesOnlyQuote = Note(
+    id: 'q2',
+    createdAt: DateTime.now().toIso8601String(),
+    user: const User(id: 'u4', username: 'photo', name: '写真だけの人'),
+    text: null,
+    files: const [
+      DriveFile(
+        id: 'qf1',
+        type: 'image/png',
+        url: 'https://example.com/1.png',
+        name: '1.png',
+      ),
+      DriveFile(
+        id: 'qf2',
+        type: 'image/png',
+        url: 'https://example.com/2.png',
+        name: '2.png',
+      ),
+    ],
+  );
+  final cwQuote = Note(
+    id: 'q3',
+    createdAt: DateTime.now().toIso8601String(),
+    user: const User(id: 'u5', username: 'cwuser', name: 'CW の人'),
+    cw: 'ネタバレ',
+    text: '隠れているはずの本文',
+  );
+  final longTextQuote = Note(
+    id: 'q4',
+    createdAt: DateTime.now().toIso8601String(),
+    user: const User(id: 'u6', username: 'writer', name: '長文の人'),
+    text: List.generate(10, (i) => '長い本文の ${i + 1} 行目です。').join('\n'),
+  );
+  final pollQuote = Note(
+    id: 'q5',
+    createdAt: DateTime.now().toIso8601String(),
+    user: const User(id: 'u7', username: 'voter', name: '投票の人'),
+    text: '投票つき',
+    poll: const Poll(
+      choices: [
+        PollChoice(text: 'きのこ', votes: 3),
+        PollChoice(text: 'たけのこ', votes: 5),
+      ],
+    ),
+    files: const [
+      DriveFile(
+        id: 'qf3',
+        type: 'application/pdf',
+        url: 'https://example.com/d.pdf',
+        name: '資料.pdf',
+      ),
+    ],
+  );
+
+  testWidgets('引用の中身', (tester) async {
+    // 縦に積むとテスト用の描画面(800x600)をすぐ超えるため、5パターンを
+    // 3枚に分けて確かめる。
+    await _pumpNotes(tester, [
+      _note(text: '引用', renote: longNameQuote),
+      _note(text: '引用', renote: imagesOnlyQuote),
+    ]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('quote_contents.png'),
+    );
+  });
+
+  testWidgets('引用の中身（CWと投票）', (tester) async {
+    await _pumpNotes(tester, [
+      _note(text: '引用', renote: cwQuote),
+      _note(text: '引用', renote: pollQuote),
+    ]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('quote_contents_cw_poll.png'),
+    );
+  });
+
+  testWidgets('引用の中身（長文）', (tester) async {
+    await _pumpNotes(tester, [_note(text: '引用', renote: longTextQuote)]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('quote_contents_long.png'),
+    );
+  });
+
   testWidgets('画像以外の添付', (tester) async {
     // 画像しか出していなかったため、動画や音声だけのノートは添付が
     // 無かったことになっていた

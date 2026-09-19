@@ -16,62 +16,160 @@ class QuotedNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final emojis = LayeredEmojis(base: serverEmojis, overlay: note.emojis);
+    final user = note.user;
+    final handle = user.host != null
+        ? '@${user.username}@${user.host}'
+        : '@${user.username}';
+    final files = note.files;
+    final isImageOnly =
+        files.isNotEmpty && files.every((f) => f.type.startsWith('image/'));
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => openNoteDetail(context, note),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          border: Border.all(color: colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 引用の中でも、名前とアイコンからは相手のプロフィールへ
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => UserProfileScreen(
-                    userId: note.user.id,
-                    initialUser: note.user,
+    return Card.outlined(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => openNoteDetail(context, note),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 引用の中でも、名前とアイコンからは相手のプロフィールへ
+              InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        UserProfileScreen(userId: user.id, initialUser: user),
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  DecoratedAvatar(
-                    avatarUrl: note.user.avatarUrl,
-                    size: 20,
-                    isCat: note.user.isCat,
-                    avatarBlurhash: note.user.avatarBlurhash,
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: MfmText(
-                      note.user.name ?? note.user.username,
-                      emojis: emojis,
-                      style: Theme.of(context).textTheme.bodySmall,
+                child: Row(
+                  children: [
+                    DecoratedAvatar(
+                      avatarUrl: user.avatarUrl,
+                      size: 20,
+                      isCat: user.isCat,
+                      avatarBlurhash: user.avatarBlurhash,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Flexible(
+                            child: MfmText(
+                              user.name ?? user.username,
+                              emojis: emojis,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              handle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            if (note.text != null) ...[
-              const SizedBox(height: 6),
-              MfmText(
-                note.text!,
-                emojis: emojis,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              if (note.cw != null) ...[
+                const SizedBox(height: 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.visibility_off_outlined,
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: MfmText(
+                        note.cw!,
+                        emojis: emojis,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (note.text != null && note.text!.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                MfmText(
+                  note.text!,
+                  emojis: emojis,
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+              if (files.isNotEmpty || note.poll != null) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 12,
+                  children: [
+                    if (files.isNotEmpty)
+                      _SummaryItem(
+                        icon: isImageOnly
+                            ? Icons.image_outlined
+                            : Icons.attach_file,
+                        label: isImageOnly
+                            ? '画像 ${files.length} 枚'
+                            : 'ファイル ${files.length} 件',
+                      ),
+                    if (note.poll != null)
+                      const _SummaryItem(
+                        icon: Icons.poll_outlined,
+                        label: '投票',
+                      ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// 引用の中に出す、添付や投票の有無だけを伝える補助行。
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+        ),
+      ],
     );
   }
 }
