@@ -69,6 +69,7 @@ class NoteReactions extends StatelessWidget {
           count: e.value,
           isMine: note.myReaction == e.key,
           isRemote: isExternal,
+          isCustomEmoji: isCustomEmoji,
           emojiUrl: emojiUrl,
           fallbackLabel: isCustomEmoji ? ':$displayName:' : displayName,
           onTap: () => onTap(e.key),
@@ -89,6 +90,7 @@ class _ReactionChip extends StatefulWidget {
     required this.count,
     required this.isMine,
     required this.isRemote,
+    required this.isCustomEmoji,
     required this.emojiUrl,
     required this.fallbackLabel,
     required this.onTap,
@@ -97,6 +99,7 @@ class _ReactionChip extends StatefulWidget {
   final int count;
   final bool isMine;
   final bool isRemote;
+  final bool isCustomEmoji;
   final String? emojiUrl;
   final String fallbackLabel;
   final VoidCallback onTap;
@@ -143,31 +146,59 @@ class _ReactionChipState extends State<_ReactionChip>
     widget.onTap();
   }
 
+  // Misskey Web と同じく、絵文字は 1.5em (≈24px) 相当の高さで出す。幅は
+  // 縦横比まかせ（横に長い絵文字を正方形へ押し込むと潰れる）で、代わりに
+  // 70px 前後で上限を切る。
+  static const _emojiSize = 24.0;
+  static const _emojiMaxWidth = 72.0;
+  static const _unicodeStyle = TextStyle(fontSize: 21);
+  static const _countStyle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+  );
+
   @override
   Widget build(BuildContext context) {
     final emojiUrl = widget.emojiUrl;
 
+    // avatar 枠は正方形固定で、横に長い絵文字を入れると潰れる。ラベル側に
+    // 絵文字とカウントを並べて置き、実際の縦横比のまま出す。
+    final Widget label = emojiUrl != null
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomEmojiImage(
+                url: emojiUrl,
+                size: _emojiSize,
+                maxWidth: _emojiMaxWidth,
+                errorFallback: Text(widget.fallbackLabel),
+              ),
+              const SizedBox(width: 6),
+              Text('${widget.count}', style: _countStyle),
+            ],
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.fallbackLabel,
+                // カスタム絵文字名の ":name:" 表記は本文サイズのまま。
+                // Unicode 絵文字だけ Misskey Web と揃えて大きく出す。
+                style: widget.isCustomEmoji ? null : _unicodeStyle,
+              ),
+              const SizedBox(width: 4),
+              Text('${widget.count}', style: _countStyle),
+            ],
+          );
+
     return ScaleTransition(
       scale: _pop,
       child: FilterChip(
-        // 画像が無いとき（Unicode 絵文字や読み込み失敗）はラベル側に出す。
-        // avatar は小さな正方形なので、文字を入れると切り詰められる。
-        avatar: emojiUrl == null
-            ? null
-            : CustomEmojiImage(
-                url: emojiUrl,
-                size: 18,
-                errorFallback: Text(widget.fallbackLabel),
-              ),
-        label: Text(
-          emojiUrl == null
-              ? '${widget.fallbackLabel} ${widget.count}'
-              : '${widget.count}',
-        ),
+        label: label,
         selected: widget.isMine,
         showCheckmark: false,
         visualDensity: VisualDensity.compact,
-        labelPadding: const EdgeInsets.only(left: 4, right: 2),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 6),
         onSelected: (_) => _handleTap(),
       ),
     );

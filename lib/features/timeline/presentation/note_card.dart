@@ -178,12 +178,13 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                     onTap: () => _openProfile(displayNote.user),
                     child: DecoratedAvatar(
                       avatarUrl: displayNote.user.avatarUrl,
+                      size: 48,
                       isCat: displayNote.user.isCat,
                       avatarBlurhash: displayNote.user.avatarBlurhash,
                       decorations: displayNote.user.avatarDecorations,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,23 +248,21 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                             ),
                           ),
                         ],
-                        if (!hasCw || _cwExpanded)
-                          // 長いノートは文字数ではなく描画後の高さで畳む。
-                          // 文字で切ると MFM の途中で切れて表現が壊れるため。
-                          CollapsibleContent(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (displayNote.text != null)
-                                  MfmText(displayNote.text!, emojis: emojis),
-                                if (displayNote.files.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  NoteMediaGrid(files: displayNote.files),
-                                ],
-                              ],
+                        if (!hasCw || _cwExpanded) ...[
+                          if (displayNote.text != null)
+                            // 長いノートは文字数ではなく描画後の高さで畳む。
+                            // 文字で切ると MFM の途中で切れて表現が壊れるため。
+                            // 添付やリンクはここに含めない: 高さが本文
+                            // ではなく画像だけから来ているときに畳まれて
+                            // しまうため、常に本文の下へそのまま出す。
+                            CollapsibleContent(
+                              child: MfmText(displayNote.text!, emojis: emojis),
                             ),
-                          ),
+                          if (displayNote.files.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            NoteMediaGrid(files: displayNote.files),
+                          ],
+                        ],
                         if ((!hasCw || _cwExpanded) &&
                             displayNote.poll != null) ...[
                           const SizedBox(height: 8),

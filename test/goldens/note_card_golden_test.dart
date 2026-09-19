@@ -40,6 +40,21 @@ Note _note({
   renoteCount: renoteCount,
 );
 
+// 添付は画像以外（PDF）にする。画像はテスト環境で実際にネットワークへ
+// 取りに行こうとしてしまい、ゴールデン比較の待ち時間の間にプラグイン
+// 未実装のエラーで落ちる（このテスト環境の既知の制約）。件数だけ
+// 十分あれば、画像と同じく「本文とは無関係に添付だけで閾値を超える」
+// 状況を安全に再現できる。
+List<DriveFile> _pdfFiles(int count) => [
+  for (var i = 1; i <= count; i++)
+    DriveFile(
+      id: 'm$i',
+      type: 'application/pdf',
+      url: 'https://example.com/$i.pdf',
+      name: '資料$i.pdf',
+    ),
+];
+
 /// ノートを並べて描く。カード自体の見た目を見るためのもの。
 Future<void> _pumpNotes(
   WidgetTester tester,
@@ -269,6 +284,31 @@ void main() {
     ]);
 
     await expectLater(find.byType(ListView), matchesGoldenFile('poll.png'));
+  });
+
+  testWidgets('高さが添付だけから来るときは畳まない', (tester) async {
+    // 本文は短いが、添付の並びだけで高さの閾値(320)を超える。以前はこの
+    // 高さを理由に本文と一緒に畳まれていた。
+    await _pumpNotes(tester, [_note(text: '資料です', files: _pdfFiles(8))]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('media_not_collapsed.png'),
+    );
+  });
+
+  testWidgets('本文が長いときは本文だけ畳み、添付は見えたままにする', (tester) async {
+    await _pumpNotes(tester, [
+      _note(
+        text: List.generate(30, (i) => '長い本文の ${i + 1} 行目です。').join('\n'),
+        files: _pdfFiles(2),
+      ),
+    ]);
+
+    await expectLater(
+      find.byType(ListView),
+      matchesGoldenFile('text_collapsed_media_visible.png'),
+    );
   });
 
   // ダークでしか出ない問題（色の直書き、コントラスト不足）を拾う

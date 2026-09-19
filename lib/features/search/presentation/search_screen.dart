@@ -157,6 +157,8 @@ class _NoteResults extends ConsumerWidget {
                     return false;
                   },
                   child: ListView.builder(
+                    // 最後の項目が投稿ボタン（FAB）に隠れないよう空ける
+                    padding: const EdgeInsets.only(bottom: 80),
                     itemCount: notes.length,
                     itemBuilder: (context, index) => RepaintBoundary(
                       child: NoteCard(
@@ -201,6 +203,8 @@ class _UserResults extends ConsumerWidget {
                     return false;
                   },
                   child: ListView.builder(
+                    // 最後の項目が投稿ボタン（FAB）に隠れないよう空ける
+                    padding: const EdgeInsets.only(bottom: 80),
                     itemCount: users.length,
                     itemBuilder: (context, index) =>
                         _UserTile(user: users[index], emojis: serverEmojis),

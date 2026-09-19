@@ -203,14 +203,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             : null,
       ),
       body: IndexedStack(index: _currentIndex, children: _screens),
-      floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton(
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ComposeScreen())),
-              child: const Icon(Icons.edit),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ComposeScreen())),
+        child: const Icon(Icons.edit),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onDestinationSelected,

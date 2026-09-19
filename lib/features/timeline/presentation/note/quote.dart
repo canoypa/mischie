@@ -50,7 +50,7 @@ class QuotedNote extends StatelessWidget {
                   children: [
                     DecoratedAvatar(
                       avatarUrl: user.avatarUrl,
-                      size: 20,
+                      size: 24,
                       isCat: user.isCat,
                       avatarBlurhash: user.avatarBlurhash,
                     ),
