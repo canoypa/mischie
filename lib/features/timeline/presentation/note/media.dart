@@ -260,8 +260,13 @@ class _ImageViewerState extends State<_ImageViewer>
   late int _current;
   late AnimationController _bgController;
   late Animation<double> _bgOpacity;
+  late PageController _pageController;
   double _dragY = 0;
   bool _dragging = false;
+
+  /// タップして解除した画像の index。グリッドで既に解除して開いた1枚は、
+  /// ビューアでまた隠さないよう最初から入れておく。
+  late final Set<int> _revealed = {widget.initialIndex};
 
   static const _bgMaxOpacity = 0.92;
   static const _dismissThreshold = 120.0;
@@ -270,6 +275,7 @@ class _ImageViewerState extends State<_ImageViewer>
   void initState() {
     super.initState();
     _current = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
     _bgController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -283,6 +289,7 @@ class _ImageViewerState extends State<_ImageViewer>
   @override
   void dispose() {
     _bgController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -333,12 +340,23 @@ class _ImageViewerState extends State<_ImageViewer>
             children: [
               PhotoViewGallery.builder(
                 itemCount: widget.images.length,
-                pageController: PageController(
-                  initialPage: widget.initialIndex,
-                ),
+                pageController: _pageController,
                 onPageChanged: (i) => setState(() => _current = i),
                 builder: (context, index) {
                   final file = widget.images[index];
+                  if (file.isSensitive && !_revealed.contains(index)) {
+                    return PhotoViewGalleryPageOptions.customChild(
+                      // ぼかしの上に自前のタップ判定を置くので、PhotoView
+                      // 側のズーム・パンは無効にしておく。
+                      disableGestures: true,
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.contained,
+                      child: _SensitivePage(
+                        blurhash: file.blurhash,
+                        onReveal: () => setState(() => _revealed.add(index)),
+                      ),
+                    );
+                  }
                   return PhotoViewGalleryPageOptions(
                     imageProvider: CachedNetworkImageProvider(
                       file.url,
@@ -409,6 +427,57 @@ class _ImageViewerState extends State<_ImageViewer>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// ビューア内でセンシティブな画像を隠す面。グリッドの伏せ表示と同じ見た目
+/// （ぼかし・警告アイコン・タップで解除）をフルスクリーン用に出す。
+class _SensitivePage extends StatelessWidget {
+  const _SensitivePage({required this.blurhash, required this.onReveal});
+
+  final String? blurhash;
+  final VoidCallback onReveal;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onReveal,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (blurhash != null)
+            BlurHash(hash: blurhash!)
+          else
+            const ColoredBox(color: Colors.black87),
+          const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.white,
+                  size: 36,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'センシティブな内容',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'タップで表示',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
