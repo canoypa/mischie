@@ -15,6 +15,9 @@ class Draft {
     this.fileIds = const [],
     this.replyId,
     this.renoteId,
+    this.pollChoices,
+    this.pollMultiple = false,
+    this.pollExpiresInMs,
   });
 
   factory Draft.fromJson(Map<String, dynamic> json) => Draft(
@@ -26,6 +29,9 @@ class Draft {
     fileIds: (json['fileIds'] as List<dynamic>? ?? []).cast<String>(),
     replyId: json['replyId'] as String?,
     renoteId: json['renoteId'] as String?,
+    pollChoices: (json['pollChoices'] as List<dynamic>?)?.cast<String>(),
+    pollMultiple: json['pollMultiple'] as bool? ?? false,
+    pollExpiresInMs: json['pollExpiresInMs'] as int?,
   );
 
   final String id;
@@ -37,6 +43,11 @@ class Draft {
   final String? replyId;
   final String? renoteId;
 
+  /// 投票の選択肢（未入力の欄も含む、入力欄そのまま）。null なら投票なし。
+  final List<String>? pollChoices;
+  final bool pollMultiple;
+  final int? pollExpiresInMs;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'text': text,
@@ -46,6 +57,9 @@ class Draft {
     'fileIds': fileIds,
     'replyId': replyId,
     'renoteId': renoteId,
+    'pollChoices': pollChoices,
+    'pollMultiple': pollMultiple,
+    'pollExpiresInMs': pollExpiresInMs,
   };
 }
 

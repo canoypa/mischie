@@ -12,6 +12,7 @@ import 'package:mischie/features/compose/presentation/poll_editor.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
+import 'package:mischie/features/timeline/domain/note_actions.dart';
 
 const _maxLength = 3000;
 
@@ -69,10 +70,31 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   late final String _draftId =
       widget.draft?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
 
+  /// 返信先・引用元の id。フレッシュな返信・引用は widget から、
+  /// 下書きから戻した場合は下書きに残っていたものから引く。
+  /// 投稿・再保存は常にここを見る（widget.replyTo/quoteOf は直接見ない）。
+  String? _replyId;
+  String? _renoteId;
+
+  /// ヘッダー表示用の本体。フレッシュな返信・引用では渡されるが、下書きから
+  /// 戻した場合は id しか無いので取得する。取れなくても id があれば投稿できる。
+  Note? _targetNote;
+  bool _targetLoading = false;
+
+  /// アップロード中の添付を、下書き保存時に待ち合わせるための Future。
+  final Map<Attachment, Future<void>> _uploads = {};
+
   @override
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+
+    final draft = widget.draft;
+
+    _replyId = widget.replyTo?.id ?? draft?.replyId;
+    _renoteId = widget.quoteOf?.id ?? draft?.renoteId;
+    _targetNote = widget.replyTo ?? widget.quoteOf;
+
     // 返信は元ノートの公開範囲を引き継ぐ（元より広く公開しない）
     final source = widget.replyTo;
     if (source != null) {
@@ -86,7 +108,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _addAttachments(widget.initialImagePaths);
     }
 
-    final draft = widget.draft;
     if (draft != null) {
       _textController.text = draft.text;
       if (draft.cw != null && draft.cw!.isNotEmpty) {
@@ -95,6 +116,56 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       }
       _visibility = NoteVisibility.fromName(draft.visibility);
       _attachments.addAll(draft.fileIds.map(Attachment.uploaded));
+
+      final pollChoices = draft.pollChoices
+          ?.take(PollDraft.maxChoices)
+          .toList();
+      if (pollChoices != null) {
+        final poll = PollDraft();
+        while (poll.controllers.length < pollChoices.length) {
+          poll.addChoice();
+        }
+        for (var i = 0; i < pollChoices.length; i++) {
+          poll.controllers[i].text = pollChoices[i];
+        }
+        poll.multiple = draft.pollMultiple;
+        poll.duration = draft.pollExpiresInMs != null
+            ? Duration(milliseconds: draft.pollExpiresInMs!)
+            : null;
+        _poll = poll;
+      }
+    }
+
+    if (_targetNote == null && (_replyId != null || _renoteId != null)) {
+      _targetLoading = true;
+      _fetchTarget();
+    }
+  }
+
+  /// 下書きから戻した返信・引用は id しか持たないので notes/show で取りに行く。
+  Future<void> _fetchTarget() async {
+    final id = _replyId ?? _renoteId;
+    if (id == null) return;
+    try {
+      final repo = ref.read(noteRepositoryProvider);
+      if (repo == null) throw Exception('未ログイン');
+      final note = await repo.show(id);
+      if (!mounted) return;
+      setState(() {
+        _targetNote = note;
+        _targetLoading = false;
+        // 返信は元ノートより広い公開範囲にはしない。下書きに残っていた
+        // 公開範囲がすでにそれより狭ければそのまま保つ（勝手に広げない）。
+        if (_replyId != null) {
+          final sourceVisibility = NoteVisibility.fromName(note.visibility);
+          if (sourceVisibility.index > _visibility.index) {
+            _visibility = sourceVisibility;
+          }
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _targetLoading = false);
     }
   }
 
@@ -147,6 +218,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _poll != null;
 
   Future<void> _saveDraft() async {
+    // アップロード中のまま保存すると fileId が無く、その添付が
+    // 静かに消えるので、書き込む前に完了を待つ。
+    final pending = _attachments.where((a) => a.uploading).toList();
+    if (pending.isNotEmpty) {
+      await Future.wait(pending.map((a) => _uploads[a] ?? Future.value()));
+    }
+
     await ref
         .read(draftsProvider.notifier)
         .save(
@@ -160,10 +238,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 .map((a) => a.fileId)
                 .whereType<String>()
                 .toList(),
-            replyId: widget.replyTo?.id,
-            renoteId: widget.quoteOf?.id,
+            replyId: _replyId,
+            renoteId: _renoteId,
+            pollChoices: _poll?.controllers.map((c) => c.text).toList(),
+            pollMultiple: _poll?.multiple ?? false,
+            pollExpiresInMs: _poll?.duration?.inMilliseconds,
           ),
         );
+
+    final failed = _attachments.where((a) => a.error != null).toList();
+    if (failed.isNotEmpty && mounted) {
+      final names = failed
+          .map((a) => a.path?.split('/').last ?? '添付')
+          .join(', ');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('保存できなかった添付があります: $names')));
+    }
   }
 
   /// 書きかけを黙って捨てない。破棄・下書き保存・書き続けるを選ばせる。
@@ -230,8 +321,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
     if (selected == null || !mounted) return;
 
+    // 書きかけを黙って捨てない（PopScope と同じ確認を通す）。
+    if (!await _confirmDiscard() || !mounted) return;
+
+    // _confirmDiscard で保存すると selected 自身が上書きされることがあるので、
+    // 遷移直前の最新の内容を読み直す。
+    final latest = ref.read(draftsProvider).value ?? const [];
+    final toOpen = latest.firstWhere(
+      (d) => d.id == selected.id,
+      orElse: () => selected,
+    );
+
     await Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => ComposeScreen(draft: selected)),
+      MaterialPageRoute(builder: (_) => ComposeScreen(draft: toOpen)),
     );
   }
 
@@ -243,7 +345,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final added = paths.take(room).map(Attachment.new).toList();
     setState(() => _attachments.addAll(added));
     for (final attachment in added) {
-      _upload(attachment);
+      _uploads[attachment] = _upload(attachment);
     }
   }
 
@@ -363,8 +465,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           text,
           cw: _showCw ? _cwController.text.trim() : null,
           visibility: _visibility,
-          replyId: widget.replyTo?.id,
-          renoteId: widget.quoteOf?.id,
+          replyId: _replyId,
+          renoteId: _renoteId,
           fileIds: _attachments
               .map((a) => a.fileId)
               .whereType<String>()
@@ -393,12 +495,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final remaining = _maxLength - _textLength;
     final isOverLimit = remaining < 0;
     final isUploading = _attachments.any((a) => a.uploading);
+    final hasUploadError = _attachments.any((a) => a.error != null);
     final pollIncomplete = _poll != null && !_poll!.isValid;
     final isEmpty = _textLength == 0 && _attachments.isEmpty;
 
-    final isReply = widget.replyTo != null;
-    final isQuote = widget.quoteOf != null;
-    final target = widget.replyTo ?? widget.quoteOf;
+    final isReply = _replyId != null;
+    final isQuote = _renoteId != null;
+    final target = _targetNote;
 
     final draftCount = ref.watch(draftsProvider).value?.length ?? 0;
 
@@ -438,6 +541,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     isLoading ||
                         isOverLimit ||
                         isUploading ||
+                        hasUploadError ||
                         isEmpty ||
                         pollIncomplete
                     ? null
@@ -455,7 +559,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         ),
         body: Column(
           children: [
-            if (target != null) _TargetPreview(note: target, isReply: isReply),
+            if (target != null)
+              _TargetPreview(note: target, isReply: isReply)
+            else if (isReply || isQuote)
+              _TargetPreviewCompact(isReply: isReply, loading: _targetLoading),
             if (_showCw)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -476,7 +583,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     a.uploading = true;
                     a.error = null;
                   });
-                  _upload(a);
+                  _uploads[a] = _upload(a);
                 },
                 onEdit: _editAttachment,
               ),
@@ -680,6 +787,55 @@ class _TargetPreview extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: textTheme.bodyMedium,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 返信先・引用元の本体を取得できていない間の簡易表示。
+///
+/// 下書きから戻した直後や notes/show が失敗した場合に出す。本体が無くても
+/// id さえあれば投稿はできるので、ここでは「返信/引用であること」だけ示す。
+class _TargetPreviewCompact extends StatelessWidget {
+  const _TargetPreviewCompact({required this.isReply, required this.loading});
+
+  final bool isReply;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      color: colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Icon(
+            isReply ? Icons.reply : Icons.format_quote,
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isReply ? '返信先' : '引用元',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (loading) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 12,
+              width: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
