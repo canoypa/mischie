@@ -27,7 +27,9 @@ const _scopes =
     'write:drive '
     'write:mutes '
     'write:blocks '
-    'write:channels';
+    'write:channels '
+    'write:votes '
+    'read:channels';
 
 class OAuthService {
   Future<({String host, String accessToken})> login(String host) async {
