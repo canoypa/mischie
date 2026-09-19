@@ -211,8 +211,8 @@ return $default(_that.id,_that.username,_that.name,_that.avatarUrl,_that.avatarB
 /// @nodoc
 @JsonSerializable()
 
-class _User implements User {
-  const _User({required this.id, required this.username, this.name, this.avatarUrl, this.avatarBlurhash, this.host, this.isCat = false, this.isBot = false, final  List<AvatarDecoration> avatarDecorations = const []}): _avatarDecorations = avatarDecorations;
+class _User extends User {
+  const _User({required this.id, required this.username, this.name, this.avatarUrl, this.avatarBlurhash, this.host, this.isCat = false, this.isBot = false, final  List<AvatarDecoration> avatarDecorations = const []}): _avatarDecorations = avatarDecorations,super._();
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
 @override final  String id;

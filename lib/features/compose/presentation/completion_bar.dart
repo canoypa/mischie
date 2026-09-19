@@ -1,7 +1,6 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mischie/core/image/image_cache_managers.dart';
+import 'package:mischie/core/widgets/custom_emoji_image.dart';
 import 'package:mischie/features/compose/domain/compose_completion.dart';
 
 /// 入力中の `:` や `$[` に対する候補。本文の直下に横並びで出す。
@@ -53,13 +52,10 @@ class CompletionBar extends ConsumerWidget {
               child: ActionChip(
                 avatar: item.imageUrl == null
                     ? null
-                    : CachedNetworkImage(
-                        imageUrl: item.imageUrl!,
-                        cacheManager: EmojiCacheManager.instance,
-                        height: 18,
-                        placeholder: (_, _) =>
-                            const SizedBox(height: 18, width: 18),
-                        errorWidget: (_, _, _) => const SizedBox.shrink(),
+                    : CustomEmojiImage(
+                        url: item.imageUrl!,
+                        size: 18,
+                        errorFallback: const SizedBox.shrink(),
                       ),
                 label: Text(item.label),
                 visualDensity: VisualDensity.compact,

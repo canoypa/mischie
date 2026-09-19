@@ -227,8 +227,8 @@ return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_t
 /// @nodoc
 @JsonSerializable()
 
-class _UserDetailed implements UserDetailed {
-  const _UserDetailed({required this.id, required this.username, this.name, this.host, this.avatarUrl, this.bannerUrl, this.bannerBlurhash, this.description, this.location, this.birthday, this.createdAt, this.isBot = false, this.isCat = false, this.isFollowing = false, this.isFollowed = false, this.isMuted = false, this.isBlocking = false, final  List<AvatarDecoration> avatarDecorations = const [], this.followersCount, this.followingCount, this.notesCount, final  List<ProfileField> fields = const [], final  List<Note> pinnedNotes = const [], final  List<UserRole> roles = const [], final  Map<String, String> emojis = const {}}): _avatarDecorations = avatarDecorations,_fields = fields,_pinnedNotes = pinnedNotes,_roles = roles,_emojis = emojis;
+class _UserDetailed extends UserDetailed {
+  const _UserDetailed({required this.id, required this.username, this.name, this.host, this.avatarUrl, this.bannerUrl, this.bannerBlurhash, this.description, this.location, this.birthday, this.createdAt, this.isBot = false, this.isCat = false, this.isFollowing = false, this.isFollowed = false, this.isMuted = false, this.isBlocking = false, final  List<AvatarDecoration> avatarDecorations = const [], this.followersCount, this.followingCount, this.notesCount, final  List<ProfileField> fields = const [], final  List<Note> pinnedNotes = const [], final  List<UserRole> roles = const [], final  Map<String, String> emojis = const {}}): _avatarDecorations = avatarDecorations,_fields = fields,_pinnedNotes = pinnedNotes,_roles = roles,_emojis = emojis,super._();
   factory _UserDetailed.fromJson(Map<String, dynamic> json) => _$UserDetailedFromJson(json);
 
 @override final  String id;

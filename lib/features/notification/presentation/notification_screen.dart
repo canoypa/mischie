@@ -9,7 +9,6 @@ import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 import 'package:mischie/features/notification/domain/notification_label.dart';
 import 'package:mischie/features/notification/domain/notification_notifier.dart';
-import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -113,11 +112,7 @@ class _NotificationTile extends StatelessWidget {
     };
 
     final username = item.user?.name ?? item.user?.username ?? '不明';
-    final handle = item.user != null
-        ? (item.user!.host != null
-              ? '@${item.user!.username}@${item.user!.host}'
-              : '@${item.user!.username}')
-        : null;
+    final handle = item.user?.acct;
     final time = timeago.format(DateTime.parse(item.createdAt), locale: 'ja');
     final noteEmojis = LayeredEmojis(
       base: serverEmojis,
@@ -137,7 +132,11 @@ class _NotificationTile extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 onTap: item.user == null
                     ? null
-                    : () => _openProfile(context, item.user!),
+                    : () => openUserProfile(
+                        context,
+                        item.user!.id,
+                        initialUser: item.user,
+                      ),
                 child: DecoratedAvatar(
                   avatarUrl: item.user?.avatarUrl,
                   isCat: item.user?.isCat ?? false,
@@ -218,16 +217,8 @@ class _NotificationTile extends StatelessWidget {
           return;
         }
         final user = item.user;
-        if (user != null) _openProfile(context, user);
+        if (user != null) openUserProfile(context, user.id, initialUser: user);
       },
-    );
-  }
-
-  void _openProfile(BuildContext context, User user) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => UserProfileScreen(userId: user.id, initialUser: user),
-      ),
     );
   }
 }

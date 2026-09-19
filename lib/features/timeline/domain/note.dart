@@ -15,10 +15,8 @@ sealed class Note with _$Note {
     String? text,
     String? cw,
     String? replyId,
-    String? renoteId,
     Note? reply,
     Note? renote,
-    List<Note>? replies,
     String? uri,
     String? url,
     String? channelId,
@@ -88,7 +86,6 @@ sealed class NoteChannel with _$NoteChannel {
     required String id,
     @Default('') String name,
     String? color,
-    @Default(false) bool isSensitive,
   }) = _NoteChannel;
 
   factory NoteChannel.fromJson(Map<String, dynamic> json) =>

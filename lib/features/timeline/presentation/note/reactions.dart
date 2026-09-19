@@ -1,7 +1,6 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mischie/core/image/image_cache_managers.dart';
+import 'package:mischie/core/widgets/custom_emoji_image.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
 /// `:name:` / `:name@server.tld:` 形式のリアクションキー。
@@ -18,6 +17,16 @@ bool isRemoteReaction(String identifier) {
   if (atIndex < 0) return false;
   final host = identifier.substring(atIndex + 1);
   return host.isNotEmpty && host != '.';
+}
+
+/// 絵文字の URL を引く。フルキー (name@server.tld) でまず検索し、
+/// なければホストを落とした短縮名 (name) で引き直す。
+String? lookupEmojiUrl(Map<String, String> emojis, String identifier) {
+  final url = emojis[identifier];
+  if (url != null) return url;
+  final atIndex = identifier.indexOf('@');
+  if (atIndex <= 0) return null;
+  return emojis[identifier.substring(0, atIndex)];
 }
 
 class NoteReactions extends StatelessWidget {
@@ -46,14 +55,7 @@ class NoteReactions extends StatelessWidget {
         // `:name:` または `:name@server.tld:` 形式からキーを抽出
         final match = customEmojiPattern.firstMatch(e.key);
         final identifier = match?.group(1) ?? e.key;
-        // フルキー (name@server.tld) でまず検索し、なければ短縮名 (name) で検索
-        var emojiUrl = emojis[identifier];
-        if (emojiUrl == null) {
-          final atIndex = identifier.indexOf('@');
-          if (atIndex > 0) {
-            emojiUrl = emojis[identifier.substring(0, atIndex)];
-          }
-        }
+        final emojiUrl = lookupEmojiUrl(emojis, identifier);
         final atIndex = identifier.indexOf('@');
         final displayName = atIndex > 0
             ? identifier.substring(0, atIndex)
@@ -152,14 +154,10 @@ class _ReactionChipState extends State<_ReactionChip>
         // avatar は小さな正方形なので、文字を入れると切り詰められる。
         avatar: emojiUrl == null
             ? null
-            : CachedNetworkImage(
-                imageUrl: emojiUrl,
-                cacheManager: EmojiCacheManager.instance,
-                height: 18,
-                // 幅を予約しないと、読み込み前は 0 幅で描かれてから
-                // 画像の到着で広がり、ノート全体がずれる
-                placeholder: (_, _) => const SizedBox(height: 18, width: 18),
-                errorWidget: (_, _, _) => Text(widget.fallbackLabel),
+            : CustomEmojiImage(
+                url: emojiUrl,
+                size: 18,
+                errorFallback: Text(widget.fallbackLabel),
               ),
         label: Text(
           emojiUrl == null

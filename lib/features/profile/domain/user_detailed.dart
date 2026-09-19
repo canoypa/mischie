@@ -37,8 +37,13 @@ sealed class UserDetailed with _$UserDetailed {
     @Default({}) Map<String, String> emojis,
   }) = _UserDetailed;
 
+  const UserDetailed._();
+
   factory UserDetailed.fromJson(Map<String, dynamic> json) =>
       _$UserDetailedFromJson(json);
+
+  /// 表示用のハンドル。リモートは `@username@host`、ローカルは `@username`。
+  String get acct => host != null ? '@$username@$host' : '@$username';
 }
 
 @freezed

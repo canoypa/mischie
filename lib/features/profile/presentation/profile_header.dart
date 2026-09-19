@@ -16,6 +16,12 @@ import 'package:mischie/features/timeline/domain/user.dart';
 
 /// プロフィール上部の見出し。読み込み中は最低限、揃ったら全体を出す。
 
+/// アバターの直径。
+const _avatarSize = 96.0;
+
+/// アバターがバナーへ食い込む量。下の余白はここから割り出す。
+const _avatarOverhang = 40.0;
+
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({
     super.key,
@@ -78,9 +84,7 @@ class MinimalHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final handle = user.host != null
-        ? '@${user.username}@${user.host}'
-        : '@${user.username}';
+    final handle = user.acct;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,10 +99,10 @@ class MinimalHeader extends StatelessWidget {
             ),
             Positioned(
               left: 16,
-              bottom: -40,
+              bottom: -_avatarOverhang,
               child: DecoratedAvatar(
                 avatarUrl: user.avatarUrl,
-                size: 96,
+                size: _avatarSize,
                 isCat: user.isCat,
                 decorations: user.avatarDecorations,
                 borderColor: colorScheme.surface,
@@ -106,7 +110,7 @@ class MinimalHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 48),
+        const SizedBox(height: _avatarOverhang + 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
@@ -144,9 +148,7 @@ class FullHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final handle = detail.host != null
-        ? '@${detail.username}@${detail.host}'
-        : '@${detail.username}';
+    final handle = detail.acct;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,10 +177,10 @@ class FullHeader extends StatelessWidget {
             ),
             Positioned(
               left: 16,
-              bottom: -40,
+              bottom: -_avatarOverhang,
               child: DecoratedAvatar(
                 avatarUrl: detail.avatarUrl,
-                size: 96,
+                size: _avatarSize,
                 isCat: detail.isCat,
                 decorations: detail.avatarDecorations,
                 borderColor: colorScheme.surface,
@@ -193,7 +195,7 @@ class FullHeader extends StatelessWidget {
           // 支えている。自分のプロフィールではフォローボタンが消えるため、
           // 高さを確保しておかないと名前がアイコンに重なる。
           child: SizedBox(
-            height: 40,
+            height: _avatarOverhang,
             child: Align(
               alignment: Alignment.centerRight,
               child: FollowButton(detail: detail),

@@ -9,6 +9,8 @@ import 'package:mischie/features/timeline/presentation/home_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authNotifierProvider);
+  final authStateListenable = _AuthStateListenable(ref);
+  ref.onDispose(authStateListenable.dispose);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -27,7 +29,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (isLoginRoute || isSplashRoute) return '/';
       return null;
     },
-    refreshListenable: _AuthStateListenable(ref, authNotifier),
+    refreshListenable: authStateListenable,
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(
@@ -40,7 +42,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 });
 
 class _AuthStateListenable extends ChangeNotifier {
-  _AuthStateListenable(Ref ref, AsyncValue<AuthState> initial) {
+  _AuthStateListenable(Ref ref) {
     ref.listen(authNotifierProvider, (prev, next) => notifyListeners());
   }
 }

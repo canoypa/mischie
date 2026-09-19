@@ -53,9 +53,15 @@ class DecoratedAvatar extends StatelessWidget {
         : CircleAvatar(
             radius: radius,
             backgroundColor: _placeholderColor(context),
-            backgroundImage: CachedNetworkImageProvider(
-              avatarUrl!,
-              cacheManager: MediaCacheManager.instance,
+            // 原寸のままデコードすると、一覧に並ぶ小さなアイコンのために
+            // 巨大な画像をメモリへ展開することになる。表示に要る分だけに絞る。
+            backgroundImage: ResizeImage(
+              CachedNetworkImageProvider(
+                avatarUrl!,
+                cacheManager: MediaCacheManager.instance,
+              ),
+              width: (diameter * MediaQuery.devicePixelRatioOf(context))
+                  .round(),
             ),
           );
 

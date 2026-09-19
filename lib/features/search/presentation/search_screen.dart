@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
+import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
@@ -193,25 +192,17 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final handle = user.host != null
-        ? '@${user.username}@${user.host}'
-        : '@${user.username}';
+    final handle = user.acct;
 
     return ListTile(
-      leading: CircleAvatar(
-        backgroundImage: user.avatarUrl != null
-            ? CachedNetworkImageProvider(
-                user.avatarUrl!,
-                cacheManager: MediaCacheManager.instance,
-              )
-            : null,
-        child: user.avatarUrl == null ? const Icon(Icons.person) : null,
+      leading: DecoratedAvatar(
+        avatarUrl: user.avatarUrl,
+        isCat: user.isCat,
+        decorations: user.avatarDecorations,
       ),
       title: MfmText(user.name ?? user.username, emojis: emojis),
       subtitle: Text(handle),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => UserProfileScreen(userId: user.id)),
-      ),
+      onTap: () => openUserProfile(context, user.id),
     );
   }
 }

@@ -162,9 +162,7 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final handle = user.host != null
-        ? '@${user.username}@${user.host}'
-        : '@${user.username}';
+    final handle = user.acct;
 
     return ListTile(
       leading: DecoratedAvatar(
@@ -174,9 +172,7 @@ class _UserTile extends StatelessWidget {
       ),
       title: MfmText(user.name ?? user.username, emojis: emojis),
       subtitle: Text(handle),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => UserProfileScreen(userId: user.id)),
-      ),
+      onTap: () => openUserProfile(context, user.id),
     );
   }
 }

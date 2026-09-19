@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
+import 'package:mischie/core/widgets/custom_emoji_image.dart';
 import 'package:mischie/features/timeline/presentation/note/reactions.dart';
 
 /// 履歴が空のときに出す既定。カスタム絵文字が無いサーバーでも押せる。
@@ -41,6 +42,11 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
   final _searchController = TextEditingController();
   String _query = '';
 
+  // ソート済みのローカル絵文字名をキャッシュする。emojis の中身は打鍵の
+  // たびには変わらないので、マップのインスタンスが変わったときだけ組み直す。
+  Map<String, String>? _lastEmojis;
+  List<String> _local = const [];
+
   @override
   void initState() {
     super.initState();
@@ -56,13 +62,21 @@ class _ReactionPickerState extends ConsumerState<_ReactionPicker> {
     super.dispose();
   }
 
+  List<String> _localNames(Map<String, String> emojis) {
+    if (!identical(_lastEmojis, emojis)) {
+      _lastEmojis = emojis;
+      // 外部サーバーの絵文字 (name@host) は自サーバーへリアクションできない
+      _local = emojis.keys.where((k) => !k.contains('@')).toList()..sort();
+    }
+    return _local;
+  }
+
   @override
   Widget build(BuildContext context) {
     final emojis = ref.watch(emojiCacheProvider).value ?? const {};
     final history = ref.watch(reactionHistoryProvider).value ?? const [];
     final quickPicks = history.isEmpty ? _defaultReactions : history;
-    // 外部サーバーの絵文字 (name@host) は自サーバーへリアクションできない
-    final local = emojis.keys.where((k) => !k.contains('@')).toList()..sort();
+    final local = _localNames(emojis);
     final filtered = _query.isEmpty
         ? local
         : local.where((k) => k.toLowerCase().contains(_query)).toList();
@@ -164,20 +178,10 @@ class _QuickPick extends StatelessWidget {
     // 履歴には `:name@.:`（ローカル）の形も入る。フルキーで引けなければ
     // ホストを落とした短縮名で引き直す。これをしないと絵文字が出ず、
     // `:name@.:` という文字列がそのまま並ぶ。
-    var url = identifier == null ? null : emojis[identifier];
-    if (url == null && identifier != null) {
-      final atIndex = identifier.indexOf('@');
-      if (atIndex > 0) url = emojis[identifier.substring(0, atIndex)];
-    }
+    final url = identifier == null ? null : lookupEmojiUrl(emojis, identifier);
     if (url == null) {
       return Text(reaction, style: const TextStyle(fontSize: 26));
     }
-    return CachedNetworkImage(
-      imageUrl: url,
-      cacheManager: EmojiCacheManager.instance,
-      height: 28,
-      placeholder: (_, _) => const SizedBox(height: 28, width: 28),
-      errorWidget: (_, _, _) => Text(reaction),
-    );
+    return CustomEmojiImage(url: url, size: 28, errorFallback: Text(reaction));
   }
 }

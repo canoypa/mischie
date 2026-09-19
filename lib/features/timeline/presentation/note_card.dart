@@ -27,7 +27,6 @@ class NoteCard extends ConsumerStatefulWidget {
     super.key,
     required this.note,
     required this.serverEmojis,
-    this.showActions = true,
     this.onTap,
   });
 
@@ -35,9 +34,6 @@ class NoteCard extends ConsumerStatefulWidget {
 
   /// サーバー全体の絵文字キャッシュ。TimelineScreen で1回だけ watch して渡す。
   final Map<String, String> serverEmojis;
-
-  /// ノート詳細では返信フォームを別に持つため、アクション行を隠せるようにする。
-  final bool showActions;
 
   /// タップ時の遷移。既定ではノート詳細を開く。
   final VoidCallback? onTap;
@@ -51,7 +47,7 @@ class NoteCard extends ConsumerStatefulWidget {
 class _NoteCardState extends ConsumerState<NoteCard> {
   bool _cwExpanded = false;
 
-  /// 画面に出ている間だけノートの更新を購読する。keep alive をやめたので、
+  /// 画面に出ている間だけノートの更新を購読する。keep alive していないので、
   /// カードの寿命がそのまま「表示中かどうか」になる。
   late final String _capturedNoteId;
 
@@ -59,9 +55,12 @@ class _NoteCardState extends ConsumerState<NoteCard> {
   /// 購読の解除に使うものは initState で捕まえておく。
   late final NoteCapture _capture;
 
-  // ノート固有の絵文字だけを畳んだ結果をキャッシュする。
+  // 重ねた結果の LayeredEmojis 自体をキャッシュする。ここで毎回新しい
+  // インスタンスを返すと、MfmText の identical(oldEmojis, newEmojis) による
+  // 再構築の抑制が効かなくなる。
   Note? _lastNote;
-  Map<String, String> _noteEmojis = const {};
+  Map<String, String>? _lastServerEmojis;
+  LayeredEmojis _emojis = const LayeredEmojis(base: {}, overlay: {});
 
   @override
   void initState() {
@@ -79,25 +78,24 @@ class _NoteCardState extends ConsumerState<NoteCard> {
   }
 
   void _openProfile(User user) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => UserProfileScreen(userId: user.id, initialUser: user),
-      ),
-    );
+    openUserProfile(context, user.id, initialUser: user);
   }
 
   /// サーバー全体の絵文字は共有のまま重ねて引く。ここで
   /// `{...serverEmojis, ...}` と書くと、カスタム絵文字が数千〜1 万件ある
   /// サーバーではノート 1 件ごとにその規模のコピーができてしまう。
-  Map<String, String> _mergeEmojis(Note displayNote) {
-    if (!identical(_lastNote, displayNote)) {
+  LayeredEmojis _mergeEmojis(Note displayNote) {
+    if (!identical(_lastNote, displayNote) ||
+        !identical(_lastServerEmojis, widget.serverEmojis)) {
       _lastNote = displayNote;
-      _noteEmojis =
+      _lastServerEmojis = widget.serverEmojis;
+      final noteEmojis =
           displayNote.emojis.isEmpty && displayNote.reactionEmojis.isEmpty
-          ? const {}
+          ? const <String, String>{}
           : {...displayNote.emojis, ...displayNote.reactionEmojis};
+      _emojis = LayeredEmojis(base: widget.serverEmojis, overlay: noteEmojis);
     }
-    return LayeredEmojis(base: widget.serverEmojis, overlay: _noteEmojis);
+    return _emojis;
   }
 
   @override
@@ -295,13 +293,11 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                             onTap: (reaction) => _react(displayNote, reaction),
                           ),
                         ],
-                        if (widget.showActions) ...[
-                          const SizedBox(height: 4),
-                          NoteActionsRow(
-                            note: displayNote,
-                            onReact: () => _pickReaction(displayNote),
-                          ),
-                        ],
+                        const SizedBox(height: 4),
+                        NoteActionsRow(
+                          note: displayNote,
+                          onReact: () => _pickReaction(displayNote),
+                        ),
                       ],
                     ),
                   ),
@@ -341,9 +337,7 @@ class _UserName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = user.name ?? user.username;
-    final handle = user.host != null
-        ? '@${user.username}@${user.host}'
-        : '@${user.username}';
+    final handle = user.acct;
 
     // 通知一覧と揃えて横並びにする。縦積みだと同じ情報が画面ごとに
     // 違う形で出てしまう。幅を超えたら名前側を省略する（折り返すと

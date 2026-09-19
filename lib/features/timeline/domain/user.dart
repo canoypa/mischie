@@ -19,7 +19,12 @@ sealed class User with _$User {
     @Default([]) List<AvatarDecoration> avatarDecorations,
   }) = _User;
 
+  const User._();
+
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+
+  /// 表示用のハンドル。リモートは `@username@host`、ローカルは `@username`。
+  String get acct => host != null ? '@$username@$host' : '@$username';
 }
 
 /// アイコンに重ねる装飾。Misskey 側で位置・角度・反転を指定できる。

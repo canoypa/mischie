@@ -2,7 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/compose/data/compose_repository.dart';
 
-enum NoteVisibility { public, home, followers, specified }
+enum NoteVisibility {
+  public,
+  home,
+  followers,
+  specified;
+
+  /// サーバーの文字列表現から引く。未知の値は public 扱いにする。
+  static NoteVisibility fromName(String? name) => NoteVisibility.values
+      .firstWhere((v) => v.name == name, orElse: () => NoteVisibility.public);
+}
 
 final composeRepositoryProvider = Provider<ComposeRepository?>((ref) {
   final client = ref.watch(misskeyApiClientProvider);

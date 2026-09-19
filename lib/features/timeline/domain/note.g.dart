@@ -14,16 +14,12 @@ _Note _$NoteFromJson(Map<String, dynamic> json) => _Note(
   text: json['text'] as String?,
   cw: json['cw'] as String?,
   replyId: json['replyId'] as String?,
-  renoteId: json['renoteId'] as String?,
   reply: json['reply'] == null
       ? null
       : Note.fromJson(json['reply'] as Map<String, dynamic>),
   renote: json['renote'] == null
       ? null
       : Note.fromJson(json['renote'] as Map<String, dynamic>),
-  replies: (json['replies'] as List<dynamic>?)
-      ?.map((e) => Note.fromJson(e as Map<String, dynamic>))
-      .toList(),
   uri: json['uri'] as String?,
   url: json['url'] as String?,
   channelId: json['channelId'] as String?,
@@ -68,10 +64,8 @@ Map<String, dynamic> _$NoteToJson(_Note instance) => <String, dynamic>{
   'text': instance.text,
   'cw': instance.cw,
   'replyId': instance.replyId,
-  'renoteId': instance.renoteId,
   'reply': instance.reply,
   'renote': instance.renote,
-  'replies': instance.replies,
   'uri': instance.uri,
   'url': instance.url,
   'channelId': instance.channelId,
@@ -121,7 +115,6 @@ _NoteChannel _$NoteChannelFromJson(Map<String, dynamic> json) => _NoteChannel(
   id: json['id'] as String,
   name: json['name'] as String? ?? '',
   color: json['color'] as String?,
-  isSensitive: json['isSensitive'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$NoteChannelToJson(_NoteChannel instance) =>
@@ -129,5 +122,4 @@ Map<String, dynamic> _$NoteChannelToJson(_NoteChannel instance) =>
       'id': instance.id,
       'name': instance.name,
       'color': instance.color,
-      'isSensitive': instance.isSensitive,
     };

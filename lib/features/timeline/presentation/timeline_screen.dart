@@ -17,8 +17,7 @@ class TimelineScreen extends ConsumerStatefulWidget {
 
 class TimelineScreenState extends ConsumerState<TimelineScreen> {
   final _scrollController = ScrollController();
-  bool _loadingMore = false;
-  int _pendingCount = 0;
+  final _loadingMore = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -36,26 +35,25 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   void _onPendingChanged() {
     if (!mounted) return;
-    final notifier = ref.read(timelineNotifierProvider.notifier);
-    final count = notifier.pendingCount.value;
+    _flushIfAtTop();
+  }
 
-    // 最上部にいる場合は自動で表示
-    if (_scrollController.hasClients &&
-        _scrollController.position.pixels == 0) {
-      notifier.flushPending();
-      // バッジを即座にリセット
-      if (_pendingCount != 0) setState(() => _pendingCount = 0);
+  /// 最上部にいて新着があれば、そのまま先頭へ流し込む。スクロール位置が
+  /// 変わったとき（_onScroll）と新着が届いたとき（_onPendingChanged）の
+  /// 両方で同じ判定が要る。
+  void _flushIfAtTop() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.pixels != 0) {
       return;
     }
-
-    setState(() {
-      _pendingCount = count;
-    });
+    final notifier = ref.read(timelineNotifierProvider.notifier);
+    if (notifier.pendingCount.value > 0) notifier.flushPending();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _loadingMore.dispose();
     // removeListener は notifier が先に dispose されている場合があるので try
     try {
       ref
@@ -82,29 +80,25 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   }
 
   void _onScroll(ScrollUpdateNotification notification) {
-    final pos = _scrollController.position;
     // 最上部に戻ったとき、新着があれば自動表示
-    if (pos.pixels == 0 && _pendingCount > 0) {
-      ref.read(timelineNotifierProvider.notifier).flushPending();
-      setState(() => _pendingCount = 0);
-    }
+    _flushIfAtTop();
+    final pos = _scrollController.position;
     // 末尾 200px 以内に来たら追加ロード
-    if (pos.pixels >= pos.maxScrollExtent - 200 && !_loadingMore) {
+    if (pos.pixels >= pos.maxScrollExtent - 200 && !_loadingMore.value) {
       _loadMore();
     }
   }
 
   Future<void> _loadMore() async {
-    setState(() => _loadingMore = true);
+    _loadingMore.value = true;
     await ref.read(timelineNotifierProvider.notifier).loadMore();
-    if (mounted) setState(() => _loadingMore = false);
+    if (mounted) _loadingMore.value = false;
   }
 
   @override
   Widget build(BuildContext context) {
     final timelineAsync = ref.watch(timelineNotifierProvider);
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
-    final pendingCount = _pendingCount;
 
     return timelineAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -142,14 +136,17 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                       childrenDelegate: SliverChildBuilderDelegate(
                         (context, index) {
                           if (index == notes.length) {
-                            return _loadingMore
-                                ? const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  )
-                                : const SizedBox(height: 80);
+                            return ValueListenableBuilder<bool>(
+                              valueListenable: _loadingMore,
+                              builder: (context, loading, _) => loading
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    )
+                                  : const SizedBox(height: 80),
+                            );
                           }
                           final note = notes[index];
                           return RepaintBoundary(
@@ -176,21 +173,30 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                   ),
           ),
           // 新着ノートチップ
-          if (pendingCount > 0)
-            Positioned(
-              top: 8,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _NewNotesChip(
-                  count: pendingCount,
-                  onTap: () {
-                    ref.read(timelineNotifierProvider.notifier).flushPending();
-                    scrollToTop();
-                  },
-                ),
+          Positioned(
+            top: 8,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: ValueListenableBuilder<int>(
+                valueListenable: ref
+                    .read(timelineNotifierProvider.notifier)
+                    .pendingCount,
+                builder: (context, pendingCount, _) {
+                  if (pendingCount == 0) return const SizedBox.shrink();
+                  return _NewNotesChip(
+                    count: pendingCount,
+                    onTap: () {
+                      ref
+                          .read(timelineNotifierProvider.notifier)
+                          .flushPending();
+                      scrollToTop();
+                    },
+                  );
+                },
               ),
             ),
+          ),
         ],
       ),
     );

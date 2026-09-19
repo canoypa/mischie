@@ -77,9 +77,7 @@ class _RenoterTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = note.user;
-    final handle = user.host != null
-        ? '@${user.username}@${user.host}'
-        : '@${user.username}';
+    final handle = user.acct;
     // 本文があれば引用。無ければそのままのリノート。
     final comment = note.text;
 
@@ -109,12 +107,7 @@ class _RenoterTile extends StatelessWidget {
       isThreeLine: comment != null && comment.isNotEmpty,
       onTap: comment == null || comment.isEmpty
           // そのままのリノートは中身が無いので、その人のところへ
-          ? () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    UserProfileScreen(userId: user.id, initialUser: user),
-              ),
-            )
+          ? () => openUserProfile(context, user.id, initialUser: user)
           : () => openNoteDetail(context, note),
     );
   }

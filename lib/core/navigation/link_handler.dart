@@ -65,9 +65,7 @@ Future<void> openUserByAcct(
   try {
     final user = await repo.fetchUserByAcct(username, host: host);
     if (!context.mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => UserProfileScreen(userId: user.id)),
-    );
+    openUserProfile(context, user.id);
   } catch (e) {
     if (!context.mounted) return;
     _notify(context, resolveErrorMessage(e));

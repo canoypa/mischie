@@ -6,7 +6,7 @@ import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/auth/domain/account.dart';
 import 'package:mischie/features/settings/presentation/settings_screen.dart';
 
-/// 設定画面の見た目。アカウント切り替えは新しく足したところなので、
+/// 設定画面の見た目。アカウント切り替えは並びが崩れても気づきにくいので、
 /// 実機に入れる前にここで一度見る。
 /// 更新: flutter test test/goldens --update-goldens
 const _accounts = [

@@ -76,10 +76,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // 返信は元ノートの公開範囲を引き継ぐ（元より広く公開しない）
     final source = widget.replyTo;
     if (source != null) {
-      _visibility = NoteVisibility.values.firstWhere(
-        (v) => v.name == source.visibility,
-        orElse: () => NoteVisibility.public,
-      );
+      _visibility = NoteVisibility.fromName(source.visibility);
     }
 
     if (widget.initialText != null) {
@@ -96,10 +93,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _showCw = true;
         _cwController.text = draft.cw!;
       }
-      _visibility = NoteVisibility.values.firstWhere(
-        (v) => v.name == draft.visibility,
-        orElse: () => NoteVisibility.public,
-      );
+      _visibility = NoteVisibility.fromName(draft.visibility);
       _attachments.addAll(draft.fileIds.map(Attachment.uploaded));
     }
   }
@@ -651,9 +645,7 @@ class _TargetPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final handle = note.user.host != null
-        ? '@${note.user.username}@${note.user.host}'
-        : '@${note.user.username}';
+    final handle = note.user.acct;
 
     return Container(
       width: double.infinity,

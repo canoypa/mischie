@@ -193,6 +193,17 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
   }
 }
 
+/// 他人のプロフィールを開く。一覧画面がすでに User を持っていれば渡す。
+/// 詳細取得が終わるまでの間も、名前とアイコンをそこから出せる。
+void openUserProfile(BuildContext context, String userId, {User? initialUser}) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) =>
+          UserProfileScreen(userId: userId, initialUser: initialUser),
+    ),
+  );
+}
+
 /// 他人のプロフィールを開く画面。AppBar 付きで UserProfileView を包む。
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key, required this.userId, this.initialUser});

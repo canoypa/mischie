@@ -26,11 +26,14 @@ class NoteActions {
     return repo;
   }
 
+  /// 楽観的更新の重ね掛け（override）があればそれを、無ければ渡されたノートを返す。
+  Note _current(Note note) => _ref.read(noteOverridesProvider)[note.id] ?? note;
+
   /// 同じリアクションなら取り消し、違うリアクションなら付け替える。
   Future<void> toggleReaction(Note note, String reaction) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
-    final current = _ref.read(noteOverridesProvider)[note.id] ?? note;
+    final current = _current(note);
     final previous = current;
 
     final isSame = current.myReaction == reaction;
@@ -55,7 +58,7 @@ class NoteActions {
   Future<void> renote(Note note) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
-    final current = _ref.read(noteOverridesProvider)[note.id] ?? note;
+    final current = _current(note);
 
     overrides.put(current.copyWith(renoteCount: current.renoteCount + 1));
     try {
@@ -69,7 +72,7 @@ class NoteActions {
   Future<void> unrenote(Note note) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
-    final current = _ref.read(noteOverridesProvider)[note.id] ?? note;
+    final current = _current(note);
 
     overrides.put(
       current.copyWith(
@@ -88,7 +91,7 @@ class NoteActions {
   Future<void> vote(Note note, int choice) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
-    final current = _ref.read(noteOverridesProvider)[note.id] ?? note;
+    final current = _current(note);
     final poll = current.poll;
     if (poll == null) return;
 

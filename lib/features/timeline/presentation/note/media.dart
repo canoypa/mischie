@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
+import 'package:mischie/core/widgets/overlay_tag.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:mischie/features/timeline/presentation/note/video_viewer.dart';
@@ -172,7 +173,6 @@ class _MediaTileState extends State<_MediaTile> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 投稿側で alt を書けるようにしたのに読み上げへ渡していなかった。
           // 説明の無い画像は、読み上げ環境では存在しないのと同じになる。
           Semantics(
             image: true,
@@ -181,6 +181,12 @@ class _MediaTileState extends State<_MediaTile> {
               imageUrl: file.thumbnailUrl ?? file.url,
               cacheManager: MediaCacheManager.instance,
               fit: BoxFit.cover,
+              // グリッドのサムネイルは画面幅より大きくは出ない。原寸のまま
+              // デコードすると、その分だけ無駄にメモリへ展開することになる。
+              memCacheWidth:
+                  (MediaQuery.sizeOf(context).width *
+                          MediaQuery.devicePixelRatioOf(context))
+                      .round(),
               placeholder: (context, url) => file.blurhash != null
                   ? BlurHash(hash: file.blurhash!)
                   : Container(
@@ -438,17 +444,7 @@ class _AltBadge extends StatelessWidget {
             ],
           ),
         ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: const Text(
-            'ALT',
-            style: TextStyle(color: Colors.white, fontSize: 10),
-          ),
-        ),
+        child: const OverlayTag(label: 'ALT'),
       ),
     );
   }

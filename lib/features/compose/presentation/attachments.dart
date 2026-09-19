@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:mischie/core/widgets/overlay_tag.dart';
 
 /// 投稿画面の添付まわり。本文の入力と混ざると、どちらも追いにくくなる。
 
@@ -79,8 +80,16 @@ class AttachmentStrip extends StatelessWidget {
                   bottom: 4,
                   child: Row(
                     children: [
-                      if (attachment.alt.isNotEmpty) const Tag(label: 'ALT'),
-                      if (attachment.isSensitive) const Tag(label: 'NSFW'),
+                      if (attachment.alt.isNotEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: OverlayTag(label: 'ALT'),
+                        ),
+                      if (attachment.isSensitive)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: OverlayTag(label: 'NSFW'),
+                        ),
                     ],
                   ),
                 ),
@@ -135,29 +144,6 @@ class AttachmentStrip extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-/// サムネイルに重ねる小さなラベル（ALT / NSFW）。
-class Tag extends StatelessWidget {
-  const Tag({super.key, required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(color: Colors.white, fontSize: 10),
       ),
     );
   }

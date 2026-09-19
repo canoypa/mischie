@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mfm/mfm.dart';
 import 'package:mfm_parser/mfm_parser.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
+import 'package:mischie/core/widgets/custom_emoji_image.dart';
 
 class MfmText extends ConsumerStatefulWidget {
   const MfmText(
@@ -67,14 +66,11 @@ class _MfmTextState extends ConsumerState<MfmText> {
       // 文字より一回り大きい程度に収める。1.8 倍では絵文字が主役になり、
       // 名前や本文が読み取りにくくなる。
       final fontSize = (emojiStyle?.fontSize ?? 14.0) * 1.25;
-      return CachedNetworkImage(
-        imageUrl: url,
-        cacheManager: EmojiCacheManager.instance,
-        height: fontSize,
+      return CustomEmojiImage(
+        url: url,
+        size: fontSize,
         fit: BoxFit.contain,
-        placeholder: (_, _) => SizedBox(height: fontSize, width: fontSize),
-        errorWidget: (context, url, error) =>
-            Text(':$emojiName:', style: emojiStyle),
+        errorFallback: Text(':$emojiName:', style: emojiStyle),
       );
     };
   }
