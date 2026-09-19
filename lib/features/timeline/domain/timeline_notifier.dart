@@ -49,7 +49,12 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
 
   StreamSubscription<Note>? _subscription;
   StreamSubscription<StreamingEvent>? _updateSubscription;
+  StreamSubscription<void>? _reconnectedSubscription;
   final List<Note> _pending = [];
+
+  /// 取得の全量を表す件数。これ以上件数が返ってきたら、取りこぼしの範囲を
+  /// 読み切れないとみなして穴を残さず全体を取り直す。
+  static const _catchUpLimit = 20;
 
   /// タイムラインごとの取得済みノート。タブを戻したときに再取得で待たせない
   /// ため、表示は即座にキャッシュから復帰させる（新着はストリーミングで届く）。
@@ -76,6 +81,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
 
     _subscription?.cancel();
     _updateSubscription?.cancel();
+    _reconnectedSubscription?.cancel();
     _streaming?.dispose();
     _streaming = null;
     _pending.clear();
@@ -94,11 +100,17 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     ref.onDispose(() {
       _subscription?.cancel();
       _updateSubscription?.cancel();
+      _reconnectedSubscription?.cancel();
       _streaming?.dispose();
     });
 
     final cached = _cache[source];
-    if (cached != null) return cached;
+    if (cached != null) {
+      // このキャッシュはタブが非表示だった間ストリーミングが止まっていた
+      // ので、その間の新着を取りこぼしている。
+      unawaited(_catchUp(source));
+      return cached;
+    }
 
     final repo = ref.watch(timelineRepositoryProvider);
     if (repo == null) return [];
@@ -126,6 +138,92 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
         applyNoteUpdate(ref, event.body);
       }
     });
+    _reconnectedSubscription?.cancel();
+    _reconnectedSubscription = _streaming!.reconnected.listen((_) {
+      unawaited(_catchUp(source));
+    });
+  }
+
+  /// アプリ復帰時に呼ぶ。ソケットは背景復帰後サイレントに死んでいることが
+  /// あるため、生きているように見えても張り直す。
+  void resumeStreaming() => _streaming?.reconnect();
+
+  /// 再接続やタブの再表示で空いた期間に投稿されたノートを取りに行く。
+  /// 満杯（穴の可能性あり）なら refresh 相当で全体を取り直し、そうでなけ
+  /// れば streamed ノートと同じ pending 経由で先頭に積む。
+  Future<void> _catchUp(TimelineSource source) async {
+    final repo = ref.read(timelineRepositoryProvider);
+    if (repo == null) return;
+
+    final isSelected = source == ref.read(selectedTimelineProvider);
+    final baseline = _cache[source] ?? const <Note>[];
+    final newestId = isSelected && _pending.isNotEmpty
+        ? _pending.first.id
+        : (baseline.isNotEmpty ? baseline.first.id : null);
+    if (newestId == null) return;
+
+    List<Note> notes;
+    try {
+      notes = await repo.fetchTimeline(
+        source,
+        sinceId: newestId,
+        limit: _catchUpLimit,
+      );
+    } catch (_) {
+      // ベストエフォート。次の再接続やユーザーの pull-to-refresh で追いつける
+      return;
+    }
+    if (notes.isEmpty) return;
+    ref.read(noteOverridesProvider.notifier).evictFetched(notes);
+
+    if (notes.length >= _catchUpLimit) {
+      // 取りこぼした範囲を読み切れないので、穴を残さず全体を取り直す。
+      final fresh = await _fetchFresh(source);
+      if (fresh == null) return;
+      _cache[source] = fresh;
+      if (ref.read(selectedTimelineProvider) == source) {
+        _pending.clear();
+        pendingCount.value = 0;
+        state = AsyncValue.data(fresh);
+      }
+      return;
+    }
+
+    // sinceId 順（新しい順）で来る前提。streamed ノートと同じキューに
+    // 乗せて、新着チップ / 先頭差し込みの挙動をそのまま使う。
+    final stillSelected = source == ref.read(selectedTimelineProvider);
+    final latestCache = _cache[source] ?? baseline;
+    final knownIds = {
+      ...latestCache.map((n) => n.id),
+      if (stillSelected) ..._pending.map((n) => n.id),
+    };
+    final fresh = notes.where((n) => knownIds.add(n.id)).toList();
+    if (fresh.isEmpty) return;
+
+    if (stillSelected) {
+      // _pending は新しい順。取得を待つ間に再接続後の新着が先頭へ届いて
+      // いることがあるので、単純に前後へ足さず投稿日時で並べ直す。
+      _pending
+        ..addAll(fresh)
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      pendingCount.value = _pending.length;
+    } else {
+      // 非表示タブはチップを見せる相手がいないので、キャッシュの先頭に
+      // 積んでおく。次に選ばれたとき build() がそのまま返す。
+      _cache[source] = [...fresh, ...latestCache];
+    }
+  }
+
+  Future<List<Note>?> _fetchFresh(TimelineSource source) async {
+    final repo = ref.read(timelineRepositoryProvider);
+    if (repo == null) return null;
+    try {
+      final notes = await repo.fetchTimeline(source);
+      ref.read(noteOverridesProvider.notifier).evictFetched(notes);
+      return notes;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// バッファしたノートをリスト先頭に追加してカウントをリセット。

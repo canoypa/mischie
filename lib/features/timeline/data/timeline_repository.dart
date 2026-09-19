@@ -12,10 +12,12 @@ class TimelineRepository {
     TimelineSource source, {
     int limit = 20,
     String? untilId,
+    String? sinceId,
   }) async {
     final body = <String, dynamic>{
       'limit': limit,
       'untilId': ?untilId,
+      'sinceId': ?sinceId,
       ...source.params,
     };
     final list = await _client.postList(source.endpoint, body: body);

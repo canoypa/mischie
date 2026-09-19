@@ -83,6 +83,9 @@ dev_dependencies:
   riverpod_generator: ^4.0.3
   freezed: ^3.2.5
   json_serializable: ^6.13.0
+  # StreamingService のテストで、web_socket_channel が実装している
+  # WebSocketChannel のフェイクを作るために直接使う
+  stream_channel: ^2.1.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

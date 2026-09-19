@@ -25,10 +25,18 @@ class _FakeTimelineRepository implements TimelineRepository {
   final Map<String, List<Note>> _initial;
   final Map<String, Completer<List<Note>>> _loadMoreCompleters = {};
 
+  /// sinceId 付きの catch-up 取得（キャッチアップ）に対して返すレスポンス。
+  /// 未設定なら空リスト（＝取りこぼしなし）を返す。
+  final Map<String, List<Note>> _catchUpResponses = {};
+
   _FakeTimelineRepository(this._initial);
 
   void setInitial(TimelineSource source, List<Note> notes) {
     _initial[source.storageKey] = notes;
+  }
+
+  void setCatchUp(TimelineSource source, List<Note> notes) {
+    _catchUpResponses[source.storageKey] = notes;
   }
 
   @override
@@ -36,7 +44,11 @@ class _FakeTimelineRepository implements TimelineRepository {
     TimelineSource source, {
     int limit = 20,
     String? untilId,
+    String? sinceId,
   }) async {
+    if (sinceId != null) {
+      return _catchUpResponses[source.storageKey] ?? const [];
+    }
     if (untilId == null) {
       return _initial[source.storageKey] ?? const [];
     }
@@ -130,6 +142,72 @@ void main() {
         'n2',
         'n1',
         'n0',
+      ]);
+    });
+  });
+
+  group('TimelineNotifier のキャッチアップ（タブを戻したとき）', () {
+    test('フルページ未満なら streamed ノートと同じ pending 経由で先頭に積める', () async {
+      final repo = _FakeTimelineRepository({
+        home.storageKey: [_note('h2'), _note('h1')],
+        local.storageKey: [_note('l1')],
+      });
+      final container = _container(repo);
+
+      await container.read(timelineNotifierProvider.future);
+      final notifier = container.read(timelineNotifierProvider.notifier);
+
+      // 一旦 local に切り替え、home のストリーミング（相当）を止める
+      container.read(selectedTimelineProvider.notifier).source = local;
+      await container.read(timelineNotifierProvider.future);
+
+      // home が非表示の間に 1 件だけ投稿されたとする
+      repo.setCatchUp(home, [_note('h3')]);
+      container.read(selectedTimelineProvider.notifier).source = home;
+      final backToHome = await container.read(timelineNotifierProvider.future);
+
+      // build() 自体は即座にキャッシュを返す（新着はキャッチアップで後から届く）
+      expect(backToHome.map((n) => n.id), ['h2', 'h1']);
+
+      // キャッチアップは非同期なので完了を待つ
+      await Future<void>.delayed(Duration.zero);
+
+      expect(notifier.pendingCount.value, 1);
+      notifier.flushPending();
+      expect(container.read(timelineNotifierProvider).value!.map((n) => n.id), [
+        'h3',
+        'h2',
+        'h1',
+      ]);
+    });
+
+    test('フルページ分返ってきたら穴を残さず全体を取り直す', () async {
+      final repo = _FakeTimelineRepository({
+        home.storageKey: [_note('h1')],
+        local.storageKey: [_note('l1')],
+      });
+      final container = _container(repo);
+
+      await container.read(timelineNotifierProvider.future);
+
+      container.read(selectedTimelineProvider.notifier).source = local;
+      await container.read(timelineNotifierProvider.future);
+
+      // 取りこぼした範囲がフルページ分あり、穴の有無を読み切れない
+      repo.setCatchUp(home, List.generate(20, (i) => _note('c$i')));
+      // 取り直した「素の」取得はキャッチアップとは別の内容を返す
+      repo.setInitial(home, [_note('fresh2'), _note('fresh1')]);
+
+      container.read(selectedTimelineProvider.notifier).source = home;
+      await container.read(timelineNotifierProvider.future);
+
+      // キャッチアップ → 取り直しの 2 段の非同期を待つ
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(timelineNotifierProvider).value!.map((n) => n.id), [
+        'fresh2',
+        'fresh1',
       ]);
     });
   });

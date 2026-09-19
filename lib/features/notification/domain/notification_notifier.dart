@@ -26,6 +26,7 @@ final notificationNotifierProvider =
 class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
   StreamingService? _streaming;
   StreamSubscription<StreamingEvent>? _subscription;
+  StreamSubscription<void>? _reconnectedSubscription;
 
   /// 未読の通知数。通知タブを開いたら 0 に戻す。
   final unreadCount = ValueNotifier<int>(0);
@@ -42,6 +43,7 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
     final authState = ref.watch(authNotifierProvider).value;
 
     _subscription?.cancel();
+    _reconnectedSubscription?.cancel();
     _streaming?.dispose();
     _streaming = null;
     _hasMore = true;
@@ -51,6 +53,7 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
     }
     ref.onDispose(() {
       _subscription?.cancel();
+      _reconnectedSubscription?.cancel();
       _streaming?.dispose();
     });
 
@@ -74,6 +77,48 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
       }
       unreadCount.value++;
     });
+    _reconnectedSubscription?.cancel();
+    _reconnectedSubscription = _streaming!.reconnected.listen((_) {
+      unawaited(_catchUp());
+    });
+  }
+
+  /// アプリ復帰時に呼ぶ。ソケットは背景復帰後サイレントに死んでいることが
+  /// あるため、生きているように見えても張り直す。
+  void resumeStreaming() => _streaming?.reconnect();
+
+  /// 再接続の間に届いた通知を sinceId で取りに行き、既存の先頭へ束ねる。
+  /// ストリーミングで 1 件ずつ届いていた場合と同じ並びになるよう、古い方
+  /// から順に mergeIncomingNotification を通す。
+  Future<void> _catchUp() async {
+    final repo = ref.read(notificationRepositoryProvider);
+    if (repo == null) return;
+    final current = state.value;
+    if (current == null || current.isEmpty) return;
+
+    List<NotificationItem> items;
+    try {
+      items = await repo.fetchNotifications(
+        sinceId: current.first.id,
+        markAsRead: false,
+      );
+    } catch (_) {
+      // ベストエフォート。次の再接続やユーザーの pull-to-refresh で追いつける
+      return;
+    }
+    if (items.isEmpty) return;
+
+    final notes = items.map((item) => item.note).whereType<Note>();
+    ref.read(noteOverridesProvider.notifier).evictFetched(notes);
+
+    final latest = state.value;
+    if (latest == null) return;
+    var merged = latest;
+    for (final item in items.reversed) {
+      merged = mergeIncomingNotification(item, merged);
+    }
+    state = AsyncValue.data(merged);
+    unreadCount.value += items.length;
   }
 
   void markAllRead() => unreadCount.value = 0;
