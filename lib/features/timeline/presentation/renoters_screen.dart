@@ -10,11 +10,8 @@ import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 
-/// このノートをリノート・引用した投稿の一覧。
-///
-/// 誰が広めたのかを辿れないと、話の出どころが追えない。引用は本文が
-/// 付くので、ユーザー名だけでなく中身も出す。
-final renotersProvider = FutureProvider.family<List<Note>, String>((
+/// 引用も含むので、本文があれば出す。
+final renotersProvider = FutureProvider.autoDispose.family<List<Note>, String>((
   ref,
   noteId,
 ) async {

@@ -37,12 +37,16 @@ sealed class Note with _$Note {
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 
-  /// 本文も添付もリアクションも持たない、純粋なリノート（引用ではない）。
   bool get isPureRenote =>
-      renote != null && (text == null || text!.isEmpty) && files.isEmpty;
+      renote != null &&
+      replyId == null &&
+      text == null &&
+      cw == null &&
+      files.isEmpty &&
+      poll == null;
 }
 
-/// 投票。締め切りが無い（expiresAt が null）ものもある。
+/// expiresAt が null なら締め切りなし。
 @freezed
 sealed class Poll with _$Poll {
   const factory Poll({
@@ -63,7 +67,6 @@ sealed class Poll with _$Poll {
     return DateTime.parse(at).isBefore(DateTime.now());
   }
 
-  /// すでに投票したか。締め切り後と同じく、結果だけを見せる状態になる。
   bool get hasVoted => choices.any((choice) => choice.isVoted);
 }
 
@@ -79,13 +82,14 @@ sealed class PollChoice with _$PollChoice {
       _$PollChoiceFromJson(json);
 }
 
-/// ノートが投稿されたチャンネル。
 @freezed
 sealed class NoteChannel with _$NoteChannel {
   const factory NoteChannel({
     required String id,
     @Default('') String name,
     String? color,
+    @Default(false) bool isSensitive,
+    @Default(true) bool allowRenoteToExternal,
   }) = _NoteChannel;
 
   factory NoteChannel.fromJson(Map<String, dynamic> json) =>

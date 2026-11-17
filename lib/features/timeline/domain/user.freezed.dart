@@ -15,8 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$User {
 
- String get id; String get username; String? get name; String? get avatarUrl;/// アイコンのぼかし表現。猫耳の色をここから取る。
- String? get avatarBlurhash; String? get host; bool get isCat; bool get isBot; List<AvatarDecoration> get avatarDecorations;
+ String get id; String get username; String? get name; String? get avatarUrl; String? get avatarBlurhash; String? get host; bool get isCat; bool get isBot; List<AvatarDecoration> get avatarDecorations;
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -219,7 +218,6 @@ class _User extends User {
 @override final  String username;
 @override final  String? name;
 @override final  String? avatarUrl;
-/// アイコンのぼかし表現。猫耳の色をここから取る。
 @override final  String? avatarBlurhash;
 @override final  String? host;
 @override@JsonKey() final  bool isCat;

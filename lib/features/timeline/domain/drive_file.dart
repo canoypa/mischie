@@ -13,10 +13,15 @@ sealed class DriveFile with _$DriveFile {
     String? name,
     String? blurhash,
 
-    /// 画像の説明（alt）。読み上げと、内容を確かめたいときに使う。
+    /// バイト数。
+    int? size,
+
+    /// ルートなら null。
+    String? folderId,
+
+    /// 画像の説明（alt）。
     String? comment,
 
-    /// 画像の寸法など。縦横比を保って表示するのに使う。
     DriveFileProperties? properties,
     @Default(false) bool isSensitive,
   }) = _DriveFile;
@@ -26,8 +31,7 @@ sealed class DriveFile with _$DriveFile {
   factory DriveFile.fromJson(Map<String, dynamic> json) =>
       _$DriveFileFromJson(json);
 
-  /// 表示に使う縦横比。極端に縦長・横長な画像がタイムラインを占領しないよう
-  /// 上下限を設ける。寸法が分からないときは 16:9 に倒す。
+  /// 極端な縦長・横長がタイムラインを占領しないよう上下限を設ける。
   double get displayAspectRatio {
     final width = properties?.width;
     final height = properties?.height;

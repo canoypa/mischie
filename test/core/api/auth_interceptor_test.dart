@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mischie/core/api/auth_interceptor.dart';
 
-/// 送られたリクエストを覚えて、空の JSON を返すだけのアダプタ。
 class _RecordingAdapter implements HttpClientAdapter {
   RequestOptions? last;
 
@@ -45,7 +44,6 @@ void main() {
     });
 
     test('トークンが無ければヘッダーを付けない', () async {
-      // 未ログインで叩ける API（meta など）に空の Bearer を送らない
       final request = await _send(null);
       expect(request.headers.containsKey('Authorization'), isFalse);
     });

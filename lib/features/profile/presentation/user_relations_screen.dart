@@ -6,6 +6,7 @@ import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
+import 'package:mischie/features/profile/domain/user_relation_page.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 
 enum UserRelation {
@@ -29,7 +30,6 @@ void openUserRelations(
   );
 }
 
-/// フォロー中 / フォロワーの一覧。
 class UserRelationsScreen extends ConsumerStatefulWidget {
   const UserRelationsScreen({
     super.key,
@@ -51,13 +51,16 @@ class _UserRelationsScreenState extends ConsumerState<UserRelationsScreen> {
   bool _loadingMore = false;
   Object? _error;
 
+  /// ユーザーの ID ではなく、フォロー関係の ID。
+  String? _nextUntilId;
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
-  Future<List<UserDetailed>> _fetch({String? untilId}) {
+  Future<UserRelationPage> _fetch({String? untilId}) {
     final repo = ref.read(profileRepositoryProvider)!;
     return widget.relation == UserRelation.following
         ? repo.fetchFollowing(widget.userId, untilId: untilId)
@@ -71,12 +74,13 @@ class _UserRelationsScreenState extends ConsumerState<UserRelationsScreen> {
       _error = null;
     });
     try {
-      final users = await _fetch();
+      final page = await _fetch();
       if (!mounted) return;
       setState(() {
         _users
           ..clear()
-          ..addAll(users);
+          ..addAll(page.users);
+        _nextUntilId = page.nextUntilId;
         _loading = false;
       });
     } catch (e) {
@@ -89,12 +93,15 @@ class _UserRelationsScreenState extends ConsumerState<UserRelationsScreen> {
   }
 
   Future<void> _loadMore() async {
-    if (_loadingMore || _users.isEmpty) return;
+    if (_loadingMore || _nextUntilId == null) return;
     setState(() => _loadingMore = true);
     try {
-      final more = await _fetch(untilId: _users.last.id);
+      final page = await _fetch(untilId: _nextUntilId);
       if (!mounted) return;
-      setState(() => _users.addAll(more));
+      setState(() {
+        _users.addAll(page.users);
+        _nextUntilId = page.nextUntilId;
+      });
     } catch (_) {
       // 追加読み込みの失敗は黙って諦める（先頭は読めている）
     } finally {

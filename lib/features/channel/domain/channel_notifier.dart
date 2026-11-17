@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
+import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/channel/data/channel_repository.dart';
 import 'package:mischie/features/channel/domain/channel.dart';
 
@@ -9,7 +10,7 @@ final channelRepositoryProvider = Provider<ChannelRepository?>((ref) {
   return ChannelRepository(client);
 });
 
-final channelProvider = FutureProvider.family<Channel, String>((
+final channelProvider = FutureProvider.autoDispose.family<Channel, String>((
   ref,
   channelId,
 ) async {
@@ -18,7 +19,6 @@ final channelProvider = FutureProvider.family<Channel, String>((
   return repo.show(channelId);
 });
 
-/// フォロー中のチャンネル。無ければおすすめを見せる。
 final followedChannelsProvider = FutureProvider<List<Channel>>((ref) async {
   final repo = ref.watch(channelRepositoryProvider);
   if (repo == null) return const [];
@@ -39,8 +39,7 @@ final channelSearchProvider = FutureProvider.autoDispose
       return repo.search(query);
     });
 
-/// チャンネルのフォロー状態のローカル上書き。プロフィールのフォローと同じく、
-/// 押した瞬間に切り替えて失敗時だけ戻す。
+/// フォロー状態のローカル上書き。押した瞬間に切り替え、失敗したら戻す。
 final channelFollowOverridesProvider =
     NotifierProvider<ChannelFollowOverrides, Map<String, bool>>(
       ChannelFollowOverrides.new,
@@ -48,7 +47,11 @@ final channelFollowOverridesProvider =
 
 class ChannelFollowOverrides extends Notifier<Map<String, bool>> {
   @override
-  Map<String, bool> build() => {};
+  Map<String, bool> build() {
+    // アカウントが変わったら空に戻す
+    ref.watch(currentAccountIdProvider);
+    return {};
+  }
 
   void put(String channelId, {required bool following}) =>
       state = {...state, channelId: following};

@@ -30,7 +30,6 @@ void main() {
       const verifier = 'test_verifier_string';
       final challenge = service.generateCodeChallenge(verifier);
 
-      // 期待値を手動計算
       final hash = sha256.convert(utf8.encode(verifier));
       final expected = base64UrlEncode(hash.bytes).replaceAll('=', '');
 

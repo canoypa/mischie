@@ -4,18 +4,10 @@ import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/core/widgets/collapsible_content.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 
-/// ウィジェットプレビューの置き場。
-///
-/// `flutter widget-preview start` で見る。実機を繋がずに見た目を確かめる
-/// ための入り口で、実機での確認を置き換えるものではない。
-///
-/// プレビューは web 環境で動くため、`dart:io` に依存するもの
-/// （ネットワーク画像のキャッシュ、セキュアストレージなど）は使えない。
-/// ここには依存の無いウィジェットだけを置き、それ以外は
-/// `test/goldens/` のゴールデンで確認する。
+/// `dart:io` に依存するウィジェットはプレビューで動かないため、ここには置かず
+/// ゴールデンで確かめる。
 
-/// アプリと同じ配色でプレビューする。素の Material 既定色で見ても、
-/// 実際の見え方とは違ってしまうため。
+/// 配色は MischieApp のテーマと揃えておく。
 final class _MischiePreview extends MultiPreview {
   const _MischiePreview({required this.previewName, this.previewSize});
 

@@ -8,7 +8,6 @@ enum NoteVisibility {
   followers,
   specified;
 
-  /// サーバーの文字列表現から引く。未知の値は public 扱いにする。
   static NoteVisibility fromName(String? name) => NoteVisibility.values
       .firstWhere((v) => v.name == name, orElse: () => NoteVisibility.public);
 }
@@ -33,6 +32,7 @@ class ComposeNotifier extends AsyncNotifier<void> {
     NoteVisibility visibility = NoteVisibility.public,
     String? replyId,
     String? renoteId,
+    String? channelId,
     List<String> fileIds = const [],
     List<String> pollChoices = const [],
     bool pollMultiple = false,
@@ -48,6 +48,7 @@ class ComposeNotifier extends AsyncNotifier<void> {
         visibility: visibility,
         replyId: replyId,
         renoteId: renoteId,
+        channelId: channelId,
         fileIds: fileIds,
         pollChoices: pollChoices,
         pollMultiple: pollMultiple,

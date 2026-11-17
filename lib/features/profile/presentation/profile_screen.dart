@@ -4,7 +4,6 @@ import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 
-/// 自分のプロフィールタブ。表示は他人のプロフィールと同じものを使う。
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 

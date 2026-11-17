@@ -13,11 +13,6 @@ final accountStoreProvider = Provider<AccountStore>(
   (ref) => AccountStore(ref.watch(flutterSecureStorageProvider)),
 );
 
-/// 使用中のアカウント向けの API クライアント。
-///
-/// アカウントを切り替えるとここが作り直され、これを watch している
-/// リポジトリ以下がまとめて入れ替わる。
-/// API 呼び出しの記録。設定から中身を確認できる。
 final requestLogProvider = Provider<RequestLog>((ref) {
   final log = RequestLog();
   ref.onDispose(log.dispose);

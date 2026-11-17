@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/emoji/layered_emojis.dart';
+import 'package:mischie/core/navigation/link_handler.dart';
+import 'package:mischie/core/widgets/scrollable_message.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/widgets/custom_emoji_image.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
+import 'package:mischie/features/drive/presentation/drive_screen.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 import 'package:mischie/features/notification/domain/notification_label.dart';
@@ -14,10 +17,7 @@ import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-/// `:name:` / `:name@server.tld:` 形式のリアクションキーから絵文字名を取る。
-///
-/// note/reactions.dart にも同じ判定があるが、通知一覧はこちらの
-/// ファイル群だけで完結させたいので、小さな正規表現ひとつをここでも持つ。
+/// `:name:` / `:name@host:` 形式のリアクションキーから絵文字名を取る。
 final _customEmojiKeyPattern = RegExp(r'^:([^:]+):$');
 
 String? _lookupGroupedEmojiUrl(Map<String, String> emojis, String key) {
@@ -30,15 +30,34 @@ String? _lookupGroupedEmojiUrl(Map<String, String> emojis, String key) {
   return emojis[identifier.substring(0, atIndex)];
 }
 
+/// HomeScreen から scrollToTop() を呼ぶための GlobalKey。
+final notificationScreenKey = GlobalKey<NotificationScreenState>();
+
 class NotificationScreen extends ConsumerStatefulWidget {
-  const NotificationScreen({super.key});
+  NotificationScreen() : super(key: notificationScreenKey);
 
   @override
-  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
+  ConsumerState<NotificationScreen> createState() => NotificationScreenState();
 }
 
-class _NotificationScreenState extends ConsumerState<NotificationScreen> {
+class NotificationScreenState extends ConsumerState<NotificationScreen> {
   bool _loadingMore = false;
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   Future<void> _loadMore() async {
     if (_loadingMore) return;
@@ -63,24 +82,28 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
 
     return asyncState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(resolveErrorMessage(e)),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: () => ref.invalidate(notificationNotifierProvider),
-              child: const Text('再試行'),
-            ),
-          ],
+      error: (e, _) => RefreshIndicator(
+        onRefresh: () =>
+            ref.read(notificationNotifierProvider.notifier).refresh(),
+        child: ScrollableMessage(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(resolveErrorMessage(e)),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => ref.invalidate(notificationNotifierProvider),
+                child: const Text('再試行'),
+              ),
+            ],
+          ),
         ),
       ),
       data: (items) => RefreshIndicator(
         onRefresh: () =>
             ref.read(notificationNotifierProvider.notifier).refresh(),
         child: items.isEmpty
-            ? const Center(child: Text('通知はありません'))
+            ? const ScrollableMessage(child: Text('通知はありません'))
             : NotificationListener<ScrollUpdateNotification>(
                 onNotification: (n) {
                   final pos = n.metrics;
@@ -88,6 +111,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                   return false;
                 },
                 child: ListView.builder(
+                  controller: _scrollController,
                   itemCount: items.length + 1,
                   itemBuilder: (context, index) {
                     if (index == items.length) {
@@ -110,13 +134,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   }
 }
 
-class _NotificationTile extends StatelessWidget {
+class _NotificationTile extends ConsumerWidget {
   const _NotificationTile({required this.item, required this.serverEmojis});
 
   final NotificationItem item;
   final Map<String, String> serverEmojis;
 
-  /// まとめ通知に載っている相手。新しい順。
   List<User> get _groupActors => switch (item.type) {
     'reaction:grouped' =>
       (item.reactions ?? const []).map((r) => r.user).toList(),
@@ -125,19 +148,16 @@ class _NotificationTile extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final label = notificationLabel(item.type);
     final isGrouped =
         item.type == 'reaction:grouped' || item.type == 'renote:grouped';
     final groupActors = _groupActors;
-    // まとめ通知には単発の user が無い（サーバーが送ってこない）ので、
-    // 先頭（最新）の相手をリーディングアイコンに立てる。
+    // まとめ通知には user が無いので、先頭（最新）の相手をアイコンに出す。
     final leadUser = isGrouped
         ? (groupActors.isNotEmpty ? groupActors.first : null)
         : item.user;
-    // 種類の区別はアイコンで付ける。色は Material 3 のカラーロールから
-    // 取り、seed から導かれた調和の中に収める。
     final (badgeColor, onBadgeColor) = switch (label.role) {
       NotificationRole.primary => (colorScheme.primary, colorScheme.onPrimary),
       NotificationRole.secondary => (
@@ -206,8 +226,6 @@ class _NotificationTile extends StatelessWidget {
           ],
         ),
       ),
-      // 相手のいない通知（投票の終了・実績など）では名前を出さない。
-      // 付けると「Cano が 投票が終了しました」のように文が壊れる。
       title: isGrouped
           ? _GroupedTitle(
               actors: groupActors,
@@ -244,10 +262,14 @@ class _NotificationTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isGrouped) _GroupedAvatars(item: item, emojis: noteEmojis),
-          if (item.note?.text != null)
+          // CW 付きのノートは、本文ではなく注意書きを出す（一覧で中身を見せない）
+          if (item.note?.cw ?? item.note?.text case final summary?)
             MfmText(
-              item.note!.text!,
+              summary,
               emojis: noteEmojis,
+              host: item.note!.user.host,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           if (!isGrouped && item.reaction != null)
@@ -256,16 +278,29 @@ class _NotificationTile extends StatelessWidget {
               emojis: noteEmojis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
+          if (item.type == 'receiveFollowRequest' && leadUser != null)
+            _FollowRequestActions(userId: leadUser.id),
         ],
       ),
       trailing: Text(time, style: Theme.of(context).textTheme.bodySmall),
-      // 通知は「開けて当然」なので、ノートがあればノートへ、
-      // なければ相手のプロフィールへ飛ぶ
       onTap: () {
         final note = item.note;
         if (note != null) {
           openNoteDetail(context, note);
           return;
+        }
+        switch (item.type) {
+          case 'chatRoomInvitationReceived':
+            openOnServer(ref, '/chat');
+            return;
+          case 'achievementEarned':
+            openOnServer(ref, '/my/achievements');
+            return;
+          case 'exportCompleted':
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DriveScreen()));
+            return;
         }
         if (leadUser != null) {
           openUserProfile(context, leadUser.id, initialUser: leadUser);
@@ -275,9 +310,7 @@ class _NotificationTile extends StatelessWidget {
   }
 }
 
-/// まとめ通知の見出し。「Cano ほか 3 人がリアクション」のように、単発行
-/// （「Cano @cano がリアクション」）と揃えて「さん」は付けない。
-/// 最新の相手の名前だけを個別に出し、残りは人数でまとめる。
+/// 単発行と揃えて「さん」は付けない。
 class _GroupedTitle extends StatelessWidget {
   const _GroupedTitle({
     required this.actors,
@@ -318,9 +351,6 @@ class _GroupedTitle extends StatelessWidget {
   }
 }
 
-/// まとめ通知の本文側。重ねた相手のアイコンを最大 6 件並べる。
-/// リアクションのまとめは、誰が何のリアクションを付けたかをその人の
-/// アイコンにバッジで乗せる（Misskey Web と同じ見せ方）。
 class _GroupedAvatars extends StatelessWidget {
   const _GroupedAvatars({required this.item, required this.emojis});
 
@@ -345,8 +375,6 @@ class _GroupedAvatars extends StatelessWidget {
   }
 }
 
-/// 重ねて並べた相手のアイコン。最大 6 人までに残りは "+N" でまとめ、
-/// アイコンをタップすればその人のプロフィールへ飛ぶ。
 class _AvatarStack extends StatelessWidget {
   const _AvatarStack({
     required this.users,
@@ -361,7 +389,6 @@ class _AvatarStack extends StatelessWidget {
   /// なら null。
   final List<String>? reactions;
 
-  // 一覧の行に収まりつつ、誰が絡んだか見て取れる大きさ・数。
   static const _size = 28.0;
   static const _max = 6;
 
@@ -371,7 +398,6 @@ class _AvatarStack extends StatelessWidget {
     if (shown.isEmpty) return const SizedBox.shrink();
     final overflow = users.length - shown.length;
     const size = _size;
-    // 3 分の 1 ほど重ねる。
     final step = size * 2 / 3;
     final slots = shown.length + (overflow > 0 ? 1 : 0);
     final width = size + step * (slots - 1);
@@ -382,8 +408,7 @@ class _AvatarStack extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 先頭（最新）を一番手前・左に置きたいので、後ろのアイコンから
-          // 先に描く。
+          // 先頭（最新）を手前に重ねるため、後ろから描く。
           for (var i = shown.length - 1; i >= 0; i--)
             Positioned(
               left: step * i,
@@ -405,7 +430,6 @@ class _AvatarStack extends StatelessWidget {
   }
 }
 
-/// スタック 1 個ぶん。アイコン本体と、あれば右下のリアクションバッジ。
 class _StackedAvatar extends StatelessWidget {
   const _StackedAvatar({
     required this.user,
@@ -473,8 +497,7 @@ class _StackedAvatar extends StatelessWidget {
       );
     }
 
-    // タップ領域はアイコン本体と同じ大きさ（重ねているため、隣と揃えて
-    // 40dp を確保すると隣同士の判定が被って押し分けられなくなる）。
+    // 重ねているので、タップ領域を 40dp に広げると隣と被る。
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => openUserProfile(context, user.id, initialUser: user),
@@ -483,7 +506,6 @@ class _StackedAvatar extends StatelessWidget {
   }
 }
 
-/// スタックに乗らなかった残り人数。"+3" のように出す。
 class _OverflowCount extends StatelessWidget {
   const _OverflowCount({required this.count, required this.size});
 
@@ -512,6 +534,69 @@ class _OverflowCount extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FollowRequestActions extends ConsumerStatefulWidget {
+  const _FollowRequestActions({required this.userId});
+
+  final String userId;
+
+  @override
+  ConsumerState<_FollowRequestActions> createState() =>
+      _FollowRequestActionsState();
+}
+
+class _FollowRequestActionsState extends ConsumerState<_FollowRequestActions> {
+  bool _busy = false;
+  String? _result;
+
+  Future<void> _answer({required bool accept}) async {
+    final repo = ref.read(notificationRepositoryProvider);
+    if (repo == null) return;
+    setState(() => _busy = true);
+    try {
+      if (accept) {
+        await repo.acceptFollowRequest(widget.userId);
+      } else {
+        await repo.rejectFollowRequest(widget.userId);
+      }
+      if (mounted) setState(() => _result = accept ? '承認しました' : '拒否しました');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    if (result != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(result, style: Theme.of(context).textTheme.bodySmall),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        spacing: 8,
+        children: [
+          FilledButton.tonal(
+            onPressed: _busy ? null : () => _answer(accept: true),
+            child: const Text('承認'),
+          ),
+          OutlinedButton(
+            onPressed: _busy ? null : () => _answer(accept: false),
+            child: const Text('拒否'),
+          ),
+        ],
       ),
     );
   }

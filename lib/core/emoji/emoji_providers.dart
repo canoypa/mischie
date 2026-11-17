@@ -10,19 +10,19 @@ final emojiRepositoryProvider = Provider<EmojiRepository?>((ref) {
   return EmojiRepository(client);
 });
 
-/// サーバーの全カスタム絵文字キャッシュ (shortcode name → URL)
-/// 一度取得したら再利用する。ログアウト/ログイン時は自動で invalidate される。
-final emojiCacheProvider = FutureProvider<Map<String, String>>((ref) async {
+final emojiCatalogProvider = FutureProvider<EmojiCatalog>((ref) async {
   final repo = ref.watch(emojiRepositoryProvider);
-  if (repo == null) return {};
-  return repo.fetchEmojis();
+  if (repo == null) return EmojiCatalog.empty;
+  return repo.fetchCatalog();
 });
+
+final emojiCacheProvider = FutureProvider<Map<String, String>>(
+  (ref) async => (await ref.watch(emojiCatalogProvider.future)).urls,
+);
 
 final prefsStoreProvider = Provider<PrefsStore>((ref) => const PrefsStore());
 
-/// よく使うリアクションの履歴（新しい順）。
-///
-/// 毎回グリッドから探させると、同じ絵文字を押すだけでも手間がかかる。
+/// 使ったリアクションの履歴（新しい順）。
 final reactionHistoryProvider =
     AsyncNotifierProvider<ReactionHistory, List<String>>(ReactionHistory.new);
 
@@ -39,10 +39,8 @@ class ReactionHistory extends AsyncNotifier<List<String>> {
 
   Future<void> record(String reaction) async {
     final key = normalizeReactionKey(reaction);
-    // build() の完了前に呼ばれることがある（既存チップからの1回目の
-    // リアクション）。state.value を直接読むと未完了時は空のままで、
-    // 後から build() の結果が上書きして今の記録が消えてしまうため、
-    // 読み込み結果そのものを待つ。
+    // 読み込み前に呼ばれると、state.value では今の記録が後から上書きされて消える。
+    // 読み込みを待つ。
     final loaded = await future;
     final updated = _dedupe([key, ...loaded]);
     state = AsyncValue.data(updated);

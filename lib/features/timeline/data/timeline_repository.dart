@@ -24,7 +24,6 @@ class TimelineRepository {
     return list.map(Note.fromJson).toList();
   }
 
-  /// 自分が作ったリスト一覧。
   Future<List<UserList>> fetchLists() async {
     final list = await _client.postList('users/lists/list');
     return list.map(UserList.fromJson).toList();

@@ -13,6 +13,8 @@ void main() {
         fileIds: ['f1', 'f2'],
         replyId: 'note-reply',
         renoteId: 'note-renote',
+        channelId: 'channel1',
+        channelName: 'お絵かき',
         pollChoices: ['A', 'B', ''],
         pollMultiple: true,
         pollExpiresInMs: 3600000,
@@ -27,6 +29,8 @@ void main() {
       expect(restored.fileIds, draft.fileIds);
       expect(restored.replyId, 'note-reply');
       expect(restored.renoteId, 'note-renote');
+      expect(restored.channelId, 'channel1');
+      expect(restored.channelName, 'お絵かき');
       expect(restored.pollChoices, ['A', 'B', '']);
       expect(restored.pollMultiple, isTrue);
       expect(restored.pollExpiresInMs, 3600000);
@@ -48,9 +52,7 @@ void main() {
       expect(restored.renoteId, isNull);
     });
 
-    test('投票を追加する前の古い drafts.json エントリも問題なく読める', () {
-      // pollChoices/pollMultiple/pollExpiresInMs も replyId/renoteId も
-      // 無い、追加前に保存された下書き。
+    test('後から足した項目が無い古い下書きも読める', () {
       final old = Draft.fromJson({
         'id': 'old-1',
         'text': '昔の下書き',
@@ -66,6 +68,8 @@ void main() {
       expect(old.pollExpiresInMs, isNull);
       expect(old.replyId, isNull);
       expect(old.renoteId, isNull);
+      expect(old.channelId, isNull);
+      expect(old.channelName, isNull);
     });
   });
 }

@@ -6,23 +6,20 @@ import 'package:mischie/core/providers/core_providers.dart';
 import 'package:mischie/features/auth/domain/account.dart';
 import 'package:mischie/features/settings/presentation/settings_screen.dart';
 
-/// 設定画面の見た目。アカウント切り替えは並びが崩れても気づきにくいので、
-/// 実機に入れる前にここで一度見る。
-/// 更新: flutter test test/goldens --update-goldens
 const _accounts = [
   Account(
-    host: 'misskey.io',
+    host: 'example.com',
     accessToken: 't1',
     userId: 'u1',
-    username: 'cano',
-    name: 'Cano',
+    username: 'alice',
+    name: 'Alice',
   ),
   Account(
-    host: 'mi.tepbyte.dev',
+    host: 'example.org',
     accessToken: 't2',
     userId: 'u2',
-    username: 'cano',
-    name: 'Cano (開発用)',
+    username: 'alice',
+    name: 'Alice (サブ)',
   ),
 ];
 

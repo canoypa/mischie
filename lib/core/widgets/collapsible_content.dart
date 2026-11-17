@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
-/// 長いノートを、描画後の高さで折りたたむ。
-///
-/// 本文を文字数で切ると MFM（装飾・絵文字・引用）の途中で切れて表現が壊れる。
-/// ここでは中身をそのまま組んだうえで、実測の高さが [maxHeight] を超えた
-/// ときだけ表示を切り詰める。
+/// 長いノートを、描画後の高さで折りたたむ。文字数で切ると MFM の途中で切れて表示が壊れるため。
 class CollapsibleContent extends StatefulWidget {
   const CollapsibleContent({
     super.key,
@@ -108,7 +104,6 @@ class _ToggleButton extends StatelessWidget {
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minimumSize: const Size(0, 32),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         icon: Icon(expanded ? Icons.expand_less : Icons.expand_more, size: 18),
         label: Text(expanded ? '折りたたむ' : '続きを見る'),
@@ -166,7 +161,7 @@ class _RenderMaxHeight extends RenderBox
       return;
     }
 
-    // 高さは無制限で組む。ここで切ると中身の折り返しが変わってしまう。
+    // 本当の高さを測るため、高さは制限せずに組む。
     child.layout(
       BoxConstraints(
         minWidth: constraints.minWidth,

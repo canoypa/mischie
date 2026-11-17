@@ -23,7 +23,6 @@ class SearchQuery extends Notifier<String> {
   set query(String value) => state = value;
 }
 
-/// 検索結果は先頭 20 件で終わりではない。末尾まで読んだら続きを足す。
 final noteSearchProvider = AsyncNotifierProvider<NoteSearch, List<Note>>(
   NoteSearch.new,
 );

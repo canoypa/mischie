@@ -4,7 +4,6 @@ import 'package:mischie/core/widgets/blurhash_color.dart';
 void main() {
   group('averageColorOfBlurhash', () {
     test('実サーバーが返す blurhash から色を取れる', () {
-      // misskey.io のアイコンから取得したもの
       final color = averageColorOfBlurhash(
         r'eCE-UV%$0;Wab]9lb{.9p0I[?b-qJEwK${^8bcO?OYIo~C$*5RNs,-',
       );

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:video_player/video_player.dart';
 
-/// 動画を全画面で再生する。
-///
-/// 外部アプリへ渡すと、見終わったあとにタイムラインの位置へ戻れない。
-/// 中で再生して閉じれば、読んでいた場所がそのまま残る。
+/// 動画をアプリ内で再生する。外部アプリへ渡すと、見終わったあとにタイムラインの位置へ戻れない。
 void openVideo(BuildContext context, DriveFile file) {
   showDialog<void>(
     context: context,
@@ -52,20 +50,28 @@ class _VideoViewerState extends State<VideoViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog.fullscreen(
-      backgroundColor: Colors.transparent,
-      child: Stack(
-        children: [
-          Center(child: _content()),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(child: _content()),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    tooltip: '閉じる',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -84,13 +90,26 @@ class _VideoViewerState extends State<VideoViewer> {
         AspectRatio(
           aspectRatio: _controller.value.aspectRatio,
           child: GestureDetector(
-            // 画面のどこでも止められるほうが速い
-            onTap: () => setState(
-              () => _controller.value.isPlaying
-                  ? _controller.pause()
-                  : _controller.play(),
+            onTap: () => _controller.value.isPlaying
+                ? _controller.pause()
+                : _controller.play(),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(_controller),
+                ValueListenableBuilder<VideoPlayerValue>(
+                  valueListenable: _controller,
+                  builder: (context, value, _) => value.isPlaying
+                      ? const SizedBox.shrink()
+                      : const Icon(
+                          Icons.play_circle_outline,
+                          color: Colors.white,
+                          size: 64,
+                          semanticLabel: '再生',
+                        ),
+                ),
+              ],
             ),
-            child: VideoPlayer(_controller),
           ),
         ),
         VideoProgressIndicator(_controller, allowScrubbing: true),

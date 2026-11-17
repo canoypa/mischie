@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 
 void main() {
-  final userJson = {'id': 'u1', 'username': 'cano', 'name': 'Cano'};
+  final userJson = {'id': 'u1', 'username': 'carol', 'name': 'Carol'};
   final noteJson = {
     'id': 'note1',
     'createdAt': '2024-01-01T00:00:00.000Z',
@@ -10,7 +10,7 @@ void main() {
     'text': 'hello',
   };
 
-  group('NotificationItem.fromJson / 既存の種別', () {
+  group('NotificationItem.fromJson / 単独の通知', () {
     test('reaction は user と reaction を持つ', () {
       final item = NotificationItem.fromJson({
         'id': 'n1',
@@ -22,7 +22,7 @@ void main() {
       });
 
       expect(item.type, 'reaction');
-      expect(item.user?.username, 'cano');
+      expect(item.user?.username, 'carol');
       expect(item.reaction, '👍');
       expect(item.reactions, isNull);
       expect(item.users, isNull);
@@ -61,7 +61,7 @@ void main() {
       expect(item.user, isNull);
       expect(item.note?.id, 'note1');
       expect(item.reactions, hasLength(2));
-      expect(item.reactions![0].user.username, 'cano');
+      expect(item.reactions![0].user.username, 'carol');
       expect(item.reactions![0].reaction, '👍');
       expect(item.reactions![1].user.username, 'alice');
       expect(item.reactions![1].reaction, '🎉');
@@ -82,7 +82,7 @@ void main() {
       expect(item.type, 'renote:grouped');
       expect(item.user, isNull);
       expect(item.users, hasLength(2));
-      expect(item.users![0].username, 'cano');
+      expect(item.users![0].username, 'carol');
       expect(item.users![1].username, 'alice');
     });
   });

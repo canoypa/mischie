@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// isCat のユーザーのアイコンに生やす猫耳。
-///
-/// アイコンの上へはみ出して描くので、置く側は Stack の `clipBehavior` を
-/// `Clip.none` にしておく。色はアイコンの平均色に合わせる。素の三角形だと
-/// アイコンから浮くうえ、猫らしさも出ない。
+/// isCat のユーザーのアイコンに載せる猫耳。
 class CatEars extends StatelessWidget {
   const CatEars({super.key, required this.width, this.color, this.innerColor});
 
-  /// アイコンの直径。耳の大きさと間隔はここから決める。
+  /// アイコンの直径。
   final double width;
 
-  /// 耳の色。アイコンの平均色を渡す。省略時はテーマの色を使う。
+  /// アイコンの平均色を渡す。
   final Color? color;
   final Color? innerColor;
 
@@ -23,7 +19,6 @@ class CatEars extends StatelessWidget {
       size: Size(width, width * 0.44),
       painter: CatEarsPainter(
         color: base,
-        // 内側は少し明るく。同系色のまま濃淡で耳の内外を描き分ける。
         innerColor: innerColor ?? _lighten(base),
       ),
     );
@@ -57,7 +52,7 @@ class CatEarsPainter extends CustomPainter {
       final baseOuter = w * (0.5 + side * 0.52);
       final tipX = w * (0.5 + side * 0.40);
 
-      // 外側は膨らませ、内側はくぼませる。直線で結ぶと三角形になる。
+      // 外側は膨らませ、内側はくぼませる。
       canvas.drawPath(
         Path()
           ..moveTo(baseInner, h)

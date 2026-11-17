@@ -12,26 +12,51 @@ import 'package:uuid/uuid.dart';
 const _clientId = 'https://mischie.tepbyte.dev/';
 const _redirectUri = 'mischie://oauth/callback';
 
-/// 要求するスコープ。
-///
-/// エンドポイントごとの必要権限は API 仕様（/api.json の各 description に
-/// ある **Permission**）から拾ったもの。足りないと該当操作だけが 403 で
-/// 落ちるうえ、トークンは発行時のスコープで固定されるため、増やしたときは
-/// 再ログインが要る。
+/// 足りないと該当操作が 403 になる。トークンは発行時のスコープで固定されるため、
+/// 増やしたら再ログインが要る。
 const _scopes =
     'read:account '
+    'write:account '
     'read:notifications '
+    'write:notifications '
     'write:notes '
+    'read:reactions '
     'write:reactions '
+    'read:following '
     'write:following '
+    'read:drive '
     'write:drive '
+    'read:mutes '
     'write:mutes '
+    'read:blocks '
     'write:blocks '
+    'read:favorites '
+    'write:favorites '
+    'read:clip-favorite '
+    'write:clip-favorite '
+    'read:channels '
     'write:channels '
     'write:votes '
-    'read:channels';
+    'write:report-abuse '
+    'read:federation';
+
+/// ログインの途中でユーザーがやめた。エラーとしては知らせない。
+class OAuthCancelledException implements Exception {
+  const OAuthCancelledException();
+}
 
 class OAuthService {
+  /// ブラウザからの戻りを待っているログイン。キャンセルと、二重に始めた
+  /// ときの前のログインの打ち切りに使う。
+  Completer<String>? _pending;
+
+  void cancel() {
+    final pending = _pending;
+    if (pending != null && !pending.isCompleted) {
+      pending.completeError(const OAuthCancelledException());
+    }
+  }
+
   Future<({String host, String accessToken})> login(String host) async {
     final codeVerifier = generateCodeVerifier();
     final codeChallenge = generateCodeChallenge(codeVerifier);
@@ -88,22 +113,15 @@ class OAuthService {
     return (host: host, accessToken: accessToken);
   }
 
-  /// OAuth callback via the external system browser + OS deep link.
-  ///
-  /// Per RFC 8252 ("OAuth 2.0 for Native Apps") we open the authorize URL in
-  /// the external browser and listen for the `mischie://oauth/callback` deep
-  /// link. This deliberately avoids `flutter_web_auth_2`'s in-app tab: its 5.x
-  /// AuthTab default silently fails to deliver the callback on some Chrome
-  /// builds (login hangs with no error), and 4.x no longer compiles against the
-  /// current Android (AGP namespace) toolchain. The `mischie://` scheme is
-  /// routed to MainActivity (see AndroidManifest) and surfaced through
-  /// `app_links`.
+  /// OAuth は外部ブラウザで行い、`mischie://oauth/callback` のディープリンクで戻る。
+  /// スキームは AndroidManifest で受ける。
   Future<String> _authenticateWithSystemBrowser({
     required Uri authEndpoint,
     required String state,
   }) async {
+    cancel();
     final appLinks = AppLinks();
-    final completer = Completer<String>();
+    final completer = _pending = Completer<String>();
     final subscription = appLinks.uriLinkStream.listen((uri) {
       if (uri.scheme == 'mischie' && uri.queryParameters['state'] == state) {
         if (!completer.isCompleted) {
@@ -126,6 +144,7 @@ class OAuthService {
         onTimeout: () => throw Exception('OAuth timed out'),
       );
     } finally {
+      if (identical(_pending, completer)) _pending = null;
       await subscription.cancel();
     }
   }

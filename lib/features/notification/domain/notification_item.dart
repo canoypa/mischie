@@ -15,12 +15,10 @@ sealed class NotificationItem with _$NotificationItem {
     Note? note,
     String? reaction,
 
-    /// `reaction:grouped` の中身。同じノートへの連続したリアクションを
-    /// まとめたもので、新しい順に入る。
+    /// `reaction:grouped` の中身。新しい順。
     List<GroupedReaction>? reactions,
 
-    /// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
-    /// 新しい順にまとめたもの。
+    /// `renote:grouped` の相手。新しい順。
     List<User>? users,
   }) = _NotificationItem;
 
@@ -28,7 +26,6 @@ sealed class NotificationItem with _$NotificationItem {
       _$NotificationItemFromJson(json);
 }
 
-/// `reaction:grouped` 通知に含まれる、1 件ぶんのリアクション。
 @freezed
 sealed class GroupedReaction with _$GroupedReaction {
   const factory GroupedReaction({

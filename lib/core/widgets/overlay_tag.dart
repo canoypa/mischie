@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 画像などに重ねる小さなラベル（ALT / NSFW など）。
 class OverlayTag extends StatelessWidget {
   const OverlayTag({super.key, required this.label});
 

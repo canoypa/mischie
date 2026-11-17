@@ -2,19 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/search/domain/search_notifier.dart';
 
-/// 入力中のトークンの種類。
-enum CompletionKind {
-  /// `:name` — カスタム絵文字
-  emoji,
+enum CompletionKind { emoji, mention, mfmFunction }
 
-  /// `@name` — メンション
-  mention,
-
-  /// `$[fn ` — MFM の装飾
-  mfmFunction,
-}
-
-/// カーソル位置で補完しようとしているもの。
 class CompletionQuery {
   const CompletionQuery({
     required this.kind,
@@ -25,7 +14,7 @@ class CompletionQuery {
 
   final CompletionKind kind;
 
-  /// 記号を除いた入力済みの文字。空でも候補は出す。
+  /// 記号を除いた部分。空でも候補は出す。
   final String query;
 
   /// 置き換える範囲（記号を含む）。
@@ -33,18 +22,13 @@ class CompletionQuery {
   final int end;
 }
 
-/// カーソル直前を見て、補完対象を取り出す。
-///
-/// 補完は入力の邪魔になりやすいので、拾う条件は狭くする。記号の直前が
-/// 単語の途中（英数字）なら拾わない。`http://` の `:` などで候補が出ると
-/// うるさいだけなので。
+/// 補完は入力の邪魔になりやすいので、拾う条件を狭くしている。
 CompletionQuery? completionAt(String text, int cursor) {
   if (cursor < 0 || cursor > text.length) return null;
 
   for (var i = cursor - 1; i >= 0; i--) {
     final char = text[i];
 
-    // 空白や改行まで戻ったら、そこには記号が無かったということ
     if (char == ' ' || char == '\n' || char == '\t') return null;
 
     final kind = switch (char) {
@@ -59,7 +43,6 @@ CompletionQuery? completionAt(String text, int cursor) {
     }
 
     if (kind == null) {
-      // 記号の手前は識別子として妥当な文字だけを許す
       if (!_isWordChar(char)) return null;
       continue;
     }
@@ -86,7 +69,7 @@ CompletionQuery? _build(
 
 bool _isWordChar(String char) => RegExp(r'[0-9A-Za-z_\-]').hasMatch(char);
 
-/// MFM の装飾。よく使うものだけを出す。
+/// よく使うものだけに絞っている。
 const mfmFunctions = [
   'x2',
   'x3',
@@ -105,10 +88,7 @@ const mfmFunctions = [
   'twitch',
 ];
 
-/// メンション候補の検索。打鍵ごとに投げないよう、呼ぶ側で間引く。
-///
-/// 絵文字と MFM は手元のデータで済むが、メンションはサーバーに聞くしかない。
-/// 1 文字打つたびに検索すると、開発用サーバーにも本番にも無駄な負荷をかける。
+/// 呼ぶ側で打鍵を間引いてから渡す。
 final mentionSuggestionsProvider = FutureProvider.autoDispose
     .family<List<UserDetailed>, String>((ref, query) async {
       if (query.isEmpty) return const [];

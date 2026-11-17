@@ -7,6 +7,7 @@ import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/widgets/mfm_text.dart';
 import 'package:mischie/features/channel/domain/channel.dart';
 import 'package:mischie/features/channel/domain/channel_notifier.dart';
+import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
@@ -19,7 +20,6 @@ void openChannel(BuildContext context, String channelId, {String? name}) {
   );
 }
 
-/// チャンネルの概要と投稿一覧。
 class ChannelScreen extends ConsumerStatefulWidget {
   const ChannelScreen({super.key, required this.channelId, this.initialName});
 
@@ -94,14 +94,34 @@ class _ChannelScreenState extends ConsumerState<ChannelScreen> {
     }
   }
 
+  Future<void> _compose(Channel channel) async {
+    final posted = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ComposeScreen(
+          channel: NoteChannel(id: channel.id, name: channel.name),
+        ),
+      ),
+    );
+    if (posted == true && mounted) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final channelAsync = ref.watch(channelProvider(widget.channelId));
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
-    final title = channelAsync.value?.name ?? widget.initialName ?? 'チャンネル';
+    final channel = channelAsync.value;
+    final title = channel?.name ?? widget.initialName ?? 'チャンネル';
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
+      // アーカイブされたチャンネルには投稿できない
+      floatingActionButton: channel == null || channel.isArchived
+          ? null
+          : FloatingActionButton(
+              tooltip: 'チャンネルに投稿',
+              onPressed: () => _compose(channel),
+              child: const Icon(Icons.edit),
+            ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: NotificationListener<ScrollUpdateNotification>(

@@ -10,8 +10,6 @@ import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
-/// プロフィールと通知の見た目。更新: flutter test test/goldens --update-goldens
-/// 通知一覧は取得せず、渡したものをそのまま出す。
 class _StubNotifications extends NotificationNotifier {
   _StubNotifications(this.items);
 
@@ -21,7 +19,7 @@ class _StubNotifications extends NotificationNotifier {
   Future<List<NotificationItem>> build() async => items;
 }
 
-const _user = User(id: 'u1', username: 'cano', name: 'Cano', isCat: true);
+const _user = User(id: 'u1', username: 'frank', name: 'Frank', isCat: true);
 const _user2 = User(id: 'u2', username: 'alice', name: 'Alice');
 const _user3 = User(id: 'u3', username: 'bob', name: 'Bob');
 const _user4 = User(id: 'u4', username: 'eve', name: 'Eve');
@@ -49,8 +47,7 @@ Note _note(String text) => Note(
   text: text,
 );
 
-// ストリーミングでの束ね（notification_merge.dart）が作るのと同じ形。
-// 先頭 = 最新の相手。8 人にして、スタックの上限（6 人 + "+2"）も見る。
+// 8 人にして、上限を超えた分の "+N" 表示も見る。
 NotificationItem _groupedReaction() => NotificationItem(
   id: 'g-reaction',
   createdAt: DateTime.now()
@@ -84,27 +81,24 @@ void main() {
   setUpAll(loadGoldenFonts);
 
   testWidgets('通知の種別表示', (tester) async {
-    // まとめ通知の行は 1 行増えるぶん縦に長い。既定の 600 では末尾の
-    // まとめ通知がビューポートの外に出て、ListView.builder に
-    // 描かれなくなる（ゴールデンにも映らない）。
+    // 既定の高さでは末尾のまとめ通知が描かれない。
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(800, 900);
     tester.view.devicePixelRatio = 1;
     await pumpGolden(
       tester,
-      const Scaffold(body: NotificationScreen()),
+      Scaffold(body: NotificationScreen()),
       overrides: [
         notificationNotifierProvider.overrideWith(
           () => _StubNotifications([
             _item('reaction', reaction: '👍', note: _note('リアクションされたノート')),
             _item('reply', note: _note('返信の本文')),
             _item('renote', note: _note('リノートされたノート')),
-            _item('mention', note: _note('@cano めんしょん')),
+            _item('mention', note: _note('@frank めんしょん')),
             _item('follow'),
             // 相手のいない通知でも文が壊れないこと
             _item('pollEnded'),
             _item('achievementEarned'),
-            // まとめ通知（reaction:grouped / renote:grouped）
             _groupedReaction(),
             _groupedRenote(),
           ]),
@@ -119,15 +113,14 @@ void main() {
     );
   });
 
-  // 種別バッジは primary / tertiary の上に onPrimary / onTertiary を置く。
-  // 暗所でコントラストが崩れないかを見る。
+  // 種別バッジのコントラストをダークで見る。
   testWidgets('通知の種別表示 / ダーク', (tester) async {
     addTearDown(tester.view.reset);
     tester.view.physicalSize = const Size(800, 900);
     tester.view.devicePixelRatio = 1;
     await pumpGolden(
       tester,
-      const Scaffold(body: NotificationScreen()),
+      Scaffold(body: NotificationScreen()),
       brightness: Brightness.dark,
       overrides: [
         notificationNotifierProvider.overrideWith(
@@ -139,7 +132,6 @@ void main() {
             // 相手のいない通知でも文が壊れないこと
             _item('pollEnded'),
             _item('achievementEarned'),
-            // まとめ通知（reaction:grouped / renote:grouped）
             _groupedReaction(),
             _groupedRenote(),
           ]),
@@ -162,14 +154,14 @@ void main() {
         userDetailProvider('u1').overrideWith(
           (ref) async => UserDetailed(
             id: 'u1',
-            username: 'cano',
-            name: 'Cano',
-            description: 'Flutter で Misskey クライアントを作っています。',
+            username: 'frank',
+            name: 'Frank',
+            description: 'よろしくお願いします。',
             isCat: true,
             followersCount: 128,
             followingCount: 64,
             notesCount: 1024,
-            location: '東京',
+            location: 'どこか',
             pinnedNotes: [
               Note(
                 id: 'pinned1',

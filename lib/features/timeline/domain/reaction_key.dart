@@ -1,13 +1,8 @@
 final _customEmojiPattern = RegExp(r'^:([^:]+):$');
 
-/// リアクションキーをサーバーが実際に保持する形へ揃える。
-///
-/// - カスタム絵文字はホスト無し表記 (`:name:`) をローカルホスト表記
-///   (`:name@.:`) にする。サーバーはリアクションのキーに必ずホストを
-///   付けて返す・配信するため、揃えないと同じ絵文字が別キーとして
-///   扱われ、チップが二重に出たり自分のリアクションが認識されない。
-/// - Unicode 絵文字は VS16 (U+FE0F) を落とす。ただし ZWJ (U+200D) を
-///   含む合成絵文字では VS16 が構成要素そのものなので落とすと崩れる。
+/// サーバーが返すキーの形へ揃える。揃えないと同じ絵文字が別キーになる。
+/// カスタム絵文字は `:name:` を `:name@.:` に、Unicode 絵文字は VS16 を落とす
+/// （ZWJ 合成絵文字では VS16 が構成要素なので残す）。
 String normalizeReactionKey(String reaction) {
   final match = _customEmojiPattern.firstMatch(reaction);
   if (match != null) {

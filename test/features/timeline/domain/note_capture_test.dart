@@ -6,9 +6,6 @@ import 'package:mischie/features/timeline/domain/note_capture.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
-/// テストの中から `Ref` を取り出すためだけの入れ物。
-/// `applyNoteUpdate` はどの provider にも属さない `Ref` で十分動く
-/// （`ref.read` しか使わないため）。
 final _refProvider = Provider<Ref>((ref) => ref);
 
 class _FakeProfileNotifier extends ProfileNotifier {
@@ -91,7 +88,7 @@ void main() {
 
     test('自分の unreacted がアプリ内の付け替えで既に反映済みなら無視する', () async {
       final container = await _container();
-      // 👍 → ❤ に付け替えた直後を想定（myReaction は既に ❤、👍 は既に外れている）
+      // 👍 → ❤ に付け替えた直後
       container
           .read(noteOverridesProvider.notifier)
           .put(_note(reactions: {'❤': 1}, myReaction: '❤'));
@@ -170,7 +167,6 @@ void main() {
         _event(type: 'reacted', userId: _myId, reaction: ':kawaii:'),
       );
 
-      // 正規化すれば既に反映済みと判定できるので、二重に数えない
       final note = container.read(noteOverridesProvider)['note1']!;
       expect(note.myReaction, ':kawaii@.:');
       expect(note.reactions, {':kawaii@.:': 1});

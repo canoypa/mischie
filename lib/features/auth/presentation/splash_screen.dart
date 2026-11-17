@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 認証状態が決まるまでの繋ぎ。
-///
-/// Android の起動テーマと同じ背景だけを出す。ここにスピナーを置くと、
-/// トークン読み出しは大抵一瞬なので、ちらついて見えるだけになる。
+/// 認証状態が決まるまでの繋ぎ。読み出しは一瞬で終わるので、スピナーを置くとちらつくだけになる。
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 

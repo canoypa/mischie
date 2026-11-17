@@ -6,10 +6,8 @@ import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/reaction_key.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 
-/// 表示中のノートを個別購読して、他の人のリアクションを届いた時点で反映する。
-///
-/// 購読するのは画面に出ているノートだけ。タイムライン全体を購読すると、
-/// 読み進めるほど購読が積み上がってサーバーにも端末にも無駄がかかる。
+/// 画面に出ているノートだけを購読し、他の人のリアクションを反映する。
+/// 全体を購読すると読み進めるほど購読が積み上がる。
 final noteCaptureProvider = Provider<NoteCapture>(NoteCapture.new);
 
 class NoteCapture {
@@ -48,7 +46,6 @@ class NoteCapture {
       _ref.read(noteOverridesProvider)[noteId] ?? _known[noteId];
 }
 
-/// `noteUpdated` を上書きストアへ反映する。
 void applyNoteUpdate(Ref ref, Map<String, dynamic> event) {
   final noteId = event['id'] as String?;
   final type = event['type'] as String?;
@@ -71,23 +68,17 @@ void applyNoteUpdate(Ref ref, Map<String, dynamic> event) {
   final base = ref.read(noteCaptureProvider).baseOf(noteId);
   if (base == null) return;
 
-  // 自分のリアクションかどうかで扱いが変わる。
-  //
-  // 同じ端末で押した／外したぶんは楽観的更新で既に反映済みなので、
-  // 素直に +1/-1 すると二重に数える。一方、別の端末で操作したぶんは
-  // ここで初めて届くので、件数だけでなく myReaction も更新しないと
-  // 他人のリアクションに見えたり、自分の chip が消えないままになる。
-  // どちらのイベントも同じ形で届くため、いま持っている myReaction と
-  // 突き合わせて「まだ反映していない」方だけを当てる。
+  // 自分のリアクションは、この端末で押したぶんは反映済み。
+  // まだ反映していないとき（別の端末で押したぶん）だけ当てる。
   var nextMyReaction = base.myReaction;
   final myId = ref.read(profileNotifierProvider).value?.id;
   final isMine = myId != null && body['userId'] == myId;
   if (isMine) {
     if (type == 'reacted') {
-      if (base.myReaction == reaction) return; // 楽観的更新済み
+      if (base.myReaction == reaction) return;
       nextMyReaction = reaction;
     } else {
-      if (base.myReaction != reaction) return; // 楽観的更新済み
+      if (base.myReaction != reaction) return;
       nextMyReaction = null;
     }
   }
@@ -104,7 +95,6 @@ void applyNoteUpdate(Ref ref, Map<String, dynamic> event) {
     }
   }
 
-  // カスタム絵文字は URL が付いてくるので、描画できるよう取り込む
   final emoji = body['emoji'];
   final reactionEmojis = {...base.reactionEmojis};
   if (emoji is Map<String, dynamic>) {

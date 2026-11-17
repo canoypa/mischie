@@ -15,8 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserDetailed {
 
- String get id; String get username; String? get name; String? get host; String? get avatarUrl; String? get bannerUrl; String? get bannerBlurhash; String? get description; String? get location; String? get birthday; String? get createdAt; bool get isBot; bool get isCat; bool get isFollowing; bool get isFollowed; bool get isMuted; bool get isBlocking; List<AvatarDecoration> get avatarDecorations; int? get followersCount; int? get followingCount; int? get notesCount; List<ProfileField> get fields;/// 本人が固定した投稿。プロフィールの先頭に出す。
- List<Note> get pinnedNotes; List<UserRole> get roles; Map<String, String> get emojis;
+ String get id; String get username; String? get name; String? get host; String? get avatarUrl; String? get bannerUrl; String? get bannerBlurhash; String? get description; String? get location; String? get birthday; String? get createdAt; bool get isBot; bool get isCat; bool get isFollowing; bool get isFollowed; bool get isLocked; bool get hasPendingFollowRequestFromYou; bool get isMuted; bool get isBlocking; List<AvatarDecoration> get avatarDecorations; int? get followersCount; int? get followingCount; int? get notesCount; List<ProfileField> get fields; List<Note> get pinnedNotes; List<UserRole> get roles; Map<String, String> get emojis;
 /// Create a copy of UserDetailed
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +28,16 @@ $UserDetailedCopyWith<UserDetailed> get copyWith => _$UserDetailedCopyWithImpl<U
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other.avatarDecorations, avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other.fields, fields)&&const DeepCollectionEquality().equals(other.pinnedNotes, pinnedNotes)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.emojis, emojis));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked)&&(identical(other.hasPendingFollowRequestFromYou, hasPendingFollowRequestFromYou) || other.hasPendingFollowRequestFromYou == hasPendingFollowRequestFromYou)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other.avatarDecorations, avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other.fields, fields)&&const DeepCollectionEquality().equals(other.pinnedNotes, pinnedNotes)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.emojis, emojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isMuted,isBlocking,const DeepCollectionEquality().hash(avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(fields),const DeepCollectionEquality().hash(pinnedNotes),const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(emojis)]);
+int get hashCode => Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isLocked,hasPendingFollowRequestFromYou,isMuted,isBlocking,const DeepCollectionEquality().hash(avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(fields),const DeepCollectionEquality().hash(pinnedNotes),const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(emojis)]);
 
 @override
 String toString() {
-  return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
+  return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isLocked: $isLocked, hasPendingFollowRequestFromYou: $hasPendingFollowRequestFromYou, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
 }
 
 
@@ -49,7 +48,7 @@ abstract mixin class $UserDetailedCopyWith<$Res>  {
   factory $UserDetailedCopyWith(UserDetailed value, $Res Function(UserDetailed) _then) = _$UserDetailedCopyWithImpl;
 @useResult
 $Res call({
- String id, String username, String? name, String? host, String? avatarUrl, String? bannerUrl, String? bannerBlurhash, String? description, String? location, String? birthday, String? createdAt, bool isBot, bool isCat, bool isFollowing, bool isFollowed, bool isMuted, bool isBlocking, List<AvatarDecoration> avatarDecorations, int? followersCount, int? followingCount, int? notesCount, List<ProfileField> fields, List<Note> pinnedNotes, List<UserRole> roles, Map<String, String> emojis
+ String id, String username, String? name, String? host, String? avatarUrl, String? bannerUrl, String? bannerBlurhash, String? description, String? location, String? birthday, String? createdAt, bool isBot, bool isCat, bool isFollowing, bool isFollowed, bool isLocked, bool hasPendingFollowRequestFromYou, bool isMuted, bool isBlocking, List<AvatarDecoration> avatarDecorations, int? followersCount, int? followingCount, int? notesCount, List<ProfileField> fields, List<Note> pinnedNotes, List<UserRole> roles, Map<String, String> emojis
 });
 
 
@@ -66,7 +65,7 @@ class _$UserDetailedCopyWithImpl<$Res>
 
 /// Create a copy of UserDetailed
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? name = freezed,Object? host = freezed,Object? avatarUrl = freezed,Object? bannerUrl = freezed,Object? bannerBlurhash = freezed,Object? description = freezed,Object? location = freezed,Object? birthday = freezed,Object? createdAt = freezed,Object? isBot = null,Object? isCat = null,Object? isFollowing = null,Object? isFollowed = null,Object? isMuted = null,Object? isBlocking = null,Object? avatarDecorations = null,Object? followersCount = freezed,Object? followingCount = freezed,Object? notesCount = freezed,Object? fields = null,Object? pinnedNotes = null,Object? roles = null,Object? emojis = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? name = freezed,Object? host = freezed,Object? avatarUrl = freezed,Object? bannerUrl = freezed,Object? bannerBlurhash = freezed,Object? description = freezed,Object? location = freezed,Object? birthday = freezed,Object? createdAt = freezed,Object? isBot = null,Object? isCat = null,Object? isFollowing = null,Object? isFollowed = null,Object? isLocked = null,Object? hasPendingFollowRequestFromYou = null,Object? isMuted = null,Object? isBlocking = null,Object? avatarDecorations = null,Object? followersCount = freezed,Object? followingCount = freezed,Object? notesCount = freezed,Object? fields = null,Object? pinnedNotes = null,Object? roles = null,Object? emojis = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
@@ -83,6 +82,8 @@ as String?,isBot: null == isBot ? _self.isBot : isBot // ignore: cast_nullable_t
 as bool,isCat: null == isCat ? _self.isCat : isCat // ignore: cast_nullable_to_non_nullable
 as bool,isFollowing: null == isFollowing ? _self.isFollowing : isFollowing // ignore: cast_nullable_to_non_nullable
 as bool,isFollowed: null == isFollowed ? _self.isFollowed : isFollowed // ignore: cast_nullable_to_non_nullable
+as bool,isLocked: null == isLocked ? _self.isLocked : isLocked // ignore: cast_nullable_to_non_nullable
+as bool,hasPendingFollowRequestFromYou: null == hasPendingFollowRequestFromYou ? _self.hasPendingFollowRequestFromYou : hasPendingFollowRequestFromYou // ignore: cast_nullable_to_non_nullable
 as bool,isMuted: null == isMuted ? _self.isMuted : isMuted // ignore: cast_nullable_to_non_nullable
 as bool,isBlocking: null == isBlocking ? _self.isBlocking : isBlocking // ignore: cast_nullable_to_non_nullable
 as bool,avatarDecorations: null == avatarDecorations ? _self.avatarDecorations : avatarDecorations // ignore: cast_nullable_to_non_nullable
@@ -175,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String? name,  String? host,  String? avatarUrl,  String? bannerUrl,  String? bannerBlurhash,  String? description,  String? location,  String? birthday,  String? createdAt,  bool isBot,  bool isCat,  bool isFollowing,  bool isFollowed,  bool isMuted,  bool isBlocking,  List<AvatarDecoration> avatarDecorations,  int? followersCount,  int? followingCount,  int? notesCount,  List<ProfileField> fields,  List<Note> pinnedNotes,  List<UserRole> roles,  Map<String, String> emojis)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String? name,  String? host,  String? avatarUrl,  String? bannerUrl,  String? bannerBlurhash,  String? description,  String? location,  String? birthday,  String? createdAt,  bool isBot,  bool isCat,  bool isFollowing,  bool isFollowed,  bool isLocked,  bool hasPendingFollowRequestFromYou,  bool isMuted,  bool isBlocking,  List<AvatarDecoration> avatarDecorations,  int? followersCount,  int? followingCount,  int? notesCount,  List<ProfileField> fields,  List<Note> pinnedNotes,  List<UserRole> roles,  Map<String, String> emojis)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserDetailed() when $default != null:
-return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_that.bannerUrl,_that.bannerBlurhash,_that.description,_that.location,_that.birthday,_that.createdAt,_that.isBot,_that.isCat,_that.isFollowing,_that.isFollowed,_that.isMuted,_that.isBlocking,_that.avatarDecorations,_that.followersCount,_that.followingCount,_that.notesCount,_that.fields,_that.pinnedNotes,_that.roles,_that.emojis);case _:
+return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_that.bannerUrl,_that.bannerBlurhash,_that.description,_that.location,_that.birthday,_that.createdAt,_that.isBot,_that.isCat,_that.isFollowing,_that.isFollowed,_that.isLocked,_that.hasPendingFollowRequestFromYou,_that.isMuted,_that.isBlocking,_that.avatarDecorations,_that.followersCount,_that.followingCount,_that.notesCount,_that.fields,_that.pinnedNotes,_that.roles,_that.emojis);case _:
   return orElse();
 
 }
@@ -196,10 +197,10 @@ return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String? name,  String? host,  String? avatarUrl,  String? bannerUrl,  String? bannerBlurhash,  String? description,  String? location,  String? birthday,  String? createdAt,  bool isBot,  bool isCat,  bool isFollowing,  bool isFollowed,  bool isMuted,  bool isBlocking,  List<AvatarDecoration> avatarDecorations,  int? followersCount,  int? followingCount,  int? notesCount,  List<ProfileField> fields,  List<Note> pinnedNotes,  List<UserRole> roles,  Map<String, String> emojis)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String? name,  String? host,  String? avatarUrl,  String? bannerUrl,  String? bannerBlurhash,  String? description,  String? location,  String? birthday,  String? createdAt,  bool isBot,  bool isCat,  bool isFollowing,  bool isFollowed,  bool isLocked,  bool hasPendingFollowRequestFromYou,  bool isMuted,  bool isBlocking,  List<AvatarDecoration> avatarDecorations,  int? followersCount,  int? followingCount,  int? notesCount,  List<ProfileField> fields,  List<Note> pinnedNotes,  List<UserRole> roles,  Map<String, String> emojis)  $default,) {final _that = this;
 switch (_that) {
 case _UserDetailed():
-return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_that.bannerUrl,_that.bannerBlurhash,_that.description,_that.location,_that.birthday,_that.createdAt,_that.isBot,_that.isCat,_that.isFollowing,_that.isFollowed,_that.isMuted,_that.isBlocking,_that.avatarDecorations,_that.followersCount,_that.followingCount,_that.notesCount,_that.fields,_that.pinnedNotes,_that.roles,_that.emojis);}
+return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_that.bannerUrl,_that.bannerBlurhash,_that.description,_that.location,_that.birthday,_that.createdAt,_that.isBot,_that.isCat,_that.isFollowing,_that.isFollowed,_that.isLocked,_that.hasPendingFollowRequestFromYou,_that.isMuted,_that.isBlocking,_that.avatarDecorations,_that.followersCount,_that.followingCount,_that.notesCount,_that.fields,_that.pinnedNotes,_that.roles,_that.emojis);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -213,10 +214,10 @@ return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String? name,  String? host,  String? avatarUrl,  String? bannerUrl,  String? bannerBlurhash,  String? description,  String? location,  String? birthday,  String? createdAt,  bool isBot,  bool isCat,  bool isFollowing,  bool isFollowed,  bool isMuted,  bool isBlocking,  List<AvatarDecoration> avatarDecorations,  int? followersCount,  int? followingCount,  int? notesCount,  List<ProfileField> fields,  List<Note> pinnedNotes,  List<UserRole> roles,  Map<String, String> emojis)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String? name,  String? host,  String? avatarUrl,  String? bannerUrl,  String? bannerBlurhash,  String? description,  String? location,  String? birthday,  String? createdAt,  bool isBot,  bool isCat,  bool isFollowing,  bool isFollowed,  bool isLocked,  bool hasPendingFollowRequestFromYou,  bool isMuted,  bool isBlocking,  List<AvatarDecoration> avatarDecorations,  int? followersCount,  int? followingCount,  int? notesCount,  List<ProfileField> fields,  List<Note> pinnedNotes,  List<UserRole> roles,  Map<String, String> emojis)?  $default,) {final _that = this;
 switch (_that) {
 case _UserDetailed() when $default != null:
-return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_that.bannerUrl,_that.bannerBlurhash,_that.description,_that.location,_that.birthday,_that.createdAt,_that.isBot,_that.isCat,_that.isFollowing,_that.isFollowed,_that.isMuted,_that.isBlocking,_that.avatarDecorations,_that.followersCount,_that.followingCount,_that.notesCount,_that.fields,_that.pinnedNotes,_that.roles,_that.emojis);case _:
+return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_that.bannerUrl,_that.bannerBlurhash,_that.description,_that.location,_that.birthday,_that.createdAt,_that.isBot,_that.isCat,_that.isFollowing,_that.isFollowed,_that.isLocked,_that.hasPendingFollowRequestFromYou,_that.isMuted,_that.isBlocking,_that.avatarDecorations,_that.followersCount,_that.followingCount,_that.notesCount,_that.fields,_that.pinnedNotes,_that.roles,_that.emojis);case _:
   return null;
 
 }
@@ -228,7 +229,7 @@ return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_t
 @JsonSerializable()
 
 class _UserDetailed extends UserDetailed {
-  const _UserDetailed({required this.id, required this.username, this.name, this.host, this.avatarUrl, this.bannerUrl, this.bannerBlurhash, this.description, this.location, this.birthday, this.createdAt, this.isBot = false, this.isCat = false, this.isFollowing = false, this.isFollowed = false, this.isMuted = false, this.isBlocking = false, final  List<AvatarDecoration> avatarDecorations = const [], this.followersCount, this.followingCount, this.notesCount, final  List<ProfileField> fields = const [], final  List<Note> pinnedNotes = const [], final  List<UserRole> roles = const [], final  Map<String, String> emojis = const {}}): _avatarDecorations = avatarDecorations,_fields = fields,_pinnedNotes = pinnedNotes,_roles = roles,_emojis = emojis,super._();
+  const _UserDetailed({required this.id, required this.username, this.name, this.host, this.avatarUrl, this.bannerUrl, this.bannerBlurhash, this.description, this.location, this.birthday, this.createdAt, this.isBot = false, this.isCat = false, this.isFollowing = false, this.isFollowed = false, this.isLocked = false, this.hasPendingFollowRequestFromYou = false, this.isMuted = false, this.isBlocking = false, final  List<AvatarDecoration> avatarDecorations = const [], this.followersCount, this.followingCount, this.notesCount, final  List<ProfileField> fields = const [], final  List<Note> pinnedNotes = const [], final  List<UserRole> roles = const [], final  Map<String, String> emojis = const {}}): _avatarDecorations = avatarDecorations,_fields = fields,_pinnedNotes = pinnedNotes,_roles = roles,_emojis = emojis,super._();
   factory _UserDetailed.fromJson(Map<String, dynamic> json) => _$UserDetailedFromJson(json);
 
 @override final  String id;
@@ -246,6 +247,8 @@ class _UserDetailed extends UserDetailed {
 @override@JsonKey() final  bool isCat;
 @override@JsonKey() final  bool isFollowing;
 @override@JsonKey() final  bool isFollowed;
+@override@JsonKey() final  bool isLocked;
+@override@JsonKey() final  bool hasPendingFollowRequestFromYou;
 @override@JsonKey() final  bool isMuted;
 @override@JsonKey() final  bool isBlocking;
  final  List<AvatarDecoration> _avatarDecorations;
@@ -265,9 +268,7 @@ class _UserDetailed extends UserDetailed {
   return EqualUnmodifiableListView(_fields);
 }
 
-/// 本人が固定した投稿。プロフィールの先頭に出す。
  final  List<Note> _pinnedNotes;
-/// 本人が固定した投稿。プロフィールの先頭に出す。
 @override@JsonKey() List<Note> get pinnedNotes {
   if (_pinnedNotes is EqualUnmodifiableListView) return _pinnedNotes;
   // ignore: implicit_dynamic_type
@@ -302,16 +303,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other._avatarDecorations, _avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other._fields, _fields)&&const DeepCollectionEquality().equals(other._pinnedNotes, _pinnedNotes)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._emojis, _emojis));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked)&&(identical(other.hasPendingFollowRequestFromYou, hasPendingFollowRequestFromYou) || other.hasPendingFollowRequestFromYou == hasPendingFollowRequestFromYou)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other._avatarDecorations, _avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other._fields, _fields)&&const DeepCollectionEquality().equals(other._pinnedNotes, _pinnedNotes)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._emojis, _emojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isMuted,isBlocking,const DeepCollectionEquality().hash(_avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(_fields),const DeepCollectionEquality().hash(_pinnedNotes),const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_emojis)]);
+int get hashCode => Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isLocked,hasPendingFollowRequestFromYou,isMuted,isBlocking,const DeepCollectionEquality().hash(_avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(_fields),const DeepCollectionEquality().hash(_pinnedNotes),const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_emojis)]);
 
 @override
 String toString() {
-  return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
+  return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isLocked: $isLocked, hasPendingFollowRequestFromYou: $hasPendingFollowRequestFromYou, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
 }
 
 
@@ -322,7 +323,7 @@ abstract mixin class _$UserDetailedCopyWith<$Res> implements $UserDetailedCopyWi
   factory _$UserDetailedCopyWith(_UserDetailed value, $Res Function(_UserDetailed) _then) = __$UserDetailedCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String username, String? name, String? host, String? avatarUrl, String? bannerUrl, String? bannerBlurhash, String? description, String? location, String? birthday, String? createdAt, bool isBot, bool isCat, bool isFollowing, bool isFollowed, bool isMuted, bool isBlocking, List<AvatarDecoration> avatarDecorations, int? followersCount, int? followingCount, int? notesCount, List<ProfileField> fields, List<Note> pinnedNotes, List<UserRole> roles, Map<String, String> emojis
+ String id, String username, String? name, String? host, String? avatarUrl, String? bannerUrl, String? bannerBlurhash, String? description, String? location, String? birthday, String? createdAt, bool isBot, bool isCat, bool isFollowing, bool isFollowed, bool isLocked, bool hasPendingFollowRequestFromYou, bool isMuted, bool isBlocking, List<AvatarDecoration> avatarDecorations, int? followersCount, int? followingCount, int? notesCount, List<ProfileField> fields, List<Note> pinnedNotes, List<UserRole> roles, Map<String, String> emojis
 });
 
 
@@ -339,7 +340,7 @@ class __$UserDetailedCopyWithImpl<$Res>
 
 /// Create a copy of UserDetailed
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? name = freezed,Object? host = freezed,Object? avatarUrl = freezed,Object? bannerUrl = freezed,Object? bannerBlurhash = freezed,Object? description = freezed,Object? location = freezed,Object? birthday = freezed,Object? createdAt = freezed,Object? isBot = null,Object? isCat = null,Object? isFollowing = null,Object? isFollowed = null,Object? isMuted = null,Object? isBlocking = null,Object? avatarDecorations = null,Object? followersCount = freezed,Object? followingCount = freezed,Object? notesCount = freezed,Object? fields = null,Object? pinnedNotes = null,Object? roles = null,Object? emojis = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? username = null,Object? name = freezed,Object? host = freezed,Object? avatarUrl = freezed,Object? bannerUrl = freezed,Object? bannerBlurhash = freezed,Object? description = freezed,Object? location = freezed,Object? birthday = freezed,Object? createdAt = freezed,Object? isBot = null,Object? isCat = null,Object? isFollowing = null,Object? isFollowed = null,Object? isLocked = null,Object? hasPendingFollowRequestFromYou = null,Object? isMuted = null,Object? isBlocking = null,Object? avatarDecorations = null,Object? followersCount = freezed,Object? followingCount = freezed,Object? notesCount = freezed,Object? fields = null,Object? pinnedNotes = null,Object? roles = null,Object? emojis = null,}) {
   return _then(_UserDetailed(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
@@ -356,6 +357,8 @@ as String?,isBot: null == isBot ? _self.isBot : isBot // ignore: cast_nullable_t
 as bool,isCat: null == isCat ? _self.isCat : isCat // ignore: cast_nullable_to_non_nullable
 as bool,isFollowing: null == isFollowing ? _self.isFollowing : isFollowing // ignore: cast_nullable_to_non_nullable
 as bool,isFollowed: null == isFollowed ? _self.isFollowed : isFollowed // ignore: cast_nullable_to_non_nullable
+as bool,isLocked: null == isLocked ? _self.isLocked : isLocked // ignore: cast_nullable_to_non_nullable
+as bool,hasPendingFollowRequestFromYou: null == hasPendingFollowRequestFromYou ? _self.hasPendingFollowRequestFromYou : hasPendingFollowRequestFromYou // ignore: cast_nullable_to_non_nullable
 as bool,isMuted: null == isMuted ? _self.isMuted : isMuted // ignore: cast_nullable_to_non_nullable
 as bool,isBlocking: null == isBlocking ? _self.isBlocking : isBlocking // ignore: cast_nullable_to_non_nullable
 as bool,avatarDecorations: null == avatarDecorations ? _self._avatarDecorations : avatarDecorations // ignore: cast_nullable_to_non_nullable

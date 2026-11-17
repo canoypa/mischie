@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mischie/core/storage/account_store.dart';
 import 'package:mischie/features/auth/domain/account.dart';
 
-/// メモリ上で完結する保管庫。実機のキーチェーンに触らずに検証する。
 class _MemoryStorage implements FlutterSecureStorage {
   _MemoryStorage([Map<String, String>? initial]) : _data = {...?initial};
 
@@ -72,7 +71,7 @@ void main() {
           host: 'misskey.io',
           accessToken: 't1',
           userId: 'u1',
-          username: 'cano',
+          username: 'alice',
         ),
       ]);
       await store.writeActiveId('misskey.io/u1');
@@ -87,21 +86,21 @@ void main() {
     test('単一アカウント時代の保存を引き継ぐ', () async {
       // ここが壊れると、更新した瞬間に全員がログアウトする
       final storage = _MemoryStorage({
-        'server_host': 'mi.tepbyte.dev',
+        'server_host': 'example.com',
         'access_token': 'legacy-token',
       });
       final store = AccountStore(storage);
 
       final accounts = await store.readAccounts();
       expect(accounts, hasLength(1));
-      expect(accounts.first.host, 'mi.tepbyte.dev');
+      expect(accounts.first.host, 'example.com');
       expect(accounts.first.accessToken, 'legacy-token');
       expect(await store.readActiveId(), accounts.first.id);
     });
 
     test('移行は一度きりで、古いキーは残さない', () async {
       final storage = _MemoryStorage({
-        'server_host': 'mi.tepbyte.dev',
+        'server_host': 'example.com',
         'access_token': 'legacy-token',
       });
       final store = AccountStore(storage);
@@ -109,7 +108,6 @@ void main() {
 
       expect(await storage.read(key: 'server_host'), isNull);
       expect(await storage.read(key: 'access_token'), isNull);
-      // 2 回目は移行ではなく保存済みの一覧から読む
       expect(await store.readAccounts(), hasLength(1));
     });
 

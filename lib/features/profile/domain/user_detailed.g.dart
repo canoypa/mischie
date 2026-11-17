@@ -23,6 +23,9 @@ _UserDetailed _$UserDetailedFromJson(Map<String, dynamic> json) =>
       isCat: json['isCat'] as bool? ?? false,
       isFollowing: json['isFollowing'] as bool? ?? false,
       isFollowed: json['isFollowed'] as bool? ?? false,
+      isLocked: json['isLocked'] as bool? ?? false,
+      hasPendingFollowRequestFromYou:
+          json['hasPendingFollowRequestFromYou'] as bool? ?? false,
       isMuted: json['isMuted'] as bool? ?? false,
       isBlocking: json['isBlocking'] as bool? ?? false,
       avatarDecorations:
@@ -72,6 +75,8 @@ Map<String, dynamic> _$UserDetailedToJson(_UserDetailed instance) =>
       'isCat': instance.isCat,
       'isFollowing': instance.isFollowing,
       'isFollowed': instance.isFollowed,
+      'isLocked': instance.isLocked,
+      'hasPendingFollowRequestFromYou': instance.hasPendingFollowRequestFromYou,
       'isMuted': instance.isMuted,
       'isBlocking': instance.isBlocking,
       'avatarDecorations': instance.avatarDecorations,

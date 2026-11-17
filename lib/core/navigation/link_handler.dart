@@ -8,11 +8,7 @@ import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Mischie が持っていない画面は、公式 Web クライアントに委ねる。
-///
-/// Misskey の全機能（Play・ページ・ギャラリーなど）を実装することは
-/// このアプリの目標ではない。「開けない」で行き止まりにするより、
-/// Web に流したほうが壊れていないアプリになる。
+/// アプリに無い画面は、行き止まりにせずサーバーの Web 版で開く。
 Future<void> openOnServer(WidgetRef ref, String path) async {
   final host = ref.read(currentHostProvider);
   if (host == null) return;
@@ -25,12 +21,10 @@ Future<void> openExternal(String url) async {
   await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
-/// 本文中のリンク。自サーバーのノート・ユーザーはアプリ内で開き、
-/// それ以外（他サーバー、未対応の機能ページ、外部サイト）はブラウザへ。
 Future<void> openLink(BuildContext context, WidgetRef ref, String url) async {
   final uri = Uri.tryParse(url);
   final host = ref.read(currentHostProvider);
-  if (uri == null || host == null || uri.host != host) {
+  if (uri == null || host == null || uri.host != host.toLowerCase()) {
     await openExternal(url);
     return;
   }
@@ -53,7 +47,6 @@ Future<void> openLink(BuildContext context, WidgetRef ref, String url) async {
   await openExternal(url);
 }
 
-/// メンションのタップ。ユーザーを引いてからプロフィールを開く。
 Future<void> openUserByAcct(
   BuildContext context,
   WidgetRef ref, {

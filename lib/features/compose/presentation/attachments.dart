@@ -1,24 +1,40 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/core/widgets/overlay_tag.dart';
+import 'package:mischie/features/timeline/domain/drive_file.dart';
 
-/// 投稿画面の添付まわり。本文の入力と混ざると、どちらも追いにくくなる。
-
-/// 添付画像 1 枚ぶんの状態。選択した直後にアップロードを開始し、
-/// 完了すると fileId が入る。
 class Attachment {
-  Attachment(this.path);
+  Attachment(this.path) : thumbnailUrl = null, alt = '', isSensitive = false;
 
-  /// 下書きから戻したぶん。アップロードは済んでいるのでローカルパスを持たない。
-  Attachment.uploaded(String id) : path = null, fileId = id, uploading = false;
+  /// 下書きから戻したぶんはサムネイルが無い。
+  Attachment.uploaded(
+    String id, {
+    this.thumbnailUrl,
+    this.alt = '',
+    this.isSensitive = false,
+  }) : path = null,
+       fileId = id,
+       uploading = false;
+
+  factory Attachment.fromDriveFile(DriveFile file) => Attachment.uploaded(
+    file.id,
+    // 画像以外はサムネイルが無いとき原本を出しても表示できない
+    thumbnailUrl:
+        file.thumbnailUrl ?? (file.type.startsWith('image/') ? file.url : null),
+    alt: file.comment ?? '',
+    isSensitive: file.isSensitive,
+  );
 
   final String? path;
+  final String? thumbnailUrl;
   String? fileId;
   bool uploading = true;
   Object? error;
-  String alt = '';
-  bool isSensitive = false;
+  String alt;
+  bool isSensitive;
 }
 
 class AttachmentStrip extends StatelessWidget {
@@ -49,29 +65,13 @@ class AttachmentStrip extends StatelessWidget {
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              // タップで説明とセンシティブ指定を編集する
               GestureDetector(
                 onTap: attachment.fileId == null
                     ? null
                     : () => onEdit(attachment),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: attachment.path == null
-                      ? Container(
-                          width: 88,
-                          height: 88,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.image_outlined),
-                        )
-                      : Image.file(
-                          File(attachment.path!),
-                          width: 88,
-                          height: 88,
-                          fit: BoxFit.cover,
-                          cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
-                        ),
+                  child: _Thumbnail(attachment: attachment),
                 ),
               ),
               if (attachment.alt.isNotEmpty || attachment.isSensitive)
@@ -121,8 +121,7 @@ class AttachmentStrip extends StatelessWidget {
                     ),
                   ),
                 ),
-              // 24dp では小さすぎて押し損ねる。見た目は 28dp のままで、
-              // タップ領域だけ 40dp に広げる（はみ出しもやめる）。
+              // 押し損ねないよう、タップ領域だけ見た目より広げる。
               Positioned(
                 top: 0,
                 right: 0,
@@ -131,6 +130,7 @@ class AttachmentStrip extends StatelessWidget {
                   height: 40,
                   child: IconButton(
                     icon: const Icon(Icons.cancel, size: 22),
+                    tooltip: '添付を外す',
                     color: Colors.white,
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.black54,
@@ -145,6 +145,61 @@ class AttachmentStrip extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.attachment});
+
+  final Attachment attachment;
+
+  static const _size = 88.0;
+
+  static final _videoExtension = RegExp(
+    r'\.(mp4|m4v|mov|webm|mkv|3gp)$',
+    caseSensitive: false,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final path = attachment.path;
+    final url = attachment.thumbnailUrl;
+
+    Widget placeholder(IconData icon) => Container(
+      width: _size,
+      height: _size,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Icon(icon),
+    );
+
+    if (path != null) {
+      // 動画は端末内で縮小画像を作る手段が無いので、種類だけを示す
+      if (_videoExtension.hasMatch(path)) {
+        return placeholder(Icons.videocam_outlined);
+      }
+      return Image.file(
+        File(path),
+        width: _size,
+        height: _size,
+        fit: BoxFit.cover,
+        cacheWidth: 264, // 表示は 88dp。原寸をデコードしない
+        errorBuilder: (_, _, _) =>
+            placeholder(Icons.insert_drive_file_outlined),
+      );
+    }
+
+    final placeholderImage = placeholder(Icons.image_outlined);
+    if (url == null) return placeholderImage;
+    return CachedNetworkImage(
+      imageUrl: url,
+      cacheManager: MediaCacheManager.instance,
+      width: _size,
+      height: _size,
+      fit: BoxFit.cover,
+      memCacheWidth: 264,
+      placeholder: (_, _) => placeholderImage,
+      errorWidget: (_, _, _) => placeholderImage,
     );
   }
 }

@@ -7,7 +7,6 @@ import 'package:mischie/features/auth/domain/auth_state.dart';
 
 final oauthServiceProvider = Provider<OAuthService>((ref) => OAuthService());
 
-/// 保存されている全アカウントと、いま使っているアカウント。
 final accountsProvider = AsyncNotifierProvider<AccountsNotifier, AccountsState>(
   AccountsNotifier.new,
 );
@@ -49,9 +48,20 @@ class AccountsNotifier extends AsyncNotifier<AccountsState> {
     );
 
     final current = state.value?.accounts ?? const <Account>[];
-    final accounts = [...current.where((a) => a.id != account.id), account];
+    final accounts = [
+      ...current.where(
+        (a) =>
+            a.id != account.id &&
+            // ユーザーの分からない旧形式のログインは、同じサーバーに
+            // ログインし直したら置き換える（残すと同じアカウントが並ぶ）
+            !(a.userId == null && a.host == account.host),
+      ),
+      account,
+    ];
     await _persist(accounts, activeId: account.id);
   }
+
+  void cancelLogin() => ref.read(oauthServiceProvider).cancel();
 
   Future<Account> _withProfile(Account account) async {
     try {
@@ -99,10 +109,7 @@ class AccountsNotifier extends AsyncNotifier<AccountsState> {
   }
 }
 
-/// 使用中のアカウントを、これまでどおりの認証状態として見せる。
-///
-/// アカウントに依存する値の入り口をここと [misskeyApiClientProvider] に
-/// 絞っておくことで、リポジトリ層は複数アカウントを意識しなくて済む。
+/// アカウントに依存する値の入り口は、ここと [misskeyApiClientProvider] に絞る。
 final authNotifierProvider = Provider<AsyncValue<AuthState>>((ref) {
   return ref.watch(accountsProvider).whenData((state) {
     final active = state.active;
@@ -115,13 +122,19 @@ final authNotifierProvider = Provider<AsyncValue<AuthState>>((ref) {
   });
 });
 
-/// ログイン中のサーバーホスト。ノート URL の組み立てなどに使う。
 final currentHostProvider = Provider<String?>((ref) {
   final state = ref.watch(authNotifierProvider).value;
   return state is AuthStateAuthenticated ? state.host : null;
 });
 
-/// いま使っているアカウント。切り替え UI や表示名に使う。
 final activeAccountProvider = Provider<Account?>((ref) {
   return ref.watch(accountsProvider).value?.active;
+});
+
+/// いま使っているアカウントの識別子（[Account.id]）。
+///
+/// 同じサーバーの別アカウントも区別できる。アカウントに紐づくローカルの
+/// 状態は、これを watch して切り替えのたびに捨てる。
+final currentAccountIdProvider = Provider<String?>((ref) {
+  return ref.watch(activeAccountProvider.select((account) => account?.id));
 });

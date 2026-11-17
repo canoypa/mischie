@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 投稿に付ける投票の下書き。
-///
-/// 選択肢は 2 つ以上でないとサーバーが受け取らないので、開いた時点で
-/// 2 つ用意する。
+/// 選択肢は 2 つ以上必要なので、最初から 2 つ用意する。
 class PollDraft {
   PollDraft()
     : controllers = [TextEditingController(), TextEditingController()];
@@ -11,7 +8,7 @@ class PollDraft {
   final List<TextEditingController> controllers;
   bool multiple = false;
 
-  /// 締め切りまでの長さ。null は無期限。
+  /// null は無期限。
   Duration? duration;
 
   static const maxChoices = 10;
@@ -40,7 +37,6 @@ class PollDraft {
   }
 }
 
-/// 投票の編集欄。投稿画面の本文の下に出す。
 class PollEditor extends StatelessWidget {
   const PollEditor({
     super.key,
@@ -51,7 +47,6 @@ class PollEditor extends StatelessWidget {
 
   final PollDraft draft;
 
-  /// 選択肢の増減や設定変更を投稿画面へ知らせる。
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
@@ -110,7 +105,6 @@ class PollEditor extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline),
                     tooltip: '削除',
-                    // 2 つ未満にはできない
                     onPressed: draft.controllers.length <= 2
                         ? null
                         : () {

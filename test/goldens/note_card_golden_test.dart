@@ -6,13 +6,6 @@ import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
-/// 実機を繋がずにノートの見た目を確かめるためのゴールデン。
-///
-/// ウィジェットプレビューは web 環境で動くため、セキュアストレージや
-/// 画像キャッシュに触れる NoteCard は載せられない。こちらはテスト環境で
-/// 動くので、プロバイダーを差し替えれば素のまま描ける。
-///
-/// 更新するとき: flutter test test/goldens --update-goldens
 Note _note({
   String? text = 'ノートの本文です。ここに書いた内容がそのまま出ます。',
   Poll? poll,
@@ -28,7 +21,7 @@ Note _note({
   createdAt: DateTime.now()
       .subtract(const Duration(minutes: 5))
       .toIso8601String(),
-  user: const User(id: 'u1', username: 'cano', name: 'Cano'),
+  user: const User(id: 'u1', username: 'alice', name: 'Alice'),
   text: text,
   cw: cw,
   reactions: reactions,
@@ -40,11 +33,7 @@ Note _note({
   renoteCount: renoteCount,
 );
 
-// 添付は画像以外（PDF）にする。画像はテスト環境で実際にネットワークへ
-// 取りに行こうとしてしまい、ゴールデン比較の待ち時間の間にプラグイン
-// 未実装のエラーで落ちる（このテスト環境の既知の制約）。件数だけ
-// 十分あれば、画像と同じく「本文とは無関係に添付だけで閾値を超える」
-// 状況を安全に再現できる。
+// 画像はテスト環境で読み込めず落ちるので、添付は PDF にする。
 List<DriveFile> _pdfFiles(int count) => [
   for (var i = 1; i <= count; i++)
     DriveFile(
@@ -55,7 +44,6 @@ List<DriveFile> _pdfFiles(int count) => [
     ),
 ];
 
-/// ノートを並べて描く。カード自体の見た目を見るためのもの。
 Future<void> _pumpNotes(
   WidgetTester tester,
   List<Note> notes, {
@@ -101,11 +89,9 @@ void main() {
     );
 
     await _pumpNotes(tester, [
-      // 本文なしの純粋なリノート
       _note(text: null, renote: original),
-      // 本文つき = 引用。元ノートを埋め込んで出す
       _note(text: 'これは引用です', renote: original),
-      // 引用ノートをリノートした場合。引用元まで辿れないと文脈が切れる
+      // 引用のリノートは、引用元まで出さないと文脈が切れる
       _note(
         text: null,
         renote: _note(text: '引用のコメント', renote: original),
@@ -184,8 +170,7 @@ void main() {
   );
 
   testWidgets('引用の中身', (tester) async {
-    // 縦に積むとテスト用の描画面(800x600)をすぐ超えるため、5パターンを
-    // 3枚に分けて確かめる。
+    // 描画面に収まらないので 3 枚に分ける。
     await _pumpNotes(tester, [
       _note(text: '引用', renote: longNameQuote),
       _note(text: '引用', renote: imagesOnlyQuote),
@@ -219,8 +204,6 @@ void main() {
   });
 
   testWidgets('画像以外の添付', (tester) async {
-    // 画像しか出していなかったため、動画や音声だけのノートは添付が
-    // 無かったことになっていた
     await _pumpNotes(tester, [
       _note(
         text: '動画つき',
@@ -260,7 +243,6 @@ void main() {
 
   testWidgets('投票', (tester) async {
     await _pumpNotes(tester, [
-      // 未投票は押せるボタン、投票済みと締め切り後は結果として出る
       _note(
         text: '投票（未投票）',
         poll: const Poll(
@@ -287,8 +269,7 @@ void main() {
   });
 
   testWidgets('高さが添付だけから来るときは畳まない', (tester) async {
-    // 本文は短いが、添付の並びだけで高さの閾値(320)を超える。以前はこの
-    // 高さを理由に本文と一緒に畳まれていた。
+    // 添付だけで高さの閾値を超えるようにする。
     await _pumpNotes(tester, [_note(text: '資料です', files: _pdfFiles(8))]);
 
     await expectLater(

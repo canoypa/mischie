@@ -11,8 +11,7 @@ import 'package:mischie/features/channel/presentation/channel_list.dart';
 import 'package:mischie/features/search/domain/search_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
-/// スクロールでの追い読みは fire-and-forget で呼ぶため、ここで拾わないと
-/// 失敗がハンドルされない Future として残ってしまう。
+/// スクロールから await せずに呼ぶので、失敗はここで知らせる。
 Future<void> _loadMoreNotes(BuildContext context, WidgetRef ref) async {
   try {
     await ref.read(noteSearchProvider.notifier).loadMore();
@@ -88,6 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.clear),
+                      tooltip: '消去',
                       onPressed: () {
                         _controller.clear();
                         _submit('');
@@ -102,6 +102,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           tabs: const [
             Tab(text: 'ノート'),
             Tab(text: 'ユーザー'),
+            Tab(text: 'チャンネル'),
           ],
         ),
         Expanded(
@@ -110,7 +111,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
             children: [
               const _NoteResults(),
               const _UserResults(),
-              // チャンネルは検索語が無くても一覧を出せるので query を渡す
               Consumer(
                 builder: (context, ref, _) =>
                     ChannelResults(query: ref.watch(searchQueryProvider)),
@@ -147,7 +147,6 @@ class _NoteResults extends ConsumerWidget {
           ),
           data: (notes) => notes.isEmpty
               ? const Center(child: Text('見つかりませんでした'))
-              // 先頭 20 件で終わりではないので、末尾まで来たら続きを読む
               : NotificationListener<ScrollUpdateNotification>(
                   onNotification: (n) {
                     final pos = n.metrics;

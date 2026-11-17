@@ -18,8 +18,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final authState = authNotifier.value;
       final isSplashRoute = state.matchedLocation == '/splash';
 
-      // 認証状態が分かるまではスプラッシュに留める。ここで '/' を描くと
-      // ログイン画面の前に空のタイムラインが一瞬見える。
+      // 認証状態が分かる前に '/' を描くと、空のタイムラインが一瞬見える。
       if (authState == null) return isSplashRoute ? null : '/splash';
 
       final isLoginRoute = state.matchedLocation == '/login';

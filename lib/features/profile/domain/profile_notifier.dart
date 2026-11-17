@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
+import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/profile/data/profile_repository.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
@@ -11,16 +12,21 @@ final profileRepositoryProvider = Provider<ProfileRepository?>((ref) {
   return ProfileRepository(client);
 });
 
-final userDetailProvider = FutureProvider.family<UserDetailed, String>((
-  ref,
-  userId,
-) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  if (repo == null) throw Exception('未ログイン');
-  final detail = await repo.fetchUser(userId);
-  // pinnedNotes も NoteCard 経由で resolveNote を通るので対象にする
-  ref.read(noteOverridesProvider.notifier).evictFetched(detail.pinnedNotes);
-  return detail;
+final userDetailProvider = FutureProvider.autoDispose
+    .family<UserDetailed, String>((ref, userId) async {
+      final repo = ref.watch(profileRepositoryProvider);
+      if (repo == null) throw Exception('未ログイン');
+      final detail = await repo.fetchUser(userId);
+      // pinnedNotes も NoteCard 経由で resolveNote を通るので対象にする
+      ref.read(noteOverridesProvider.notifier).evictFetched(detail.pinnedNotes);
+      return detail;
+    });
+
+/// 自分のアカウント情報（`i` の応答そのまま）。
+final meProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final client = ref.watch(misskeyApiClientProvider);
+  if (client == null) return null;
+  return client.post('i');
 });
 
 final profileNotifierProvider = AsyncNotifierProvider<ProfileNotifier, User?>(
@@ -30,34 +36,33 @@ final profileNotifierProvider = AsyncNotifierProvider<ProfileNotifier, User?>(
 class ProfileNotifier extends AsyncNotifier<User?> {
   @override
   Future<User?> build() async {
-    final repo = ref.watch(profileRepositoryProvider);
-    if (repo == null) return null;
-    return repo.fetchMe();
+    final me = await ref.watch(meProvider.future);
+    return me == null ? null : User.fromJson(me);
   }
 
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final repo = ref.read(profileRepositoryProvider);
-      if (repo == null) return null;
-      return repo.fetchMe();
-    });
+    ref.invalidate(meProvider);
+    await future;
   }
 }
 
-/// フォロー状態のローカル上書き（userId → フォロー中か）。
-///
-/// 押した瞬間にボタンを切り替え、API 失敗時だけ戻す。プロフィール全体を
-/// 取り直すと画面が一瞬崩れるうえ、往復の待ちが体感速度を落とすため。
+/// フォロー状態のローカル上書き。取り直すと画面が崩れ待ちも出るので、
+/// 押した瞬間に切り替え、失敗したら戻す。
 final followOverridesProvider =
-    NotifierProvider<FollowOverrides, Map<String, bool>>(FollowOverrides.new);
+    NotifierProvider<FollowOverrides, Map<String, FollowState>>(
+      FollowOverrides.new,
+    );
 
-class FollowOverrides extends Notifier<Map<String, bool>> {
+class FollowOverrides extends Notifier<Map<String, FollowState>> {
   @override
-  Map<String, bool> build() => {};
+  Map<String, FollowState> build() {
+    // アカウントが変わったら空に戻す
+    ref.watch(currentAccountIdProvider);
+    return {};
+  }
 
-  void put(String userId, {required bool following}) =>
-      state = {...state, userId: following};
+  void put(String userId, FollowState followState) =>
+      state = {...state, userId: followState};
 }
 
 final followActionsProvider = Provider<FollowActions>(FollowActions.new);
@@ -67,41 +72,94 @@ class FollowActions {
 
   final Ref _ref;
 
-  Future<void> setFollowing(String userId, {required bool following}) async {
+  Future<void> follow(String userId, {required bool locked}) => _apply(
+    userId,
+    next: locked ? FollowState.requested : FollowState.following,
+    previous: FollowState.none,
+    call: (repo) => repo.follow(userId),
+  );
+
+  Future<void> unfollow(String userId) => _apply(
+    userId,
+    next: FollowState.none,
+    previous: FollowState.following,
+    call: (repo) => repo.unfollow(userId),
+  );
+
+  Future<void> cancelRequest(String userId) => _apply(
+    userId,
+    next: FollowState.none,
+    previous: FollowState.requested,
+    call: (repo) => repo.cancelFollowRequest(userId),
+  );
+
+  Future<void> _apply(
+    String userId, {
+    required FollowState next,
+    required FollowState previous,
+    required Future<void> Function(ProfileRepository repo) call,
+  }) async {
     final repo = _ref.read(profileRepositoryProvider);
     if (repo == null) throw Exception('未ログイン');
 
     final overrides = _ref.read(followOverridesProvider.notifier);
-    overrides.put(userId, following: following);
+    overrides.put(userId, next);
     try {
-      if (following) {
-        await repo.follow(userId);
-      } else {
-        await repo.unfollow(userId);
-      }
+      await call(repo);
     } catch (_) {
-      overrides.put(userId, following: !following);
+      overrides.put(userId, previous);
       rethrow;
     }
   }
 }
 
-/// この端末でミュート／ブロックしたユーザー。
-///
-/// サーバー側の絞り込みは次回の取得から効くので、すでに画面にあるノートは
-/// 残ってしまう。押した直後から消えるように、描画側でも伏せる。
-final hiddenUserIdsProvider = NotifierProvider<HiddenUserIds, Set<String>>(
-  HiddenUserIds.new,
-);
+/// 取得済みの [UserDetailed] は操作後も古いままなので、こちらを優先する。
+/// null は未操作。
+final moderationOverridesProvider =
+    NotifierProvider<ModerationOverrides, Map<String, UserModeration>>(
+      ModerationOverrides.new,
+    );
 
-class HiddenUserIds extends Notifier<Set<String>> {
-  @override
-  Set<String> build() => {};
+class UserModeration {
+  const UserModeration({this.muted, this.blocking});
 
-  void add(String userId) => state = {...state, userId};
-
-  void remove(String userId) => state = {...state}..remove(userId);
+  final bool? muted;
+  final bool? blocking;
 }
+
+class ModerationOverrides extends Notifier<Map<String, UserModeration>> {
+  @override
+  Map<String, UserModeration> build() {
+    // アカウントが変わったら空に戻す
+    ref.watch(currentAccountIdProvider);
+    return {};
+  }
+
+  void setMuted(String userId, {required bool muted}) {
+    final current = state[userId];
+    state = {
+      ...state,
+      userId: UserModeration(muted: muted, blocking: current?.blocking),
+    };
+  }
+
+  void setBlocking(String userId, {required bool blocking}) {
+    final current = state[userId];
+    state = {
+      ...state,
+      userId: UserModeration(muted: current?.muted, blocking: blocking),
+    };
+  }
+}
+
+/// すでに画面にあるノートは次の取得まで残るので、描画側でも伏せる。
+final hiddenUserIdsProvider = Provider<Set<String>>((ref) {
+  final overrides = ref.watch(moderationOverridesProvider);
+  return {
+    for (final entry in overrides.entries)
+      if (entry.value.muted == true || entry.value.blocking == true) entry.key,
+  };
+});
 
 final moderationActionsProvider = Provider<ModerationActions>(
   ModerationActions.new,
@@ -120,25 +178,29 @@ class ModerationActions {
 
   Future<void> setMuted(String userId, {required bool muted}) async {
     final repo = _repo();
-    final hidden = _ref.read(hiddenUserIdsProvider.notifier);
     if (muted) {
       await repo.mute(userId);
-      hidden.add(userId);
     } else {
       await repo.unmute(userId);
-      hidden.remove(userId);
     }
+    _ref
+        .read(moderationOverridesProvider.notifier)
+        .setMuted(userId, muted: muted);
   }
 
   Future<void> setBlocked(String userId, {required bool blocked}) async {
     final repo = _repo();
-    final hidden = _ref.read(hiddenUserIdsProvider.notifier);
     if (blocked) {
       await repo.block(userId);
-      hidden.add(userId);
     } else {
       await repo.unblock(userId);
-      hidden.remove(userId);
+    }
+    _ref
+        .read(moderationOverridesProvider.notifier)
+        .setBlocking(userId, blocking: blocked);
+    // ブロックするとフォロー関係も解消される
+    if (blocked) {
+      _ref.read(followOverridesProvider.notifier).put(userId, FollowState.none);
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:mfm/mfm.dart';
 import 'package:mfm_parser/mfm_parser.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
 import 'package:mischie/core/widgets/custom_emoji_image.dart';
+import 'package:mischie/features/search/presentation/hashtag_screen.dart';
 
 class MfmText extends ConsumerStatefulWidget {
   const MfmText(
@@ -13,13 +14,17 @@ class MfmText extends ConsumerStatefulWidget {
     this.style,
     this.maxLines,
     this.overflow,
+    this.host,
   });
 
   final String text;
   final Map<String, String> emojis;
   final TextStyle? style;
 
-  /// 名前のように 1 行に収めたい場所で使う。
+  /// 本文を書いた人のサーバー（ローカルなら null）。ホストの無い `@name` は
+  /// そのサーバーのユーザーを指すので、ログイン中のサーバーと取り違えない。
+  final String? host;
+
   final int? maxLines;
   final TextOverflow? overflow;
 
@@ -39,10 +44,13 @@ class _MfmTextState extends ConsumerState<MfmText> {
     super.initState();
     _parsed = const MfmParser().parse(widget.text);
     _linkTap = (url) => openLink(context, ref, url);
-    // タグ別タイムラインは未実装なので Web に流す
-    _hashtagTap = (tag) => openOnServer(ref, '/tags/$tag');
-    _mentionTap = (userName, host, acct) =>
-        openUserByAcct(context, ref, username: userName, host: host);
+    _hashtagTap = (tag) => openHashtag(context, tag);
+    _mentionTap = (userName, host, acct) => openUserByAcct(
+      context,
+      ref,
+      username: userName,
+      host: host ?? widget.host,
+    );
     _emojiBuilder = _buildEmojiBuilder(widget.emojis);
   }
 
@@ -63,8 +71,7 @@ class _MfmTextState extends ConsumerState<MfmText> {
       if (url == null) {
         return Text(':$emojiName:', style: emojiStyle);
       }
-      // 文字より一回り大きい程度に収める。1.8 倍では絵文字が主役になり、
-      // 名前や本文が読み取りにくくなる。
+      // これ以上大きくすると、名前や本文が読み取りにくくなる。
       final fontSize = (emojiStyle?.fontSize ?? 14.0) * 1.25;
       return CustomEmojiImage(
         url: url,
@@ -90,9 +97,7 @@ class _MfmTextState extends ConsumerState<MfmText> {
         decoration: TextDecoration.underline,
       ),
       hashtagStyle: TextStyle(color: linkColor),
-      // 本来はアイコン画像付きのバッジにしたいが、mfm パッケージは
-      // メンションを素の TextSpan で描くのでウィジェットを差し込めない。
-      // 背景色で「押せる名前」だと分かる程度までに留める。
+      // メンションにはウィジェットを差し込めないため、背景色で押せることを示す。
       mentionStyle: TextStyle(
         color: colorScheme.onPrimaryContainer,
         backgroundColor: colorScheme.primaryContainer,

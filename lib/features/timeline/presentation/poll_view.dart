@@ -4,10 +4,6 @@ import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
 
-/// ノートに付いた投票。
-///
-/// 投票前は選択肢を押せるボタンとして、投票後と締め切り後は結果として出す。
-/// 同じ場所で見た目が切り替わるので、いま押せるのかどうかが分かるようにする。
 class PollView extends ConsumerWidget {
   const PollView({super.key, required this.note, required this.poll});
 
@@ -32,6 +28,12 @@ class PollView extends ConsumerWidget {
                       0,
                       (max, c) => c.votes > max ? c.votes : max,
                     ),
+                    onPressed:
+                        poll.multiple &&
+                            !poll.isExpired &&
+                            !poll.choices[i].isVoted
+                        ? () => _vote(context, ref, i)
+                        : null,
                   )
                 : _ChoiceButton(
                     text: poll.choices[i].text,
@@ -93,16 +95,14 @@ class _ChoiceButton extends StatelessWidget {
   }
 }
 
-/// 得票率を背景の帯で示す。数字だけより、差が一目で分かる。
 class _Result extends StatelessWidget {
-  const _Result({required this.choice, required this.maxVotes});
+  const _Result({required this.choice, required this.maxVotes, this.onPressed});
 
   final PollChoice choice;
+  final VoidCallback? onPressed;
 
-  /// 一番多い選択肢の票数。帯の長さはこれを基準にする。
-  ///
-  /// 合計で割ると、複数選択可の投票では 1 人が複数に入れるため合計が
-  /// 100% を超える。最多を満たす形なら、複数選択でも比較として読める。
+  /// 帯は合計ではなく最多票を基準にする。
+  /// 合計で割ると、複数選択可のとき比率の和が 100% を超える。
   final int maxVotes;
 
   @override
@@ -156,6 +156,17 @@ class _Result extends StatelessWidget {
             ),
           ),
         ),
+        // 波紋が帯に隠れないよう、最前面に重ねる
+        if (onPressed != null)
+          Positioned.fill(
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
       ],
     );
   }

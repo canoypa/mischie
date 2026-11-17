@@ -20,20 +20,22 @@ final timelineRepositoryProvider = Provider<TimelineRepository?>((ref) {
   return TimelineRepository(client);
 });
 
-/// 自分のリスト一覧。タブに並べるために使う。
 final userListsProvider = FutureProvider<List<UserList>>((ref) async {
   final repo = ref.watch(timelineRepositoryProvider);
   if (repo == null) return const [];
   return repo.fetchLists();
 });
 
-/// 表示中のタイムライン。切り替えると再取得とストリーミング再接続が走る。
 final selectedTimelineProvider =
     NotifierProvider<SelectedTimeline, TimelineSource>(SelectedTimeline.new);
 
 class SelectedTimeline extends Notifier<TimelineSource> {
   @override
-  TimelineSource build() => const TimelineSource.builtin(TimelineKind.home);
+  TimelineSource build() {
+    // リストは別アカウントのものを指しうるので、切り替えたらホームに戻す
+    ref.watch(currentAccountIdProvider);
+    return const TimelineSource.builtin(TimelineKind.home);
+  }
 
   set source(TimelineSource value) => state = value;
 }
@@ -44,7 +46,6 @@ final timelineNotifierProvider =
 class TimelineNotifier extends AsyncNotifier<List<Note>> {
   StreamingService? _streaming;
 
-  /// 表示中のノートを個別購読するために使う。接続前は null。
   StreamingService? get streaming => _streaming;
 
   StreamSubscription<Note>? _subscription;
@@ -52,26 +53,19 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
   StreamSubscription<void>? _reconnectedSubscription;
   final List<Note> _pending = [];
 
-  /// 取得の全量を表す件数。これ以上件数が返ってきたら、取りこぼしの範囲を
-  /// 読み切れないとみなして穴を残さず全体を取り直す。
   static const _catchUpLimit = 20;
 
-  /// タイムラインごとの取得済みノート。タブを戻したときに再取得で待たせない
-  /// ため、表示は即座にキャッシュから復帰させる（新着はストリーミングで届く）。
+  /// タブを戻したときに再取得で待たせないためのキャッシュ。
   final Map<TimelineSource, List<Note>> _cache = {};
 
-  /// キャッシュがどのサーバーのものか。アカウントを切り替えたら捨てる。
-  String? _cachedHost;
+  String? _cachedAccountId;
 
-  /// ストリーミングで届いた未表示ノート数。UI が listen して使う。
   final pendingCount = ValueNotifier<int>(0);
 
-  /// 直近の flush で差し込んだノートの ID。UI が一度だけ出現アニメーションに
-  /// 使い、消費したら取り除く（既に並んでいたノートは動かさない）。
+  /// 出現アニメーション用。UI が読んだら取り除く。
   final Set<String> justInserted = {};
 
-  /// loadMore の多重実行を防ぐ。スクロールの通知は連発するので、UI 側の
-  /// フラグだけでは間に入るタブ切り替えなどをすり抜けることがある。
+  /// UI 側のフラグはタブ切り替えをまたぐとすり抜けるので、ここでも多重実行を防ぐ。
   bool _loadingMore = false;
 
   @override
@@ -87,10 +81,10 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     _pending.clear();
     pendingCount.value = 0;
 
-    final host = authState is AuthStateAuthenticated ? authState.host : null;
-    if (host != _cachedHost) {
+    final accountId = ref.watch(currentAccountIdProvider);
+    if (accountId != _cachedAccountId) {
       _cache.clear();
-      _cachedHost = host;
+      _cachedAccountId = accountId;
     }
 
     if (authState is AuthStateAuthenticated) {
@@ -106,8 +100,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
 
     final cached = _cache[source];
     if (cached != null) {
-      // このキャッシュはタブが非表示だった間ストリーミングが止まっていた
-      // ので、その間の新着を取りこぼしている。
+      // 非表示の間の新着が抜けている。
       unawaited(_catchUp(source));
       return cached;
     }
@@ -144,13 +137,10 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     });
   }
 
-  /// アプリ復帰時に呼ぶ。ソケットは背景復帰後サイレントに死んでいることが
-  /// あるため、生きているように見えても張り直す。
+  /// アプリ復帰時に呼ぶ。バックグラウンド中に切れた接続は生きて見えるので、
+  /// 無条件に張り直す。
   void resumeStreaming() => _streaming?.reconnect();
 
-  /// 再接続やタブの再表示で空いた期間に投稿されたノートを取りに行く。
-  /// 満杯（穴の可能性あり）なら refresh 相当で全体を取り直し、そうでなけ
-  /// れば streamed ノートと同じ pending 経由で先頭に積む。
   Future<void> _catchUp(TimelineSource source) async {
     final repo = ref.read(timelineRepositoryProvider);
     if (repo == null) return;
@@ -170,7 +160,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
         limit: _catchUpLimit,
       );
     } catch (_) {
-      // ベストエフォート。次の再接続やユーザーの pull-to-refresh で追いつける
+      // 次の再接続か、引っ張って更新で追いつける
       return;
     }
     if (notes.isEmpty) return;
@@ -189,8 +179,7 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
       return;
     }
 
-    // sinceId 順（新しい順）で来る前提。streamed ノートと同じキューに
-    // 乗せて、新着チップ / 先頭差し込みの挙動をそのまま使う。
+    // 新しい順で届く前提。
     final stillSelected = source == ref.read(selectedTimelineProvider);
     final latestCache = _cache[source] ?? baseline;
     final knownIds = {
@@ -201,15 +190,13 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     if (fresh.isEmpty) return;
 
     if (stillSelected) {
-      // _pending は新しい順。取得を待つ間に再接続後の新着が先頭へ届いて
-      // いることがあるので、単純に前後へ足さず投稿日時で並べ直す。
+      // 取得を待つ間に新着が先頭へ届いていることがあるので、投稿日時で並べ直す。
       _pending
         ..addAll(fresh)
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       pendingCount.value = _pending.length;
     } else {
-      // 非表示タブはチップを見せる相手がいないので、キャッシュの先頭に
-      // 積んでおく。次に選ばれたとき build() がそのまま返す。
+      // 非表示タブは新着チップを出せないので、キャッシュへ直接積む。
       _cache[source] = [...fresh, ...latestCache];
     }
   }
@@ -226,7 +213,6 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     }
   }
 
-  /// バッファしたノートをリスト先頭に追加してカウントをリセット。
   void flushPending() {
     if (_pending.isEmpty) return;
     final current = state.value ?? [];
@@ -259,18 +245,14 @@ class TimelineNotifier extends AsyncNotifier<List<Note>> {
     final repo = ref.read(timelineRepositoryProvider);
     if (repo == null) return;
 
-    // タブ切り替えは await の間にも起きるので、書き込み先は最初に読んだ
-    // このタブ（source）に固定する。「今選ばれているタブ」を都度読むと、
-    // 別タブへ切り替えた後に古いタブのノートがそこへ紛れ込む。
+    // await の間にタブが切り替わりうるので、書き込み先は最初に読んだタブに固定する。
     final source = ref.read(selectedTimelineProvider);
     _loadingMore = true;
     try {
       final older = await repo.fetchTimeline(source, untilId: current.last.id);
       ref.read(noteOverridesProvider.notifier).evictFetched(older);
 
-      // 積む先は取得前のコピー（current）ではなく、このタブの「今の」
-      // キャッシュ。await の間に flushPending が届いていると、取得前の
-      // コピーに積んでしまってその分が消える。
+      // await の間の flushPending を消さないよう、取得前のコピーではなく今のキャッシュに積む。
       final latest = _cache[source] ?? current;
       final existingIds = latest.map((note) => note.id).toSet();
       final merged = [

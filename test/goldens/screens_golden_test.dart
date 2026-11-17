@@ -8,10 +8,6 @@ import 'package:mischie/features/compose/data/draft_store.dart';
 import 'package:mischie/features/compose/domain/draft_notifier.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
 
-/// 画面まるごとの見た目を、実機を繋がずに確かめるためのゴールデン。
-///
-/// 更新するとき: flutter test test/goldens --update-goldens
-/// 下書きはファイルに触るので、テストでは何も持たないものに差し替える。
 class _EmptyDraftStore implements DraftStore {
   @override
   Future<List<Draft>> load() async => const [];
@@ -29,8 +25,8 @@ Channel _channel(
   id: name,
   name: name,
   description: description,
-  usersCount: 244,
-  notesCount: 57647,
+  usersCount: 100,
+  notesCount: 1000,
   isFollowing: isFollowing,
 );
 
@@ -59,7 +55,6 @@ void main() {
     );
     await tester.pump();
 
-    // ツールバーの投票ボタンを押して編集欄を出す
     await tester.tap(find.byIcon(Icons.poll_outlined).first);
     await tester.pump();
 
@@ -77,8 +72,7 @@ void main() {
     );
     await tester.pump();
 
-    // 絵文字候補は画像を読むためテスト環境ではキャッシュ層に触れる。
-    // 候補欄そのものの確認は画像のない MFM の装飾で行う。
+    // 絵文字候補はテスト環境で画像を読めないので、候補欄は MFM の装飾で確かめる。
     await tester.enterText(find.byType(TextField).last, r'すごい $[j');
     await tester.pump();
 
@@ -94,7 +88,7 @@ void main() {
       const Scaffold(body: ChannelResults(query: '')),
       overrides: [
         followedChannelsProvider.overrideWith(
-          (ref) async => [_channel('艦これ部', isFollowing: true)],
+          (ref) async => [_channel('写真部', isFollowing: true)],
         ),
         featuredChannelsProvider.overrideWith(
           (ref) async => [

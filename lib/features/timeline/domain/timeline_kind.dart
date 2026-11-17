@@ -1,4 +1,3 @@
-/// 表示するタイムラインの種類。
 enum TimelineKind {
   home('ホーム', 'notes/timeline', 'homeTimeline'),
   local('ローカル', 'notes/local-timeline', 'localTimeline'),

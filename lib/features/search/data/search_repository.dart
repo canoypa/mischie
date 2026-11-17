@@ -19,6 +19,18 @@ class SearchRepository {
     return list.map(Note.fromJson).toList();
   }
 
+  Future<List<Note>> notesByTag(
+    String tag, {
+    int limit = 20,
+    String? untilId,
+  }) async {
+    final list = await _client.postList(
+      'notes/search-by-tag',
+      body: {'tag': tag, 'limit': limit, 'untilId': ?untilId},
+    );
+    return list.map(Note.fromJson).toList();
+  }
+
   Future<List<UserDetailed>> searchUsers(
     String query, {
     int limit = 20,

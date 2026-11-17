@@ -15,10 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NotificationItem {
 
- String get id; String get createdAt; String get type; User? get user; Note? get note; String? get reaction;/// `reaction:grouped` の中身。同じノートへの連続したリアクションを
-/// まとめたもので、新しい順に入る。
- List<GroupedReaction>? get reactions;/// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
-/// 新しい順にまとめたもの。
+ String get id; String get createdAt; String get type; User? get user; Note? get note; String? get reaction;/// `reaction:grouped` の中身。新しい順。
+ List<GroupedReaction>? get reactions;/// `renote:grouped` の相手。新しい順。
  List<User>? get users;
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
@@ -247,11 +245,9 @@ class _NotificationItem implements NotificationItem {
 @override final  User? user;
 @override final  Note? note;
 @override final  String? reaction;
-/// `reaction:grouped` の中身。同じノートへの連続したリアクションを
-/// まとめたもので、新しい順に入る。
+/// `reaction:grouped` の中身。新しい順。
  final  List<GroupedReaction>? _reactions;
-/// `reaction:grouped` の中身。同じノートへの連続したリアクションを
-/// まとめたもので、新しい順に入る。
+/// `reaction:grouped` の中身。新しい順。
 @override List<GroupedReaction>? get reactions {
   final value = _reactions;
   if (value == null) return null;
@@ -260,11 +256,9 @@ class _NotificationItem implements NotificationItem {
   return EqualUnmodifiableListView(value);
 }
 
-/// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
-/// 新しい順にまとめたもの。
+/// `renote:grouped` の相手。新しい順。
  final  List<User>? _users;
-/// `renote:grouped` の中身。同じノートへの連続したリノートの相手を、
-/// 新しい順にまとめたもの。
+/// `renote:grouped` の相手。新しい順。
 @override List<User>? get users {
   final value = _users;
   if (value == null) return null;

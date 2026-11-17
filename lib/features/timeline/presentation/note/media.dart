@@ -1,12 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blurhash/flutter_blurhash.dart';
+import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/core/widgets/overlay_tag.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:mischie/features/timeline/presentation/note/video_viewer.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NoteMediaGrid extends StatelessWidget {
@@ -17,9 +20,6 @@ class NoteMediaGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final images = files.where((f) => f.type.startsWith('image/')).toList();
-    // 画像以外（動画・音声・その他のファイル）は自前では開けないが、
-    // 何も出さないと添付があること自体が伝わらない。行として出して
-    // タップで外部へ渡す。
     final others = files.where((f) => !f.type.startsWith('image/')).toList();
 
     if (images.isEmpty) {
@@ -47,7 +47,7 @@ class NoteMediaGrid extends StatelessWidget {
               child: _MediaTile(file: images.first, images: images, index: 0),
             )
           : AspectRatio(
-              // 2 cols: 2 images → 1 row (2:1), 3-4 images → 2 rows (1:1)
+              // 2 枚は 1 行、3〜4 枚は 2 行
               aspectRatio: images.length == 2 ? 2.0 : 1.0,
               child: GridView.count(
                 crossAxisCount: 2,
@@ -73,7 +73,7 @@ class NoteMediaGrid extends StatelessWidget {
   }
 }
 
-/// 画像以外の添付。Mischie では再生・表示できないので、外部に渡す。
+/// 画像以外の添付。
 class FileRow extends StatelessWidget {
   const FileRow({super.key, required this.file});
 
@@ -117,7 +117,6 @@ class FileRow extends StatelessWidget {
                 ),
               ),
               Icon(
-                // 動画はアプリ内で開くので、外部リンクの印は出さない
                 file.type.startsWith('video/')
                     ? Icons.play_circle_outline
                     : Icons.open_in_new,
@@ -150,16 +149,8 @@ class _MediaTile extends StatefulWidget {
 class _MediaTileState extends State<_MediaTile> {
   bool _revealed = false;
 
-  void _openViewer() {
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Close',
-      barrierColor: Colors.transparent,
-      pageBuilder: (context, anim, _) =>
-          _ImageViewer(images: widget.images, initialIndex: widget.index),
-    );
-  }
+  void _openViewer() =>
+      showImageViewer(context, widget.images, initialIndex: widget.index);
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +164,6 @@ class _MediaTileState extends State<_MediaTile> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 説明の無い画像は、読み上げ環境では存在しないのと同じになる。
           Semantics(
             image: true,
             label: alt ?? file.name ?? '画像',
@@ -181,8 +171,7 @@ class _MediaTileState extends State<_MediaTile> {
               imageUrl: file.thumbnailUrl ?? file.url,
               cacheManager: MediaCacheManager.instance,
               fit: BoxFit.cover,
-              // グリッドのサムネイルは画面幅より大きくは出ない。原寸のまま
-              // デコードすると、その分だけ無駄にメモリへ展開することになる。
+              // 画面幅より大きく出ないので、その幅でデコードしてメモリを抑える。
               memCacheWidth:
                   (MediaQuery.sizeOf(context).width *
                           MediaQuery.devicePixelRatioOf(context))
@@ -201,48 +190,30 @@ class _MediaTileState extends State<_MediaTile> {
           if (alt != null && alt.isNotEmpty && !showOverlay)
             Positioned(left: 6, bottom: 6, child: _AltBadge(text: alt)),
           if (showOverlay)
-            GestureDetector(
-              onTap: () => setState(() => _revealed = true),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (file.blurhash != null)
-                    BlurHash(hash: file.blurhash!)
-                  else
-                    Container(color: Colors.black54),
-                  const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Sensitive',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Click to show',
-                          style: TextStyle(color: Colors.white70, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _SensitiveCover(
+              blurhash: file.blurhash,
+              compact: true,
+              onReveal: () => setState(() => _revealed = true),
             ),
         ],
       ),
     );
   }
+}
+
+void showImageViewer(
+  BuildContext context,
+  List<DriveFile> images, {
+  int initialIndex = 0,
+}) {
+  showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Close',
+    barrierColor: Colors.transparent,
+    pageBuilder: (context, anim, _) =>
+        _ImageViewer(images: images, initialIndex: initialIndex),
+  );
 }
 
 class _ImageViewer extends StatefulWidget {
@@ -264,8 +235,7 @@ class _ImageViewerState extends State<_ImageViewer>
   double _dragY = 0;
   bool _dragging = false;
 
-  /// タップして解除した画像の index。グリッドで既に解除して開いた1枚は、
-  /// ビューアでまた隠さないよう最初から入れておく。
+  /// 開いた 1 枚はグリッドで見えているので、最初から入れておく。
   late final Set<int> _revealed = {widget.initialIndex};
 
   static const _bgMaxOpacity = 0.92;
@@ -293,8 +263,21 @@ class _ImageViewerState extends State<_ImageViewer>
     super.dispose();
   }
 
+  /// 保存も共有から行う。
+  Future<void> _shareCurrent() async {
+    final image = widget.images[_current];
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final file = await MediaCacheManager.instance.getSingleFile(image.url);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path, mimeType: image.type)]),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    }
+  }
+
   void _onVerticalStart(DragStartDetails d) {
-    // ピンチズーム中（scale != 1）は無視するが PhotoView に任せる
     setState(() {
       _dragging = true;
       _dragY = 0;
@@ -322,109 +305,122 @@ class _ImageViewerState extends State<_ImageViewer>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _bgOpacity,
-      builder: (context, child) {
-        return Material(
-          color: Colors.black.withAlpha((_bgOpacity.value * 255).round()),
-          child: child,
-        );
-      },
-      child: GestureDetector(
-        onVerticalDragStart: _onVerticalStart,
-        onVerticalDragUpdate: _onVerticalUpdate,
-        onVerticalDragEnd: _onVerticalEnd,
-        child: Transform.translate(
-          offset: Offset(0, _dragY),
-          child: Stack(
-            children: [
-              PhotoViewGallery.builder(
-                itemCount: widget.images.length,
-                pageController: _pageController,
-                onPageChanged: (i) => setState(() => _current = i),
-                builder: (context, index) {
-                  final file = widget.images[index];
-                  if (file.isSensitive && !_revealed.contains(index)) {
-                    return PhotoViewGalleryPageOptions.customChild(
-                      // ぼかしの上に自前のタップ判定を置くので、PhotoView
-                      // 側のズーム・パンは無効にしておく。
-                      disableGestures: true,
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.contained,
-                      child: _SensitivePage(
-                        blurhash: file.blurhash,
-                        onReveal: () => setState(() => _revealed.add(index)),
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: AnimatedBuilder(
+        animation: _bgOpacity,
+        builder: (context, child) {
+          return Material(
+            color: Colors.black.withAlpha((_bgOpacity.value * 255).round()),
+            child: child,
+          );
+        },
+        child: GestureDetector(
+          onVerticalDragStart: _onVerticalStart,
+          onVerticalDragUpdate: _onVerticalUpdate,
+          onVerticalDragEnd: _onVerticalEnd,
+          child: Transform.translate(
+            offset: Offset(0, _dragY),
+            child: Stack(
+              children: [
+                PhotoViewGallery.builder(
+                  itemCount: widget.images.length,
+                  pageController: _pageController,
+                  onPageChanged: (i) => setState(() => _current = i),
+                  builder: (context, index) {
+                    final file = widget.images[index];
+                    if (file.isSensitive && !_revealed.contains(index)) {
+                      return PhotoViewGalleryPageOptions.customChild(
+                        // ぼかしの上に自前のタップ判定を置くので、PhotoView
+                        // 側のズーム・パンは無効にしておく。
+                        disableGestures: true,
+                        minScale: PhotoViewComputedScale.contained,
+                        maxScale: PhotoViewComputedScale.contained,
+                        child: _SensitiveCover(
+                          blurhash: file.blurhash,
+                          onReveal: () => setState(() => _revealed.add(index)),
+                        ),
+                      );
+                    }
+                    return PhotoViewGalleryPageOptions(
+                      imageProvider: CachedNetworkImageProvider(
+                        file.url,
+                        cacheManager: MediaCacheManager.instance,
                       ),
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
                     );
-                  }
-                  return PhotoViewGalleryPageOptions(
-                    imageProvider: CachedNetworkImageProvider(
-                      file.url,
-                      cacheManager: MediaCacheManager.instance,
-                    ),
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 3,
-                  );
-                },
-                backgroundDecoration: const BoxDecoration(
-                  color: Colors.transparent,
+                  },
+                  backgroundDecoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  loadingBuilder: (context, event) =>
+                      const Center(child: CircularProgressIndicator()),
                 ),
-                loadingBuilder: (context, event) =>
-                    const Center(child: CircularProgressIndicator()),
-              ),
-              // 閉じるボタン
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.share, color: Colors.white),
+                            tooltip: '共有',
+                            onPressed: _shareCurrent,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            tooltip: '閉じる',
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              // ページインジケーター
-              if (widget.images.length > 1)
-                Positioned(
-                  bottom: 32,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      widget.images.length,
-                      (i) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: i == _current ? 12 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: i == _current
-                              ? Colors.white
-                              : Colors.white.withAlpha(128),
-                          borderRadius: BorderRadius.circular(3),
+                if (widget.images.length > 1)
+                  Positioned(
+                    bottom: 32 + bottomInset,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        widget.images.length,
+                        (i) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: i == _current ? 12 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: i == _current
+                                ? Colors.white
+                                : Colors.white.withAlpha(128),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              // 下スワイプヒント
-              if (!_dragging)
-                Positioned(
-                  bottom: 8,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Colors.white.withAlpha(100),
-                      size: 28,
+                // 下スワイプヒント
+                if (!_dragging)
+                  Positioned(
+                    bottom: 8 + bottomInset,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.white.withAlpha(100),
+                        size: 28,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -432,63 +428,68 @@ class _ImageViewerState extends State<_ImageViewer>
   }
 }
 
-/// ビューア内でセンシティブな画像を隠す面。グリッドの伏せ表示と同じ見た目
-/// （ぼかし・警告アイコン・タップで解除）をフルスクリーン用に出す。
-class _SensitivePage extends StatelessWidget {
-  const _SensitivePage({required this.blurhash, required this.onReveal});
+class _SensitiveCover extends StatelessWidget {
+  const _SensitiveCover({
+    required this.blurhash,
+    required this.onReveal,
+    this.compact = false,
+  });
 
   final String? blurhash;
   final VoidCallback onReveal;
 
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onReveal,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (blurhash != null)
-            BlurHash(hash: blurhash!)
-          else
-            const ColoredBox(color: Colors.black87),
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.white,
-                  size: 36,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'センシティブな内容',
-                  style: TextStyle(
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: 'センシティブな内容。タップで表示',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onReveal,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (blurhash != null)
+              BlurHash(hash: blurhash!)
+            else
+              const ColoredBox(color: Colors.black87),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    size: compact ? 28 : 36,
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'タップで表示',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
+                  SizedBox(height: compact ? 4 : 8),
+                  Text(
+                    'センシティブな内容',
+                    style:
+                        (compact ? textTheme.labelLarge : textTheme.titleSmall)
+                            ?.copyWith(color: Colors.white),
+                  ),
+                  SizedBox(height: compact ? 2 : 4),
+                  Text(
+                    'タップで表示',
+                    style:
+                        (compact ? textTheme.labelSmall : textTheme.bodySmall)
+                            ?.copyWith(color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/// 返信・リノート・リアクション・その他のアクション行。
-
-/// 説明（alt）が付いていることを示すバッジ。押すと本文を読める。
-///
-/// 画像が見えていても、説明が付いているかどうかは見た目では分からない。
-/// 付けた側の意図が届くよう、目でも辿れるようにしておく。
+/// 説明が付いていることは画像を見ても分からないので、バッジで示す。
 class _AltBadge extends StatelessWidget {
   const _AltBadge({required this.text});
 

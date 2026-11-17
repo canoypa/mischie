@@ -1008,7 +1008,7 @@ as bool,
 /// @nodoc
 mixin _$NoteChannel {
 
- String get id; String get name; String? get color;
+ String get id; String get name; String? get color; bool get isSensitive; bool get allowRenoteToExternal;
 /// Create a copy of NoteChannel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1021,16 +1021,16 @@ $NoteChannelCopyWith<NoteChannel> get copyWith => _$NoteChannelCopyWithImpl<Note
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive)&&(identical(other.allowRenoteToExternal, allowRenoteToExternal) || other.allowRenoteToExternal == allowRenoteToExternal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color);
+int get hashCode => Object.hash(runtimeType,id,name,color,isSensitive,allowRenoteToExternal);
 
 @override
 String toString() {
-  return 'NoteChannel(id: $id, name: $name, color: $color)';
+  return 'NoteChannel(id: $id, name: $name, color: $color, isSensitive: $isSensitive, allowRenoteToExternal: $allowRenoteToExternal)';
 }
 
 
@@ -1041,7 +1041,7 @@ abstract mixin class $NoteChannelCopyWith<$Res>  {
   factory $NoteChannelCopyWith(NoteChannel value, $Res Function(NoteChannel) _then) = _$NoteChannelCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? color
+ String id, String name, String? color, bool isSensitive, bool allowRenoteToExternal
 });
 
 
@@ -1058,12 +1058,14 @@ class _$NoteChannelCopyWithImpl<$Res>
 
 /// Create a copy of NoteChannel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? color = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? color = freezed,Object? isSensitive = null,Object? allowRenoteToExternal = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: freezed == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,isSensitive: null == isSensitive ? _self.isSensitive : isSensitive // ignore: cast_nullable_to_non_nullable
+as bool,allowRenoteToExternal: null == allowRenoteToExternal ? _self.allowRenoteToExternal : allowRenoteToExternal // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1145,10 +1147,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? color)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? color,  bool isSensitive,  bool allowRenoteToExternal)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NoteChannel() when $default != null:
-return $default(_that.id,_that.name,_that.color);case _:
+return $default(_that.id,_that.name,_that.color,_that.isSensitive,_that.allowRenoteToExternal);case _:
   return orElse();
 
 }
@@ -1166,10 +1168,10 @@ return $default(_that.id,_that.name,_that.color);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? color)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? color,  bool isSensitive,  bool allowRenoteToExternal)  $default,) {final _that = this;
 switch (_that) {
 case _NoteChannel():
-return $default(_that.id,_that.name,_that.color);}
+return $default(_that.id,_that.name,_that.color,_that.isSensitive,_that.allowRenoteToExternal);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1183,10 +1185,10 @@ return $default(_that.id,_that.name,_that.color);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? color)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? color,  bool isSensitive,  bool allowRenoteToExternal)?  $default,) {final _that = this;
 switch (_that) {
 case _NoteChannel() when $default != null:
-return $default(_that.id,_that.name,_that.color);case _:
+return $default(_that.id,_that.name,_that.color,_that.isSensitive,_that.allowRenoteToExternal);case _:
   return null;
 
 }
@@ -1198,12 +1200,14 @@ return $default(_that.id,_that.name,_that.color);case _:
 @JsonSerializable()
 
 class _NoteChannel implements NoteChannel {
-  const _NoteChannel({required this.id, this.name = '', this.color});
+  const _NoteChannel({required this.id, this.name = '', this.color, this.isSensitive = false, this.allowRenoteToExternal = true});
   factory _NoteChannel.fromJson(Map<String, dynamic> json) => _$NoteChannelFromJson(json);
 
 @override final  String id;
 @override@JsonKey() final  String name;
 @override final  String? color;
+@override@JsonKey() final  bool isSensitive;
+@override@JsonKey() final  bool allowRenoteToExternal;
 
 /// Create a copy of NoteChannel
 /// with the given fields replaced by the non-null parameter values.
@@ -1218,16 +1222,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive)&&(identical(other.allowRenoteToExternal, allowRenoteToExternal) || other.allowRenoteToExternal == allowRenoteToExternal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color);
+int get hashCode => Object.hash(runtimeType,id,name,color,isSensitive,allowRenoteToExternal);
 
 @override
 String toString() {
-  return 'NoteChannel(id: $id, name: $name, color: $color)';
+  return 'NoteChannel(id: $id, name: $name, color: $color, isSensitive: $isSensitive, allowRenoteToExternal: $allowRenoteToExternal)';
 }
 
 
@@ -1238,7 +1242,7 @@ abstract mixin class _$NoteChannelCopyWith<$Res> implements $NoteChannelCopyWith
   factory _$NoteChannelCopyWith(_NoteChannel value, $Res Function(_NoteChannel) _then) = __$NoteChannelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? color
+ String id, String name, String? color, bool isSensitive, bool allowRenoteToExternal
 });
 
 
@@ -1255,12 +1259,14 @@ class __$NoteChannelCopyWithImpl<$Res>
 
 /// Create a copy of NoteChannel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? color = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? color = freezed,Object? isSensitive = null,Object? allowRenoteToExternal = null,}) {
   return _then(_NoteChannel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: freezed == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,isSensitive: null == isSensitive ? _self.isSensitive : isSensitive // ignore: cast_nullable_to_non_nullable
+as bool,allowRenoteToExternal: null == allowRenoteToExternal ? _self.allowRenoteToExternal : allowRenoteToExternal // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

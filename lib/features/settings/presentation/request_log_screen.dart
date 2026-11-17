@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/providers/core_providers.dart';
 
-/// API リクエストの実測。無駄に叩いていないかを目で確かめるための画面。
+/// API を無駄に呼んでいないかを確かめるための画面。
 class RequestLogScreen extends ConsumerWidget {
   const RequestLogScreen({super.key});
 
@@ -35,7 +35,7 @@ class RequestLogScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     _Stat(label: '直近 1 分', value: '$lastMinute'),
-                    _Stat(label: '記録中', value: '${log.total}'),
+                    _Stat(label: '件数', value: '${log.total}'),
                     _Stat(
                       label: '最古',
                       value: since == null

@@ -1,9 +1,7 @@
 import 'package:mischie/features/notification/domain/notification_item.dart';
 
-/// ストリーミングで届く通知は 1 件ずつの `reaction` / `renote` で、
-/// サーバーがまとめるのは REST 取得時（`i/notifications-grouped`）だけ。
-/// 先頭がすでに同じノートへの `reaction`（または `reaction:grouped`）なら
-/// 行を増やさずそこへ束ね、Web 版と同じ「積まれない」体験にする。
+/// リアルタイムで届く通知は 1 件ずつなので、先頭が同じノートへの
+/// リアクション・リノートならそこへ束ねる。
 List<NotificationItem> mergeIncomingNotification(
   NotificationItem incoming,
   List<NotificationItem> current,
@@ -40,9 +38,8 @@ NotificationItem _mergeReaction(
       ? top.reactions ?? const []
       : [GroupedReaction(user: top.user!, reaction: top.reaction!)];
   return NotificationItem(
-    // グループの id はサーバーの規約と同じく最古（= 束ねられる前から
-    // あった）メンバーの id を保つ。untilId のページングがこの id に
-    // 依存する。
+    // id は最古のメンバーのものを保つ。続きの読み込み（untilId）がこの id を
+    // 起点にする。
     id: top.id,
     createdAt: incoming.createdAt,
     type: 'reaction:grouped',

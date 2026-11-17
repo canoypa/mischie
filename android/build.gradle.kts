@@ -19,9 +19,8 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// 一部のプラグインは Java/Kotlin のターゲットを宣言しておらず、Java は AGP 既定の
-// 1.8、Kotlin はツールチェイン (JDK 21) と食い違ってビルドが落ちる。
-// アプリ側 (17) に揃える。
+// ターゲットを宣言していないプラグインがあり、そのままでは Java と Kotlin の
+// ターゲットが食い違ってビルドが通らない。アプリと同じ 17 に揃える。
 subprojects {
     plugins.withId("com.android.library") {
         extensions.configure<com.android.build.gradle.LibraryExtension> {

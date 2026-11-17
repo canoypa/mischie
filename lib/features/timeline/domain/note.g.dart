@@ -115,6 +115,8 @@ _NoteChannel _$NoteChannelFromJson(Map<String, dynamic> json) => _NoteChannel(
   id: json['id'] as String,
   name: json['name'] as String? ?? '',
   color: json['color'] as String?,
+  isSensitive: json['isSensitive'] as bool? ?? false,
+  allowRenoteToExternal: json['allowRenoteToExternal'] as bool? ?? true,
 );
 
 Map<String, dynamic> _$NoteChannelToJson(_NoteChannel instance) =>
@@ -122,4 +124,6 @@ Map<String, dynamic> _$NoteChannelToJson(_NoteChannel instance) =>
       'id': instance.id,
       'name': instance.name,
       'color': instance.color,
+      'isSensitive': instance.isSensitive,
+      'allowRenoteToExternal': instance.allowRenoteToExternal,
     };

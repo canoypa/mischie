@@ -34,7 +34,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('続きを見る'), findsOneWidget);
-    // 中身は 600 のまま組まれ、表示だけ 200 に切り詰められる
     expect(tester.getSize(find.byType(Container)).height, 600);
     expect(
       tester.getSize(find.byType(CollapsibleContent)).height,
@@ -55,7 +54,6 @@ void main() {
       greaterThan(600),
     );
 
-    // 展開すると畳むボタンは画面外に出るので、見える位置まで運ぶ
     await tester.ensureVisible(find.text('折りたたむ'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('折りたたむ'));

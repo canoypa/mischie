@@ -23,6 +23,8 @@ sealed class UserDetailed with _$UserDetailed {
     @Default(false) bool isCat,
     @Default(false) bool isFollowing,
     @Default(false) bool isFollowed,
+    @Default(false) bool isLocked,
+    @Default(false) bool hasPendingFollowRequestFromYou,
     @Default(false) bool isMuted,
     @Default(false) bool isBlocking,
     @Default([]) List<AvatarDecoration> avatarDecorations,
@@ -30,8 +32,6 @@ sealed class UserDetailed with _$UserDetailed {
     int? followingCount,
     int? notesCount,
     @Default([]) List<ProfileField> fields,
-
-    /// 本人が固定した投稿。プロフィールの先頭に出す。
     @Default([]) List<Note> pinnedNotes,
     @Default([]) List<UserRole> roles,
     @Default({}) Map<String, String> emojis,
@@ -42,9 +42,17 @@ sealed class UserDetailed with _$UserDetailed {
   factory UserDetailed.fromJson(Map<String, dynamic> json) =>
       _$UserDetailedFromJson(json);
 
-  /// 表示用のハンドル。リモートは `@username@host`、ローカルは `@username`。
+  FollowState get followState => isFollowing
+      ? FollowState.following
+      : hasPendingFollowRequestFromYou
+      ? FollowState.requested
+      : FollowState.none;
+
   String get acct => host != null ? '@$username@$host' : '@$username';
 }
+
+/// 自分から相手への関係。
+enum FollowState { none, requested, following }
 
 @freezed
 sealed class ProfileField with _$ProfileField {

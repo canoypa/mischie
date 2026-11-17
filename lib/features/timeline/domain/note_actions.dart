@@ -14,8 +14,7 @@ final noteRepositoryProvider = Provider<NoteRepository?>((ref) {
 
 final noteActionsProvider = Provider<NoteActions>(NoteActions.new);
 
-/// ノート操作。UI を待たせないよう先にローカル状態を更新し、
-/// API が失敗したら元に戻す（楽観的更新）。
+/// リアクション・リノート・投票は先に表示へ反映し、失敗したら戻す。
 class NoteActions {
   NoteActions(this._ref);
 
@@ -27,10 +26,8 @@ class NoteActions {
     return repo;
   }
 
-  /// 楽観的更新の重ね掛け（override）があればそれを、無ければ渡されたノートを返す。
   Note _current(Note note) => _ref.read(noteOverridesProvider)[note.id] ?? note;
 
-  /// 同じリアクションなら取り消し、違うリアクションなら付け替える。
   Future<void> toggleReaction(Note note, String reaction) async {
     final key = normalizeReactionKey(reaction);
     final repo = _repo();
@@ -45,10 +42,8 @@ class NoteActions {
           : _withReaction(_withReactionRemoved(current), key),
     );
 
-    // 付け替え (A→B) で unreact(A) までは成功したが react(B) が失敗した
-    // 場合、サーバーにはもう A が無い。previous（A が付いた状態）へ戻すと
-    // ローカルとサーバーがずれるので、unreact が成功済みかどうかで
-    // 戻し先を変える。
+    // 付け替えで unreact だけ成功した場合、サーバーにはもう元のリアクションが
+    // 無いので、戻し先を変える。
     var unreacted = false;
     try {
       if (current.myReaction != null) {
@@ -65,24 +60,36 @@ class NoteActions {
     }
   }
 
-  Future<void> renote(Note note) async {
+  Future<void> renote(Note note, {bool inChannel = false}) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
     final current = _current(note);
 
     overrides.put(current.copyWith(renoteCount: current.renoteCount + 1));
     try {
-      await repo.renote(note.id);
+      await repo.renote(
+        note.id,
+        visibility: inChannel ? null : _renoteVisibility(note),
+        channelId: inChannel ? note.channelId : null,
+      );
     } catch (_) {
       overrides.put(current);
       rethrow;
     }
   }
 
-  Future<void> unrenote(Note note) async {
+  /// センシティブなチャンネルのノートを公開タイムラインへ広げない。
+  String _renoteVisibility(Note note) =>
+      note.visibility == 'public' && note.channel?.isSensitive == true
+      ? 'home'
+      : note.visibility;
+
+  /// [renoteItem] は元のノートではなく、自分のリノートそのもの。
+  Future<void> unrenote(Note renoteItem) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
-    final current = _current(note);
+    final original = renoteItem.renote!;
+    final current = _current(original);
 
     overrides.put(
       current.copyWith(
@@ -90,14 +97,14 @@ class NoteActions {
       ),
     );
     try {
-      await repo.unrenote(note.id);
+      await repo.delete(renoteItem.id);
     } catch (_) {
       overrides.put(current);
       rethrow;
     }
+    _ref.read(deletedNoteIdsProvider.notifier).add(renoteItem.id);
   }
 
-  /// 投票する。結果は押した時点で反映し、失敗したら戻す。
   Future<void> vote(Note note, int choice) async {
     final repo = _repo();
     final overrides = _ref.read(noteOverridesProvider.notifier);
@@ -129,6 +136,29 @@ class NoteActions {
     await _repo().delete(note.id);
     _ref.read(deletedNoteIdsProvider.notifier).add(note.id);
   }
+
+  Future<NoteState> noteState(Note note) async => _repo().state(note.id);
+
+  Future<bool> isPinned(Note note) async =>
+      (await _repo().pinnedNoteIds()).contains(note.id);
+
+  Future<void> setFavorite(Note note, {required bool favorite}) async {
+    final repo = _repo();
+    await (favorite ? repo.favorite(note.id) : repo.unfavorite(note.id));
+  }
+
+  Future<void> setThreadMuted(Note note, {required bool muted}) async {
+    final repo = _repo();
+    await (muted ? repo.muteThread(note.id) : repo.unmuteThread(note.id));
+  }
+
+  Future<void> setPinned(Note note, {required bool pinned}) async {
+    final repo = _repo();
+    await (pinned ? repo.pin(note.id) : repo.unpin(note.id));
+  }
+
+  Future<void> reportAbuse(Note note, String comment) async =>
+      _repo().reportAbuse(note.user.id, comment);
 
   Note _withReactionRemoved(Note note) {
     final mine = note.myReaction;

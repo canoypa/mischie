@@ -31,7 +31,6 @@ void main() {
     });
 
     test('URL の : では出さない', () {
-      // http:// で候補が出るとうるさいだけ
       expect(at('https:|'), isNull);
     });
 

@@ -35,7 +35,6 @@ void main() {
 
       overrides.put(_note('renoted'));
 
-      // renoted をリノートした投稿が取得された場合
       overrides.evictFetched([_note('quote', renote: _note('renoted'))]);
 
       expect(

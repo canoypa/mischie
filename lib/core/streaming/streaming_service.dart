@@ -7,12 +7,10 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:mischie/features/timeline/domain/note.dart';
 
-/// ソケットの張り方を差し替えるためのフック。テストでは実ソケットの代わりに
-/// フェイクの channel を注入する。
+/// テストでフェイクの接続を差し込むためのフック。
 typedef WebSocketConnector = WebSocketChannel Function(Uri uri);
 
-/// 再接続タイマーの生成を差し替えるためのフック。テストでは遅延を実際に
-/// 待たず、渡された Duration だけを検証する。
+/// テストで再接続の遅延を待たずに検証するためのフック。
 typedef TimerFactory = Timer Function(Duration delay, void Function() callback);
 
 class StreamingService {
@@ -34,7 +32,6 @@ class StreamingService {
   final String _accessToken;
   final String _channelName;
 
-  /// チャンネル固有のパラメータ（リストなら listId など）。
   final Map<String, dynamic> _params;
 
   final WebSocketConnector _connector;
@@ -63,23 +60,17 @@ class StreamingService {
   /// 一度も確認できていない再接続の連鎖でバックオフを早まって戻さないため。
   bool _awaitingFirstMessage = true;
 
-  /// これまでに一度でも connect() したか。build() 直後の最初の接続は
-  /// 「再接続」ではないので reconnected を発火しない。
   bool _everConnected = false;
 
-  /// 直前の切断に対してすでに再接続をスケジュール済みか。onError と onDone
-  /// はセットで飛んでくることがあり、両方が予約すると 1 回の切断でバック
-  /// オフが二段飛びしてしまう。
+  /// onError と onDone が続けて届いても、1 回の切断でバックオフを 2 回進めないためのフラグ。
   bool _reconnectScheduled = false;
 
   Stream<Note> get noteStream => _controller.stream;
 
-  /// チャンネルから届いた生のイベント。ノート以外（通知など）に使う。
+  /// noteStream に載らない通知やノートの更新も含めた全イベント。
   Stream<StreamingEvent> get events => _events.stream;
 
-  /// 再接続が起きた（起きようとした）タイミングの通知。ソケットの生死とは
-  /// 独立に、取りこぼしがあり得るタイミングとして REST での catch-up の
-  /// トリガーに使う。
+  /// 再接続の通知。取りこぼした分を REST で取り直すきっかけに使う。
   Stream<void> get reconnected => _reconnectedController.stream;
 
   static WebSocketChannel _defaultConnector(Uri uri) =>
@@ -130,8 +121,7 @@ class StreamingService {
 
         final data = jsonDecode(message as String) as Map<String, dynamic>;
 
-        // ノート個別の更新（リアクションの増減・削除）はチャンネルではなく
-        // 接続そのものに届く
+        // noteUpdated はチャンネル宛てではないので、チャンネルの絞り込みより前に処理する
         if (data['type'] == 'noteUpdated') {
           final body = data['body'];
           if (body is Map<String, dynamic>) {
@@ -167,7 +157,6 @@ class StreamingService {
     }
   }
 
-  /// ノートの更新を受け取るようにする。表示中のノートだけ購読すれば足りる。
   void captureNote(String noteId) {
     if (!_capturedNotes.add(noteId)) return;
     _send({
@@ -186,8 +175,6 @@ class StreamingService {
 
   void _scheduleReconnect() {
     if (_disposed) return;
-    // onError と onDone はセットで届くことがある。1 回目の呼び出しで
-    // タイマーを立てたら、2 回目はバックオフを進めずに無視する。
     if (_reconnectScheduled) return;
     _reconnectScheduled = true;
 
@@ -204,8 +191,7 @@ class StreamingService {
     _reconnectTimer = _timerFactory(delay, connect);
   }
 
-  /// アプリ復帰時など、ソケットが生きているように見えても張り直したいとき
-  /// に呼ぶ。バックオフもリセットして即座に再接続する。
+  /// 接続が生きて見えても張り直したいとき（アプリ復帰時）に呼ぶ。
   void reconnect() {
     if (_disposed) return;
     _reconnectTimer?.cancel();
@@ -250,7 +236,6 @@ class StreamingService {
   }
 }
 
-/// ストリーミングのチャンネルイベント。`type` は 'note' や 'notification' など。
 class StreamingEvent {
   const StreamingEvent({required this.type, required this.body});
 

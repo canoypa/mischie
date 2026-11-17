@@ -3,10 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/widgets/custom_emoji_image.dart';
 import 'package:mischie/features/compose/domain/compose_completion.dart';
 
-/// 入力中の `:` や `$[` に対する候補。本文の直下に横並びで出す。
-///
-/// 候補はサーバーの絵文字一覧と MFM の装飾名から作るので、打鍵ごとの
-/// 通信は起きない。
 class CompletionBar extends ConsumerWidget {
   const CompletionBar({
     super.key,
@@ -19,10 +15,9 @@ class CompletionBar extends ConsumerWidget {
   final CompletionQuery query;
   final Map<String, String> emojis;
 
-  /// 間引き後のメンション検索語。呼び出し側が打鍵を落ち着かせてから渡す。
+  /// 打鍵を間引いたあとの検索語。
   final String mentionQuery;
 
-  /// 置き換える文字列（`:name:` や `$[fn ` の形）を返す。
   final ValueChanged<String> onSelected;
 
   static const _maxItems = 30;

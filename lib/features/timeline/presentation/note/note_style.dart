@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Misskey のチャンネル色は "#86b300" 形式。読めなければ色を付けない。
 Color? parseChannelColor(String? value) {
   if (value == null) return null;
   final hex = value.replaceFirst('#', '');

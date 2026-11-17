@@ -1,28 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
-/// 操作の結果を持つローカルの状態。取得したノートそのものは書き換えず、
-/// ここに重ねることで、どの画面から見ても同じ状態に見えるようにする。
-
-/// 操作後のノートを ID で保持する上書きストア。
-///
-/// 同じノートはタイムライン・プロフィール・ノート詳細に同時に存在しうる。
-/// 各リストの `List<Note>` を個別に書き換えると表示がずれるため、操作結果は
-/// ここに一本化し、`NoteCard` 側が描画時に解決する。
+/// 同じノートが複数の画面に出るので、操作結果は各リストを書き換えずに
+/// ここへ一本化し、描画時に重ねる。
 final noteOverridesProvider =
     NotifierProvider<NoteOverrides, Map<String, Note>>(NoteOverrides.new);
 
 class NoteOverrides extends Notifier<Map<String, Note>> {
   @override
-  Map<String, Note> build() => {};
+  Map<String, Note> build() {
+    // アカウントが変わったら空に戻す
+    ref.watch(currentAccountIdProvider);
+    return {};
+  }
 
   void put(Note note) => state = {...state, note.id: note};
 
   void remove(String noteId) => state = {...state}..remove(noteId);
 
-  /// ネットワークから新しく取得したノート群について、対応する上書きを外す。
-  /// これが無いと、リアクション後にタイムラインを更新しても件数が
-  /// セッション中ずっと固まって見える。renote 先の上書きも対象にする。
+  /// 取得し直したノートの上書きを外す。外さないと件数が古いまま固まる。
   void evictFetched(Iterable<Note> notes) {
     if (state.isEmpty) return;
     final idsToEvict = <String>{};
@@ -38,19 +35,23 @@ class NoteOverrides extends Notifier<Map<String, Note>> {
   }
 }
 
-/// 削除されたノートの ID。リストから抜くのではなく描画側で伏せる。
+/// リストからは抜かず、描画側で伏せる。
 final deletedNoteIdsProvider = NotifierProvider<DeletedNoteIds, Set<String>>(
   DeletedNoteIds.new,
 );
 
 class DeletedNoteIds extends Notifier<Set<String>> {
   @override
-  Set<String> build() => {};
+  Set<String> build() {
+    // アカウントが変わったら空に戻す
+    ref.watch(currentAccountIdProvider);
+    return {};
+  }
 
   void add(String noteId) => state = {...state, noteId};
 }
 
-/// 上書きストアを反映したノートを返す。`ref.watch` 経由で使う。
+/// 中で `ref.watch` するので build の中でだけ呼ぶ。
 Note resolveNote(WidgetRef ref, Note note) {
   final override = ref.watch(noteOverridesProvider.select((m) => m[note.id]));
   final resolved = override ?? note;

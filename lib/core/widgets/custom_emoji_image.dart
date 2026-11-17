@@ -3,17 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 
-/// url → 縦横比 (width / height) の LRU キャッシュ。
-///
-/// カスタム絵文字の横幅は画像を読むまで分からない。ここに残しておけば、
-/// スクロールで戻ってきたときや同じ絵文字が別の場所に出てきたときに、
-/// 読み込みを待たず最初から正しい幅で確保できる。無制限に増やすと
-/// 絵文字が数千〜1万件あるサーバーでは肥大するので、古いものから捨てる。
+/// url → 縦横比の LRU キャッシュ。再表示のとき、読み込みを待たずに正しい幅を確保するため。
 class _AspectRatioCache {
   _AspectRatioCache(this._capacity);
 
   final int _capacity;
-  // Dart の Map リテラルは LinkedHashMap 実装なので、挿入順が保たれる。
+  // 挿入順を LRU の順として使う。
   final _map = <String, double>{};
 
   double? get(String key) {
@@ -33,11 +28,7 @@ class _AspectRatioCache {
 
 final _aspectRatioCache = _AspectRatioCache(4000);
 
-/// カスタム絵文字 1 個ぶんの画像。
-///
-/// 幅を予約しないと、読み込み前は正方形、読み込み後は実際の縦横比へと
-/// 幅が変わってレイアウトがずれる。縦横比が分かるまでは正方形として
-/// 確保し、分かった時点でその URL の幅として覚えておく。
+/// カスタム絵文字 1 個ぶんの画像。縦横比が分かるまでは正方形の幅で確保する。
 class CustomEmojiImage extends StatefulWidget {
   const CustomEmojiImage({
     super.key,
@@ -53,8 +44,6 @@ class CustomEmojiImage extends StatefulWidget {
   /// 画像の高さ。
   final double size;
 
-  /// 読み込みに失敗したときに出すもの。絵文字名を出すか無地にするかは
-  /// 置かれる場所によって違う。
   final Widget errorFallback;
   final BoxFit? fit;
 
@@ -101,8 +90,6 @@ class _CustomEmojiImageState extends State<CustomEmojiImage> {
     _listener = null;
   }
 
-  /// 表示できた画像から縦横比を読み、次回以降のために覚える。
-  /// 一度分かったものは測り直さない。
   void _measure(ImageProvider provider, BuildContext context) {
     if (_aspectRatioCache.get(widget.url) != null) return;
     _detach();
@@ -110,7 +97,7 @@ class _CustomEmojiImageState extends State<CustomEmojiImage> {
     final listener = ImageStreamListener((info, _) {
       final ratio = info.image.width / info.image.height;
       _aspectRatioCache.put(widget.url, ratio);
-      // レイアウト中に setState は呼べないので、フレーム後に反映する。
+      // キャッシュ済みの画像だとビルド中に同期で呼ばれるため、フレーム後に反映する。
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted && _aspectRatio != ratio) {
           setState(() => _aspectRatio = ratio);

@@ -5,10 +5,7 @@ import 'package:mischie/features/channel/domain/channel.dart';
 import 'package:mischie/features/channel/domain/channel_notifier.dart';
 import 'package:mischie/features/channel/presentation/channel_screen.dart';
 
-/// 検索タブに出すチャンネルの一覧。
-///
-/// 検索語が空のときは、フォロー中とおすすめを出す。何も入力していない
-/// 状態で空白を見せるより、そこから辿れるほうが使える。
+/// 検索語が空のときは、フォロー中とおすすめを出す。
 class ChannelResults extends ConsumerWidget {
   const ChannelResults({super.key, required this.query});
 

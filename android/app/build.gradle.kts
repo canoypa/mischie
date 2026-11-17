@@ -28,10 +28,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "dev.tepbyte.mischie"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 31
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -54,8 +51,7 @@ android {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
-                // Fall back to debug signing so `flutter run --release` still works
-                // when no release keystore is configured (e.g. fresh checkout, CI).
+                // リリース鍵が無いときもデバッグ鍵でリリースビルドできるようにする
                 signingConfigs.getByName("debug")
             }
         }

@@ -7,14 +7,11 @@ import 'package:mischie/core/widgets/blurhash_color.dart';
 import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
-/// 猫耳とデコレーションを載せたアイコン。
-///
-/// デコレーションはアイコンからはみ出して描かれるので、置く側では
-/// レイアウト上の大きさ（= size）だけを占める。
 /// アイコンの下地。読み込み前と透過部分に見える色。
 Color _placeholderColor(BuildContext context) =>
     Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12);
 
+/// デコレーションははみ出して描かれ、レイアウト上は size だけを占める。
 class DecoratedAvatar extends StatelessWidget {
   const DecoratedAvatar({
     super.key,
@@ -99,7 +96,6 @@ class DecoratedAvatar extends StatelessWidget {
           Align(alignment: Alignment.bottomCenter, child: avatar),
           for (final decoration in decorations)
             Positioned(
-              // デコレーション画像はアイコンより一回り大きい枠に描く
               left: -size * 0.25,
               top: -size * 0.25,
               child: _Decoration(decoration: decoration, size: size * 1.5),

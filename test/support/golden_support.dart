@@ -9,9 +9,6 @@ import 'package:mischie/core/storage/account_store.dart';
 import 'package:mischie/features/auth/domain/account.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-/// ゴールデンの下ごしらえ。各テストで同じ準備を書き写さないためのもの。
-
-/// ログインしていない状態。実機のキーチェーンには触らない。
 class FakeAccountStore implements AccountStore {
   FakeAccountStore({this.accounts = const []});
 
@@ -34,8 +31,7 @@ class FakeAccountStore implements AccountStore {
   Future<void> clear() async {}
 }
 
-/// テスト環境は既定でフォントを持たず、文字もアイコンも黒い箱になる。
-/// 見た目の確認にならないので、本文用とアイコン用を読み込ませる。
+/// 既定では文字もアイコンも箱で描かれ、見た目を確かめられない。
 Future<void> loadGoldenFonts() async {
   timeago.setLocaleMessages('ja', timeago.JaMessages());
   await _loadFont('Roboto', '/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc');

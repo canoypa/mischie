@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 通知の種別を、人が読む形に変える。
-///
-/// 種別は 20 種以上あり、訳を持たないものは識別子がそのまま画面に出ていた。
-/// また「自分の投票が終了した」のように相手のいない通知もあるので、
-/// 名前を前に付けてよいかどうかも合わせて持つ。
 class NotificationLabel {
   const NotificationLabel({
     required this.icon,
@@ -31,8 +26,6 @@ NotificationLabel notificationLabel(String type) => switch (type) {
     text: 'がリアクション',
     role: NotificationRole.tertiary,
   ),
-  // まとめ表示（reaction:grouped / renote:grouped）は行の文言を画面側で
-  // 組み立てるが、バッジのアイコン・色は単発の種別と揃える。
   'reaction:grouped' => const NotificationLabel(
     icon: Icons.add_reaction,
     text: 'がリアクション',
@@ -88,7 +81,6 @@ NotificationLabel notificationLabel(String type) => switch (type) {
     text: 'からチャットの招待',
     role: NotificationRole.primary,
   ),
-  // ここから下は相手がいない（自分に起きたこと）
   'pollEnded' => const NotificationLabel(
     icon: Icons.poll_outlined,
     text: '投票が終了しました',
@@ -130,7 +122,7 @@ NotificationLabel notificationLabel(String type) => switch (type) {
     text: 'テスト通知',
     hasActor: false,
   ),
-  // 知らない種別は識別子を出さない。読めない英語より「通知」のほうがまし。
+  // 知らない種別でも識別子は画面に出さない。
   _ => const NotificationLabel(
     icon: Icons.notifications,
     text: '通知',

@@ -17,9 +17,16 @@ class NotificationRepository {
     if (sinceId != null) body['sinceId'] = sinceId;
     if (markAsRead != null) body['markAsRead'] = markAsRead;
 
-    // -grouped は同じ i/notifications のパラメータを取り、連続した
-    // reaction/renote を reaction:grouped / renote:grouped にまとめて返す。
     final list = await _client.postList('i/notifications-grouped', body: body);
     return list.map(NotificationItem.fromJson).toList();
   }
+
+  Future<void> markAllAsRead() =>
+      _client.postVoid('notifications/mark-all-as-read');
+
+  Future<void> acceptFollowRequest(String userId) =>
+      _client.postVoid('following/requests/accept', body: {'userId': userId});
+
+  Future<void> rejectFollowRequest(String userId) =>
+      _client.postVoid('following/requests/reject', body: {'userId': userId});
 }

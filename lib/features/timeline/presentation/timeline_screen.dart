@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/widgets/scrollable_message.dart';
 import 'package:mischie/features/timeline/domain/timeline_notifier.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
-/// HomeScreen から scrollToTop() を呼ぶための GlobalKey。
 final timelineScreenKey = GlobalKey<TimelineScreenState>();
 
 class TimelineScreen extends ConsumerStatefulWidget {
@@ -27,7 +27,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // ValueNotifier を listen してカウントを受け取る
     final notifier = ref.read(timelineNotifierProvider.notifier);
     notifier.pendingCount.removeListener(_onPendingChanged);
     notifier.pendingCount.addListener(_onPendingChanged);
@@ -38,9 +37,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
     _flushIfAtTop();
   }
 
-  /// 最上部にいて新着があれば、そのまま先頭へ流し込む。スクロール位置が
-  /// 変わったとき（_onScroll）と新着が届いたとき（_onPendingChanged）の
-  /// 両方で同じ判定が要る。
   void _flushIfAtTop() {
     if (!_scrollController.hasClients ||
         _scrollController.position.pixels != 0) {
@@ -64,7 +60,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
     super.dispose();
   }
 
-  /// タイムラインを切り替えたときなど、アニメーションなしで先頭に戻す。
   void jumpToTop() {
     if (!_scrollController.hasClients) return;
     _scrollController.jumpTo(0);
@@ -80,10 +75,8 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   }
 
   void _onScroll(ScrollUpdateNotification notification) {
-    // 最上部に戻ったとき、新着があれば自動表示
     _flushIfAtTop();
     final pos = _scrollController.position;
-    // 末尾 200px 以内に来たら追加ロード
     if (pos.pixels >= pos.maxScrollExtent - 200 && !_loadingMore.value) {
       _loadMore();
     }
@@ -111,17 +104,20 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
 
     return timelineAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(resolveErrorMessage(e)),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: () => ref.invalidate(timelineNotifierProvider),
-              child: const Text('再試行'),
-            ),
-          ],
+      error: (e, _) => RefreshIndicator(
+        onRefresh: () => ref.read(timelineNotifierProvider.notifier).refresh(),
+        child: ScrollableMessage(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(resolveErrorMessage(e)),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => ref.invalidate(timelineNotifierProvider),
+                child: const Text('再試行'),
+              ),
+            ],
+          ),
         ),
       ),
       data: (notes) => Stack(
@@ -130,7 +126,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
             onRefresh: () =>
                 ref.read(timelineNotifierProvider.notifier).refresh(),
             child: notes.isEmpty
-                ? const Center(child: Text('ノートがありません'))
+                ? const ScrollableMessage(child: Text('ノートがありません'))
                 : NotificationListener<ScrollUpdateNotification>(
                     onNotification: (n) {
                       _onScroll(n);
@@ -139,9 +135,7 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                     child: ListView.custom(
                       controller: _scrollController,
                       cacheExtent: 1000,
-                      // 新着は先頭に挿入されるので、キーが無いと全カードの
-                      // index がずれて、表示中のカードが丸ごと作り直される
-                      // （新着のたびに一瞬ガクつく原因）。
+                      // キーで追わないと、先頭に新着が入るたびに表示中のカードが作り直されてガクつく。
                       childrenDelegate: SliverChildBuilderDelegate(
                         (context, index) {
                           if (index == notes.length) {
@@ -181,7 +175,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                     ),
                   ),
           ),
-          // 新着ノートチップ
           Positioned(
             top: 8,
             left: 0,
@@ -212,8 +205,6 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
   }
 }
 
-/// 新着を知らせるボタン。影や角丸を自前で組まず、Material 3 の
-/// tonal button に任せる（テーマの状態レイヤーや高さもそのまま乗る）。
 class _NewNotesChip extends StatelessWidget {
   const _NewNotesChip({required this.count, required this.onTap});
 
@@ -231,11 +222,7 @@ class _NewNotesChip extends StatelessWidget {
   }
 }
 
-/// 新着ノートを高さ 0 から開いて差し込む。
-///
-/// アニメーション無しで挿入すると、上に要素が生えた分だけ表示が飛んで見える。
-/// 対象は「今回 flush で差し込まれたノート」だけで、最初から並んでいた
-/// ノートやスクロールで作り直されたノートは動かさない。
+/// 新着を高さ 0 から開いて差し込む。いきなり挿入すると表示が飛んで見える。
 class _NoteAppear extends ConsumerStatefulWidget {
   const _NoteAppear({required this.noteId, required this.child});
 
@@ -253,8 +240,7 @@ class _NoteAppearState extends ConsumerState<_NoteAppear>
   @override
   void initState() {
     super.initState();
-    // 判定は生成時の一度きり。以降の再構築で animate が変わって
-    // ウィジェットが差し替わる（＝途中で消える）のを避ける。
+    // 判定は生成時の一度だけ。再構築のたびに判定すると、アニメーションが途中で消える。
     final isNew = ref
         .read(timelineNotifierProvider.notifier)
         .justInserted

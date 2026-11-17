@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mischie/features/auth/domain/account.dart';
 
-/// 複数アカウントの保管。トークンを含むので暗号化ストレージに置く。
+/// トークンを含むので暗号化ストレージに置く。
 class AccountStore {
   const AccountStore(this._storage);
 
@@ -12,7 +12,7 @@ class AccountStore {
   static const _keyAccounts = 'accounts';
   static const _keyActiveId = 'active_account_id';
 
-  // 単一アカウント時代のキー。読み出し時に一度だけ移行する。
+  // 旧形式のキー。読み出し時に移行する。
   static const _legacyToken = 'access_token';
   static const _legacyHost = 'server_host';
 

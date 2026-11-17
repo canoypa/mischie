@@ -9,6 +9,7 @@ import 'package:mischie/features/auth/domain/auth_state.dart';
 import 'package:mischie/features/notification/data/notification_repository.dart';
 import 'package:mischie/features/notification/domain/notification_item.dart';
 import 'package:mischie/features/notification/domain/notification_merge.dart';
+import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 
@@ -28,14 +29,8 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
   StreamSubscription<StreamingEvent>? _subscription;
   StreamSubscription<void>? _reconnectedSubscription;
 
-  /// 未読の通知数。通知タブを開いたら 0 に戻す。
   final unreadCount = ValueNotifier<int>(0);
-
-  /// loadMore の多重実行を防ぐガード。
   bool _loadingMore = false;
-
-  /// 末尾まで読み終えたか。これが立った後は、スクロールが末尾付近に
-  /// 留まる間ずっと同じリクエストを送り続けてしまうのを防ぐ。
   bool _hasMore = true;
 
   @override
@@ -57,10 +52,10 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
       _streaming?.dispose();
     });
 
+    unawaited(_loadUnreadCount());
     return _fetch();
   }
 
-  /// main チャンネルは通知やフォローなど自分宛のイベントが流れる。
   void _startStreaming(String host, String accessToken) {
     _streaming = StreamingService(
       host: host,
@@ -69,6 +64,10 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
     );
     _streaming!.connect();
     _subscription = _streaming!.events.listen((event) {
+      if (event.type == 'readAllNotifications') {
+        unreadCount.value = 0;
+        return;
+      }
       if (event.type != 'notification') return;
       final item = NotificationItem.fromJson(event.body);
       final current = state.value;
@@ -87,9 +86,7 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
   /// あるため、生きているように見えても張り直す。
   void resumeStreaming() => _streaming?.reconnect();
 
-  /// 再接続の間に届いた通知を sinceId で取りに行き、既存の先頭へ束ねる。
-  /// ストリーミングで 1 件ずつ届いていた場合と同じ並びになるよう、古い方
-  /// から順に mergeIncomingNotification を通す。
+  /// 古い方から順に束ね、1 件ずつ届いた場合と同じ並びにする。
   Future<void> _catchUp() async {
     final repo = ref.read(notificationRepositoryProvider);
     if (repo == null) return;
@@ -103,7 +100,7 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
         markAsRead: false,
       );
     } catch (_) {
-      // ベストエフォート。次の再接続やユーザーの pull-to-refresh で追いつける
+      // 失敗しても、次の再接続か引っ張って更新で追いつける
       return;
     }
     if (items.isEmpty) return;
@@ -121,12 +118,31 @@ class NotificationNotifier extends AsyncNotifier<List<NotificationItem>> {
     unreadCount.value += items.length;
   }
 
-  void markAllRead() => unreadCount.value = 0;
+  /// 通知タブを開いたときに呼ぶ。取得では既読にしない（したら閉じている
+  /// 間の通知が未読として一度も見えない）ので、見た時点でサーバーに伝える。
+  void markAllRead() {
+    if (unreadCount.value == 0) return;
+    unreadCount.value = 0;
+    final repo = ref.read(notificationRepositoryProvider);
+    unawaited(repo?.markAllAsRead().catchError((_) {}));
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final me = await ref.read(meProvider.future);
+      unreadCount.value = me?['unreadNotificationsCount'] as int? ?? 0;
+    } catch (_) {
+      // バッジが出ないだけで、一覧は読める
+    }
+  }
 
   Future<List<NotificationItem>> _fetch({String? untilId}) async {
     final repo = ref.read(notificationRepositoryProvider);
     if (repo == null) throw Exception('未ログイン');
-    final items = await repo.fetchNotifications(untilId: untilId);
+    final items = await repo.fetchNotifications(
+      untilId: untilId,
+      markAsRead: false,
+    );
     final notes = items.map((item) => item.note).whereType<Note>();
     ref.read(noteOverridesProvider.notifier).evictFetched(notes);
     return items;

@@ -11,7 +11,6 @@ sealed class User with _$User {
     String? name,
     String? avatarUrl,
 
-    /// アイコンのぼかし表現。猫耳の色をここから取る。
     String? avatarBlurhash,
     String? host,
     @Default(false) bool isCat,
@@ -23,11 +22,9 @@ sealed class User with _$User {
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
-  /// 表示用のハンドル。リモートは `@username@host`、ローカルは `@username`。
   String get acct => host != null ? '@$username@$host' : '@$username';
 }
 
-/// アイコンに重ねる装飾。Misskey 側で位置・角度・反転を指定できる。
 @freezed
 sealed class AvatarDecoration with _$AvatarDecoration {
   const factory AvatarDecoration({

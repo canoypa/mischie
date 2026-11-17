@@ -1,7 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Misskey の API・ストリーミング・画像取得に必要。Flutter のテンプレートは
-         debug/profile のマニフェストにしか置かないため、リリースビルドだけ
-         通信が全て失敗する（ログインがトークン交換で止まる）。 -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
@@ -29,23 +26,24 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- 他アプリからの共有 (画像・テキスト) を受け取る -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="text/*"/>
             </intent-filter>
-            <!-- OAuth redirect (mischie://oauth/callback), captured by app_links -->
+            <!-- OAuth のリダイレクト先。docs/index.html の redirect_uri と揃える -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>

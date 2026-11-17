@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
-/// 書きかけのノート。添付はアップロード済みの fileId で保持するので、
-/// 下書きから戻したときに上げ直さなくてよい。
 class Draft {
   const Draft({
     required this.id,
@@ -15,6 +13,8 @@ class Draft {
     this.fileIds = const [],
     this.replyId,
     this.renoteId,
+    this.channelId,
+    this.channelName,
     this.pollChoices,
     this.pollMultiple = false,
     this.pollExpiresInMs,
@@ -29,6 +29,8 @@ class Draft {
     fileIds: (json['fileIds'] as List<dynamic>? ?? []).cast<String>(),
     replyId: json['replyId'] as String?,
     renoteId: json['renoteId'] as String?,
+    channelId: json['channelId'] as String?,
+    channelName: json['channelName'] as String?,
     pollChoices: (json['pollChoices'] as List<dynamic>?)?.cast<String>(),
     pollMultiple: json['pollMultiple'] as bool? ?? false,
     pollExpiresInMs: json['pollExpiresInMs'] as int?,
@@ -43,7 +45,11 @@ class Draft {
   final String? replyId;
   final String? renoteId;
 
-  /// 投票の選択肢（未入力の欄も含む、入力欄そのまま）。null なら投票なし。
+  /// 名前は再開した画面にすぐ出すために持つ。
+  final String? channelId;
+  final String? channelName;
+
+  /// 未入力の欄も含めて持つ。null なら投票なし。
   final List<String>? pollChoices;
   final bool pollMultiple;
   final int? pollExpiresInMs;
@@ -57,13 +63,14 @@ class Draft {
     'fileIds': fileIds,
     'replyId': replyId,
     'renoteId': renoteId,
+    'channelId': channelId,
+    'channelName': channelName,
     'pollChoices': pollChoices,
     'pollMultiple': pollMultiple,
     'pollExpiresInMs': pollExpiresInMs,
   };
 }
 
-/// 下書きの保存先。サーバーに下書き API は無いので端末内に置く。
 class DraftStore {
   const DraftStore();
 

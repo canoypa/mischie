@@ -37,7 +37,6 @@ class QuotedNote extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 引用の中でも、名前とアイコンからは相手のプロフィールへ
               InkWell(
                 borderRadius: BorderRadius.circular(4),
                 onTap: () => Navigator.of(context).push(
@@ -103,6 +102,7 @@ class QuotedNote extends StatelessWidget {
                       child: MfmText(
                         note.cw!,
                         emojis: emojis,
+                        host: note.user.host,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium,
@@ -115,6 +115,7 @@ class QuotedNote extends StatelessWidget {
                 MfmText(
                   note.text!,
                   emojis: emojis,
+                  host: note.user.host,
                   maxLines: 6,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium,
@@ -150,7 +151,7 @@ class QuotedNote extends StatelessWidget {
   }
 }
 
-/// 引用の中に出す、添付や投票の有無だけを伝える補助行。
+/// 引用では添付や投票の中身は出さず、有無だけ伝える。
 class _SummaryItem extends StatelessWidget {
   const _SummaryItem({required this.icon, required this.label});
 
@@ -174,7 +175,6 @@ class _SummaryItem extends StatelessWidget {
   }
 }
 
-/// チャンネル投稿であることを示すバッジ。タップでチャンネル画面を開く。
 class ChannelBadge extends ConsumerWidget {
   const ChannelBadge({super.key, required this.channel, required this.color});
 

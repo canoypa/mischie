@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
 import 'package:mischie/features/auth/presentation/login_screen.dart';
+import 'package:mischie/features/drive/presentation/drive_screen.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/features/settings/presentation/request_log_screen.dart';
+import 'package:mischie/features/timeline/presentation/favorites_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -20,7 +22,35 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           const _AccountsSection(),
           const Divider(),
-          // 設定・ドライブ・Play など Mischie が持たない画面は Web に任せる
+          ListTile(
+            leading: const Icon(Icons.cloud_outlined),
+            title: const Text('ドライブ'),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DriveScreen())),
+          ),
+          ListTile(
+            leading: const Icon(Icons.star_outline),
+            title: const Text('お気に入り'),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const FavoritesScreen())),
+          ),
+          const Divider(),
+          for (final (icon, title, path) in const [
+            (Icons.manage_accounts_outlined, 'プロフィールを編集', '/settings/profile'),
+            (Icons.person_add_alt, 'フォローリクエスト', '/my/follow-requests'),
+            (Icons.list_alt, 'リスト', '/my/lists'),
+            (Icons.satellite_alt_outlined, 'アンテナ', '/my/antennas'),
+            (Icons.attach_file, 'クリップ', '/my/clips'),
+            (Icons.block, 'ミュートとブロック', '/settings/mute-block'),
+          ])
+            ListTile(
+              leading: Icon(icon),
+              title: Text(title),
+              trailing: const Icon(Icons.open_in_new, size: 20),
+              onTap: () => openOnServer(ref, path),
+            ),
           ListTile(
             leading: const Icon(Icons.open_in_browser),
             title: const Text('Web クライアントを開く'),
@@ -30,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.query_stats),
             title: const Text('通信ログ'),
-            subtitle: const Text('どのエンドポイントを何回叩いたか'),
+            subtitle: const Text('サーバーへのリクエストの回数'),
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const RequestLogScreen())),
@@ -82,10 +112,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-/// 登録済みアカウントの一覧と切り替え。
-///
-/// 普段使いのサーバーと開発用サーバーを行き来できるようにするためのもの。
-/// 切り替えると API クライアントごと差し替わり、取得済みのデータは破棄される。
 class _AccountsSection extends ConsumerWidget {
   const _AccountsSection();
 

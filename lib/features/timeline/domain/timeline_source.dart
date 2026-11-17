@@ -1,7 +1,5 @@
 import 'package:mischie/features/timeline/domain/timeline_kind.dart';
 
-/// 表示するタイムラインの指定。組み込みの 4 種類のほか、ユーザーが
-/// 作ったリストも指定できる。
 class TimelineSource {
   const TimelineSource.builtin(TimelineKind kind)
     : _kind = kind,
@@ -23,11 +21,10 @@ class TimelineSource {
 
   String get streamingChannel => _kind?.streamingChannel ?? 'userList';
 
-  /// タイムライン取得と、ストリーミング接続に足すパラメータ。
   Map<String, dynamic> get params =>
       listId == null ? const {} : {'listId': listId};
 
-  /// 保存用の識別子。再起動後に同じタイムラインへ戻すために使う。
+  /// 端末に保存される値なので、形式を変えない。
   String get storageKey =>
       listId == null ? 'kind:${_kind!.name}' : 'list:$listId';
 

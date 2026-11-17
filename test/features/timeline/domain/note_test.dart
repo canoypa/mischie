@@ -68,4 +68,20 @@ void main() {
       expect(note.renote!.text, 'Original');
     });
   });
+
+  group('Note.isPureRenote', () {
+    const user = User(id: 'user1', username: 'alice');
+    const original = Note(id: 'orig', createdAt: '', user: user);
+    const renote = Note(id: 'rn', createdAt: '', user: user, renote: original);
+
+    test('中身の無いリノート', () {
+      expect(renote.isPureRenote, isTrue);
+    });
+
+    test('投票だけ・CW だけ・返信の引用は純粋なリノートではない', () {
+      expect(renote.copyWith(poll: const Poll()).isPureRenote, isFalse);
+      expect(renote.copyWith(cw: '').isPureRenote, isFalse);
+      expect(renote.copyWith(replyId: 'r').isPureRenote, isFalse);
+    });
+  });
 }

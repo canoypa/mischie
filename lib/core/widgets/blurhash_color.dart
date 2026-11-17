@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// blurhash から平均色を取り出す。
-///
-/// 猫耳をアイコンの色に合わせるために使う。画像を読み込んで解析すると
-/// 表示が遅れるが、blurhash はノートと一緒に届いており、先頭の
-/// DC 成分がそのまま平均色になっている。
+/// blurhash の先頭にある平均色を取り出す。画像の読み込みを待たずに色が分かる。
 Color? averageColorOfBlurhash(String? hash) {
   if (hash == null || hash.length < 6) return null;
   final dc = _decode83(hash.substring(2, 6));

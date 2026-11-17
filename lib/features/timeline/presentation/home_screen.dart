@@ -24,17 +24,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
   StreamSubscription<List<SharedMediaFile>>? _shareSubscription;
   late TabController _tabController;
 
-  /// 上部タブに並べるタイムライン。組み込みの 4 種類に、読み込めたリストを足す。
   List<TimelineSource> _sources = [
     for (final kind in TimelineKind.values) TimelineSource.builtin(kind),
   ];
 
-  /// 前回開いていたタイムライン。復元し終えたら null にする。
+  /// 復元待ちのキー。済んだら null。
   String? _savedSourceKey;
 
   static const _sourcePrefKey = 'selected_timeline';
@@ -45,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final _screens = [
     TimelineScreen(),
     const SearchScreen(),
-    const NotificationScreen(),
+    NotificationScreen(),
     const ProfileScreen(),
   ];
 
@@ -54,8 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.initState();
     _tabController = _createTabController();
     _restoreSelection();
-    // 共有を受け取れるのはログイン後だけなので、HomeScreen で購読する。
-    // 起動中の共有と、共有から起動された場合の両方を拾う。
+    // 共有はログイン後にしか受け取れないので、ここで購読する。
     _shareSubscription = ReceiveSharingIntent.instance.getMediaStream().listen(
       _openComposeWithShared,
     );
@@ -67,8 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  /// 前回のタブを開き直す。リストは後から届くので、タブを組み直すたびに
-  /// もう一度試す。
+  /// リストは後から届くので、タブを組み直すたびに呼ぶ。
   Future<void> _restoreSelection() async {
     _savedSourceKey ??= await ref
         .read(prefsStoreProvider)
@@ -86,24 +83,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.read(selectedTimelineProvider.notifier).source = _sources[index];
   }
 
-  TabController _createTabController() =>
-      TabController(length: _sources.length, vsync: this)
-        ..addListener(_onTimelineTabChanged);
+  TabController _createTabController({int initialIndex = 0}) => TabController(
+    length: _sources.length,
+    initialIndex: initialIndex,
+    vsync: this,
+  )..addListener(_onTimelineTabChanged);
 
-  /// リストを読み込めたらタブを作り直す。表示中のタイムラインは変えない。
   void _rebuildTabs(List<UserList> lists) {
     final sources = <TimelineSource>[
       for (final kind in TimelineKind.values) TimelineSource.builtin(kind),
       for (final list in lists)
         TimelineSource.list(id: list.id, name: list.name),
     ];
-    if (sources.length == _sources.length) return;
+    final unchanged =
+        sources.length == _sources.length &&
+        Iterable.generate(sources.length).every(
+          (i) =>
+              sources[i] == _sources[i] &&
+              sources[i].label == _sources[i].label,
+        );
+    if (unchanged) return;
 
-    final previous = _tabController;
+    // 位置ではなく中身で追う。前にあるリストが消えると位置がずれる
+    var index = sources.indexOf(_sources[_timelineTabIndex]);
+    if (index < 0) {
+      index = 0;
+      ref.read(selectedTimelineProvider.notifier).source = sources[index];
+    }
+
+    final previous = _tabController..removeListener(_onTimelineTabChanged);
     setState(() {
       _sources = sources;
-      _tabController = _createTabController()
-        ..index = _timelineTabIndex.clamp(0, sources.length - 1);
+      _timelineTabIndex = index;
+      _tabController = _createTabController(initialIndex: index);
     });
     previous.dispose();
     _restoreSelection();
@@ -126,46 +138,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final source = _sources[_timelineTabIndex];
     ref.read(selectedTimelineProvider.notifier).source = source;
     ref.read(prefsStoreProvider).write(_sourcePrefKey, source.storageKey);
-    // 別のタイムラインになるので、読んでいた位置には意味がない
     timelineScreenKey.currentState?.jumpToTop();
   }
 
   void _openComposeWithShared(List<SharedMediaFile> media) {
     if (media.isEmpty || !mounted) return;
 
-    final imagePaths = <String>[];
+    final filePaths = <String>[];
     final texts = <String>[];
     for (final item in media) {
       switch (item.type) {
         case SharedMediaType.image:
-          imagePaths.add(item.path);
-        case SharedMediaType.text:
-        case SharedMediaType.url:
-          texts.add(item.path);
         case SharedMediaType.video:
         case SharedMediaType.file:
-          break;
+          filePaths.add(item.path);
+        case SharedMediaType.text:
+          texts.add(item.path);
+        case SharedMediaType.url:
+          // OAuth のコールバック（mischie://）も共有として届くので捨てる
+          if (Uri.tryParse(item.path)?.scheme == 'mischie') continue;
+          texts.add(item.path);
       }
     }
-    if (imagePaths.isEmpty && texts.isEmpty) return;
+    if (filePaths.isEmpty && texts.isEmpty) return;
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ComposeScreen(
           initialText: texts.isEmpty ? null : texts.join('\n'),
-          initialImagePaths: imagePaths,
+          initialFilePaths: filePaths,
         ),
       ),
     );
   }
 
   void _onDestinationSelected(int i) {
-    if (i == 0 && _currentIndex == 0) {
-      // すでにホームにいる → 最上部へスクロール
-      timelineScreenKey.currentState?.scrollToTop();
+    if (i == _currentIndex) {
+      switch (i) {
+        case 0:
+          timelineScreenKey.currentState?.scrollToTop();
+        case 2:
+          notificationScreenKey.currentState?.scrollToTop();
+      }
       return;
     }
-    if (i == 2) {
+    // 開いている間に届いた分も見たことになるので、離れるときにも既読にする
+    if (i == 2 || _currentIndex == 2) {
       ref.read(notificationNotifierProvider.notifier).markAllRead();
     }
     setState(() => _currentIndex = i);
@@ -177,70 +195,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       final lists = next.value;
       if (lists != null) _rebuildTabs(lists);
     });
+    // アカウントを切り替えるとホームに戻されるので、タブもそれに合わせる
+    ref.listen(selectedTimelineProvider, (_, next) {
+      final index = _sources.indexOf(next);
+      if (index < 0 || index == _tabController.index) return;
+      _timelineTabIndex = index;
+      _tabController.index = index;
+    });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        actions: [
-          if (_currentIndex == 3)
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              tooltip: '設定',
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onDestinationSelected(0);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_titles[_currentIndex]),
+          actions: [
+            if (_currentIndex == 3)
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                tooltip: '設定',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                ),
+              ),
+          ],
+          bottom: _currentIndex == 0
+              ? TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  tabs: [
+                    for (final source in _sources) Tab(text: source.label),
+                  ],
+                  onTap: (index) {
+                    if (!_tabController.indexIsChanging &&
+                        index == _timelineTabIndex) {
+                      timelineScreenKey.currentState?.scrollToTop();
+                    }
+                  },
+                )
+              : null,
+        ),
+        body: IndexedStack(index: _currentIndex, children: _screens),
+        floatingActionButton: FloatingActionButton(
+          tooltip: 'ノートを書く',
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ComposeScreen())),
+          child: const Icon(Icons.edit),
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'ホーム',
             ),
-        ],
-        bottom: _currentIndex == 0
-            ? TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                tabs: [
-                  for (final kind in TimelineKind.values) Tab(text: kind.label),
-                ],
-              )
-            : null,
-      ),
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ComposeScreen())),
-        child: const Icon(Icons.edit),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _onDestinationSelected,
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'ホーム',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: '検索',
-          ),
-          NavigationDestination(
-            icon: _UnreadBadge(child: const Icon(Icons.notifications_outlined)),
-            selectedIcon: const Icon(Icons.notifications),
-            label: '通知',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outlined),
-            selectedIcon: Icon(Icons.person),
-            label: 'プロフィール',
-          ),
-        ],
+            const NavigationDestination(
+              icon: Icon(Icons.search_outlined),
+              selectedIcon: Icon(Icons.search),
+              label: '検索',
+            ),
+            NavigationDestination(
+              icon: _UnreadBadge(
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              selectedIcon: const Icon(Icons.notifications),
+              label: '通知',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outlined),
+              selectedIcon: Icon(Icons.person),
+              label: 'プロフィール',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// 未読通知の件数バッジ。件数だけが変わるので ValueNotifier を直接聴く
-/// （通知一覧の再構築に巻き込まれないようにするため）。
+/// 通知一覧の再構築に巻き込まれないよう、ValueNotifier を直接聴く。
 class _UnreadBadge extends ConsumerWidget {
   const _UnreadBadge({required this.child});
 
@@ -253,7 +292,7 @@ class _UnreadBadge extends ConsumerWidget {
           .read(notificationNotifierProvider.notifier)
           .unreadCount,
       builder: (context, count, child) =>
-          count == 0 ? child! : Badge(label: Text('$count'), child: child),
+          Badge.count(count: count, isLabelVisible: count > 0, child: child),
       child: child,
     );
   }

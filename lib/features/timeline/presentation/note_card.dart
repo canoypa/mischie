@@ -12,6 +12,7 @@ import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/domain/note_capture.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
+import 'package:mischie/features/timeline/domain/word_mute.dart';
 import 'package:mischie/features/timeline/presentation/note/actions_row.dart';
 import 'package:mischie/features/timeline/presentation/note/media.dart';
 import 'package:mischie/features/timeline/presentation/note/note_style.dart';
@@ -20,6 +21,7 @@ import 'package:mischie/features/timeline/presentation/note/reactions.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:mischie/features/timeline/presentation/poll_view.dart';
 import 'package:mischie/features/timeline/presentation/reaction_picker.dart';
+import 'package:mischie/features/timeline/presentation/reaction_users_sheet.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NoteCard extends ConsumerStatefulWidget {
@@ -28,36 +30,37 @@ class NoteCard extends ConsumerStatefulWidget {
     required this.note,
     required this.serverEmojis,
     this.onTap,
+    this.showReplyTarget = true,
   });
 
   final Note note;
 
-  /// サーバー全体の絵文字キャッシュ。TimelineScreen で1回だけ watch して渡す。
+  /// 返信先を 1 行で添える。スレッドとして親を並べて出す画面では切る。
+  final bool showReplyTarget;
+
+  /// カードごとに watch させず、一覧の側で 1 回だけ watch して渡す。
   final Map<String, String> serverEmojis;
 
-  /// タップ時の遷移。既定ではノート詳細を開く。
+  /// null ならノート詳細を開く。
   final VoidCallback? onTap;
 
   @override
   ConsumerState<NoteCard> createState() => _NoteCardState();
 }
 
-// 通り過ぎたカードを keep alive しない。生かし続けると、スクロールした
-// ぶんだけウィジェットと画像が残り続け、進むほど重くなる。
+// keep alive しない。残すとスクロールするほど重くなる。
 class _NoteCardState extends ConsumerState<NoteCard> {
   bool _cwExpanded = false;
 
-  /// 画面に出ている間だけノートの更新を購読する。keep alive していないので、
-  /// カードの寿命がそのまま「表示中かどうか」になる。
+  bool _muteRevealed = false;
+
+  /// 表示中だけ更新を購読する。keep alive しないことに頼っている。
   late final String _capturedNoteId;
 
-  /// dispose の時点では ref を触れない（BuildContext が無効になっている）ので、
-  /// 購読の解除に使うものは initState で捕まえておく。
+  /// dispose では ref を使えないので、initState で取っておく。
   late final NoteCapture _capture;
 
-  // 重ねた結果の LayeredEmojis 自体をキャッシュする。ここで毎回新しい
-  // インスタンスを返すと、MfmText の identical(oldEmojis, newEmojis) による
-  // 再構築の抑制が効かなくなる。
+  // 毎回作り直すと MfmText の再構築の抑制が効かないので、使い回す。
   Note? _lastNote;
   Map<String, String>? _lastServerEmojis;
   LayeredEmojis _emojis = const LayeredEmojis(base: {}, overlay: {});
@@ -81,9 +84,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
     openUserProfile(context, user.id, initialUser: user);
   }
 
-  /// サーバー全体の絵文字は共有のまま重ねて引く。ここで
-  /// `{...serverEmojis, ...}` と書くと、カスタム絵文字が数千〜1 万件ある
-  /// サーバーではノート 1 件ごとにその規模のコピーができてしまう。
+  /// サーバーの絵文字表はコピーせず重ねて引く。絵文字の多いサーバーでは、ノートごとに大きなコピーができる。
   LayeredEmojis _mergeEmojis(Note displayNote) {
     if (!identical(_lastNote, displayNote) ||
         !identical(_lastServerEmojis, widget.serverEmojis)) {
@@ -119,6 +120,20 @@ class _NoteCardState extends ConsumerState<NoteCard> {
       ),
     );
     if (isHidden) return const SizedBox.shrink();
+
+    final myId = ref.watch(
+      profileNotifierProvider.select((me) => me.value?.id),
+    );
+    final isWordMuted =
+        !_muteRevealed &&
+        displayNote.user.id != myId &&
+        ref.watch(wordMuteProvider).matches(displayNote);
+    if (isWordMuted) {
+      return _WordMutedNote(
+        user: displayNote.user,
+        onReveal: () => setState(() => _muteRevealed = true),
+      );
+    }
     final hasCw = displayNote.cw != null;
 
     final emojis = _mergeEmojis(displayNote);
@@ -134,15 +149,12 @@ class _NoteCardState extends ConsumerState<NoteCard> {
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(color: channelColor, width: 3),
             ),
-      // カード全体を InkWell で包むと、カードごとに ink レイヤーと
-      // クリップ用の saveLayer が増えてスクロールが重くなる。
-      // タップ判定だけ取れれば足りるので GestureDetector を使う。
+      // InkWell で包むとスクロールが重くなるので、GestureDetector を使う。
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap ?? () => openNoteDetail(context, displayNote),
         child: Padding(
-          // 下だけ詰める。アクション行が 48dp のタップ領域を持つので、
-          // ここでも 12 取ると余白が二重になって間延びする。
+          // 下はアクション行のタップ領域が余白を兼ねるので詰める。
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,17 +183,23 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                     ],
                   ),
                 ),
+              if (widget.showReplyTarget && displayNote.reply != null)
+                _ReplyTarget(reply: displayNote.reply!, emojis: emojis),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
                     onTap: () => _openProfile(displayNote.user),
-                    child: DecoratedAvatar(
-                      avatarUrl: displayNote.user.avatarUrl,
-                      size: 48,
-                      isCat: displayNote.user.isCat,
-                      avatarBlurhash: displayNote.user.avatarBlurhash,
-                      decorations: displayNote.user.avatarDecorations,
+                    child: Semantics(
+                      button: true,
+                      label: '${displayNote.user.acct} のプロフィール',
+                      child: DecoratedAvatar(
+                        avatarUrl: displayNote.user.avatarUrl,
+                        size: 48,
+                        isCat: displayNote.user.isCat,
+                        avatarBlurhash: displayNote.user.avatarBlurhash,
+                        decorations: displayNote.user.avatarDecorations,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -232,6 +250,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                                   child: MfmText(
                                     displayNote.cw!,
                                     emojis: emojis,
+                                    host: displayNote.user.host,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -239,10 +258,13 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Chip(
+                                ActionChip(
                                   label: Text(_cwExpanded ? '隠す' : '続きを見る'),
                                   padding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
+                                  onPressed: () => setState(
+                                    () => _cwExpanded = !_cwExpanded,
+                                  ),
                                 ),
                               ],
                             ),
@@ -250,13 +272,13 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                         ],
                         if (!hasCw || _cwExpanded) ...[
                           if (displayNote.text != null)
-                            // 長いノートは文字数ではなく描画後の高さで畳む。
-                            // 文字で切ると MFM の途中で切れて表現が壊れるため。
-                            // 添付やリンクはここに含めない: 高さが本文
-                            // ではなく画像だけから来ているときに畳まれて
-                            // しまうため、常に本文の下へそのまま出す。
+                            // 添付はここに含めない。画像だけで高さを超えると、短い本文まで畳まれる。
                             CollapsibleContent(
-                              child: MfmText(displayNote.text!, emojis: emojis),
+                              child: MfmText(
+                                displayNote.text!,
+                                emojis: emojis,
+                                host: displayNote.user.host,
+                              ),
                             ),
                           if (displayNote.files.isNotEmpty) ...[
                             const SizedBox(height: 8),
@@ -268,9 +290,7 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                           const SizedBox(height: 8),
                           PollView(note: displayNote, poll: displayNote.poll!),
                         ],
-                        // 引用リノート: 埋め込みも CW で隠す対象に含める。
-                        // 判定は表示しているノートで行う。外側で見ると、
-                        // 引用ノートをリノートしたときに引用元が消える。
+                        // 外側のノートで判定すると、引用をリノートしたときに引用元が消える。
                         if ((!hasCw || _cwExpanded) &&
                             !displayNote.isPureRenote &&
                             displayNote.renote != null) ...[
@@ -290,11 +310,22 @@ class _NoteCardState extends ConsumerState<NoteCard> {
                             note: displayNote,
                             emojis: emojis,
                             onTap: (reaction) => _react(displayNote, reaction),
+                            onLongPress: (reaction) => showReactionUsers(
+                              context,
+                              noteId: displayNote.id,
+                              reaction: reaction,
+                              title: ReactionGlyph(
+                                reaction: reaction,
+                                emojis: emojis,
+                                size: 32,
+                              ),
+                            ),
                           ),
                         ],
                         const SizedBox(height: 4),
                         NoteActionsRow(
                           note: displayNote,
+                          renoteItem: isRenote ? note : null,
                           onReact: () => _pickReaction(displayNote),
                         ),
                       ],
@@ -338,9 +369,7 @@ class _UserName extends StatelessWidget {
     final displayName = user.name ?? user.username;
     final handle = user.acct;
 
-    // 通知一覧と揃えて横並びにする。縦積みだと同じ情報が画面ごとに
-    // 違う形で出てしまう。幅を超えたら名前側を省略する（折り返すと
-    // カードの高さが揃わず、一覧が読みにくくなる）。
+    // 通知一覧と揃えて、横並びの 1 行に収める。
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
@@ -368,6 +397,74 @@ class _UserName extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ReplyTarget extends StatelessWidget {
+  const _ReplyTarget({required this.reply, required this.emojis});
+
+  final Note reply;
+  final Map<String, String> emojis;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    final summary = reply.cw ?? reply.text ?? '';
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => openNoteDetail(context, reply),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Icon(Icons.reply, size: 14, color: style?.color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: '${reply.user.acct} への返信'),
+                    if (summary.isNotEmpty) TextSpan(text: '  $summary'),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WordMutedNote extends StatelessWidget {
+  const _WordMutedNote({required this.user, required this.onReveal});
+
+  final User user;
+  final VoidCallback onReveal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: InkWell(
+        onTap: onReveal,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Text(
+            '${user.acct} のノート（ミュートワード）',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

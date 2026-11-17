@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/features/profile/data/profile_repository.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/presentation/profile_header.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
@@ -9,10 +10,7 @@ import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
-/// ユーザーのプロフィールと投稿一覧。
-///
-/// 自分のプロフィールタブからも他人のプロフィール画面からも使うため、
-/// Scaffold は持たない（AppBar の有無は呼び出し側が決める）。
+/// 自分のタブと他人の画面で AppBar が違うので、Scaffold は呼び出し側が持つ。
 class UserProfileView extends ConsumerStatefulWidget {
   const UserProfileView({super.key, required this.userId, this.initialUser});
 
@@ -31,6 +29,9 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
   bool _loadingMore = false;
   bool _notesError = false;
   Object? _notesErrorObject;
+  bool _hasMore = true;
+
+  UserNotesFilter _filter = UserNotesFilter.notes;
 
   @override
   void initState() {
@@ -50,9 +51,13 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
     setState(() {
       _loadingNotes = true;
       _notesError = false;
+      _hasMore = true;
     });
     try {
-      final notes = await repo.fetchUserNotes(widget.userId);
+      final filter = _filter;
+      final notes = await repo.fetchUserNotes(widget.userId, filter: filter);
+      // 取得中に絞り込みを変えていたら、古い結果で上書きしない
+      if (filter != _filter) return;
       if (!mounted) return;
       ref.read(noteOverridesProvider.notifier).evictFetched(notes);
       setState(() {
@@ -76,14 +81,21 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
     if (repo == null || _notes.isEmpty) return;
     setState(() => _loadingMore = true);
     try {
+      final filter = _filter;
       final notes = await repo.fetchUserNotes(
         widget.userId,
         untilId: _notes.last.id,
+        filter: filter,
       );
       if (!mounted) return;
+      if (filter != _filter) {
+        setState(() => _loadingMore = false);
+        return;
+      }
       ref.read(noteOverridesProvider.notifier).evictFetched(notes);
       setState(() {
         _notes.addAll(notes);
+        _hasMore = notes.isNotEmpty;
         _loadingMore = false;
       });
     } catch (_) {
@@ -98,9 +110,21 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
     if (pos.pixels >= pos.maxScrollExtent - 300 &&
         !_loadingMore &&
         !_loadingNotes &&
+        _hasMore &&
         _notes.isNotEmpty) {
       _loadMore();
     }
+  }
+
+  Future<void> _refresh() async {
+    ref.invalidate(userDetailProvider(widget.userId));
+    await Future.wait([
+      // ヘッダーの失敗はヘッダー自身が表示するので、ここでは待つだけ
+      ref
+          .read(userDetailProvider(widget.userId).future)
+          .then<void>((_) {}, onError: (_) {}),
+      _fetchInitial(),
+    ]);
   }
 
   @override
@@ -115,89 +139,119 @@ class _UserProfileViewState extends ConsumerState<UserProfileView> {
         _onScroll(n);
         return false;
       },
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverToBoxAdapter(
-            child: ProfileHeader(
-              detailAsync: detailAsync,
-              initialUser: initialUser,
-              serverEmojis: serverEmojis,
-              userId: widget.userId,
-            ),
-          ),
-          // 本人が固定した投稿は、通常の投稿より先に出す
-          if ((detailAsync.value?.pinnedNotes ?? const []).isNotEmpty)
-            SliverList(
-              delegate: SliverChildListDelegate([
-                const _SectionLabel(icon: Icons.push_pin, label: 'ピン留め'),
-                for (final note in detailAsync.value!.pinnedNotes)
-                  RepaintBoundary(
-                    key: ValueKey('pinned-${note.id}'),
-                    child: NoteCard(note: note, serverEmojis: serverEmojis),
-                  ),
-                const Divider(height: 24),
-              ]),
-            ),
-          if (_loadingNotes && _notes.isEmpty)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
+      child: RefreshIndicator(
+        onRefresh: _refresh,
+        child: CustomScrollView(
+          controller: _scrollController,
+          // 投稿が少なくても引っ張って更新できるようにする
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: ProfileHeader(
+                detailAsync: detailAsync,
+                initialUser: initialUser,
+                serverEmojis: serverEmojis,
+                userId: widget.userId,
               ),
-            )
-          else if (_notesError && _notes.isEmpty)
+            ),
+            if ((detailAsync.value?.pinnedNotes ?? const []).isNotEmpty)
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  const _SectionLabel(icon: Icons.push_pin, label: 'ピン留め'),
+                  for (final note in detailAsync.value!.pinnedNotes)
+                    RepaintBoundary(
+                      key: ValueKey('pinned-${note.id}'),
+                      child: NoteCard(note: note, serverEmojis: serverEmojis),
+                    ),
+                  const Divider(height: 24),
+                ]),
+              ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        resolveErrorMessage(
-                          _notesErrorObject ?? Exception('エラーが発生しました'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton(
-                        onPressed: _fetchInitial,
-                        child: const Text('再試行'),
-                      ),
-                    ],
-                  ),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: SegmentedButton<UserNotesFilter>(
+                  segments: [
+                    for (final filter in UserNotesFilter.values)
+                      ButtonSegment(value: filter, label: Text(filter.label)),
+                  ],
+                  selected: {_filter},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selected) {
+                    setState(() {
+                      _filter = selected.first;
+                      _notes.clear();
+                    });
+                    _fetchInitial();
+                  },
                 ),
-              ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => RepaintBoundary(
-                  key: ValueKey(_notes[index].id),
-                  child: NoteCard(
-                    note: _notes[index],
-                    serverEmojis: serverEmojis,
-                  ),
-                ),
-                childCount: _notes.length,
               ),
             ),
-          SliverToBoxAdapter(
-            child: _loadingMore
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : const SizedBox(height: 80),
-          ),
-        ],
+            if (_loadingNotes && _notes.isEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_notesError && _notes.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          resolveErrorMessage(
+                            _notesErrorObject ?? Exception('エラーが発生しました'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton(
+                          onPressed: _fetchInitial,
+                          child: const Text('再試行'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (_notes.isEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: Text('ノートはありません')),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => RepaintBoundary(
+                    key: ValueKey(_notes[index].id),
+                    child: NoteCard(
+                      note: _notes[index],
+                      serverEmojis: serverEmojis,
+                    ),
+                  ),
+                  childCount: _notes.length,
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: _loadingMore
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : const SizedBox(height: 80),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// 他人のプロフィールを開く。一覧画面がすでに User を持っていれば渡す。
-/// 詳細取得が終わるまでの間も、名前とアイコンをそこから出せる。
+/// initialUser を渡すと、詳細の取得中も名前とアイコンを出せる。
 void openUserProfile(BuildContext context, String userId, {User? initialUser}) {
   Navigator.of(context).push(
     MaterialPageRoute(
@@ -207,7 +261,6 @@ void openUserProfile(BuildContext context, String userId, {User? initialUser}) {
   );
 }
 
-/// 他人のプロフィールを開く画面。AppBar 付きで UserProfileView を包む。
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key, required this.userId, this.initialUser});
 
@@ -233,7 +286,6 @@ class UserProfileScreen extends ConsumerWidget {
   }
 }
 
-/// 一覧の区切り。ピン留めのように、並びの意味が変わるところに置く。
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.icon, required this.label});
 

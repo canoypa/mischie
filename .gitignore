@@ -44,15 +44,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Agent Files
-.agents/
-
-# Release signing (keep out of version control)
 android/key.properties
 **/*.jks
-
-# Claude Code のスキルは .agents/skills への symlink（実体は個人領域）
-.claude/skills
 
 # ゴールデンの差分は失敗時に生成されるだけで、履歴に残すものではない
 test/**/failures/

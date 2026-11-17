@@ -4,6 +4,7 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/layered_emojis.dart';
 import 'package:mischie/core/navigation/link_handler.dart';
+import 'package:mischie/core/widgets/confirm_dialog.dart';
 import 'package:mischie/core/widgets/decorated_avatar.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
@@ -14,12 +15,7 @@ import 'package:mischie/features/profile/presentation/profile_parts.dart';
 import 'package:mischie/features/profile/presentation/user_relations_screen.dart';
 import 'package:mischie/features/timeline/domain/user.dart';
 
-/// プロフィール上部の見出し。読み込み中は最低限、揃ったら全体を出す。
-
-/// アバターの直径。
 const _avatarSize = 96.0;
-
-/// アバターがバナーへ食い込む量。下の余白はここから割り出す。
 const _avatarOverhang = 40.0;
 
 class ProfileHeader extends ConsumerWidget {
@@ -75,7 +71,6 @@ class ProfileHeader extends ConsumerWidget {
   }
 }
 
-/// 詳細情報の取得中に initialUser だけで軽量に描画するヘッダー。
 class MinimalHeader extends StatelessWidget {
   const MinimalHeader({super.key, required this.user});
 
@@ -157,8 +152,7 @@ class FullHeader extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             SizedBox(
-              // バナーが無いときは低くする。無地の帯を高く取っても
-              // 情報が増えないまま、名前が下へ押しやられるだけ。
+              // バナーが無いときは、無地の帯で名前を押し下げないよう低くする。
               height: detail.bannerUrl != null ? 150 : 104,
               width: double.infinity,
               child: detail.bannerUrl != null
@@ -188,14 +182,12 @@ class FullHeader extends StatelessWidget {
             ),
           ],
         ),
-        // アバターがバナーへ食い込んだ分の余白を、右側でボタンに使う
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          // アイコンはバナーから下へはみ出しており、この行がその分の高さを
-          // 支えている。自分のプロフィールではフォローボタンが消えるため、
-          // 高さを確保しておかないと名前がアイコンに重なる。
-          child: SizedBox(
-            height: _avatarOverhang,
+          // 自分のプロフィールではボタンが消えるので、アイコンのはみ出し分の
+          // 高さを下限で確保する。
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _avatarOverhang),
             child: Align(
               alignment: Alignment.centerRight,
               child: FollowButton(detail: detail),
@@ -233,8 +225,6 @@ class FullHeader extends StatelessWidget {
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              // フォロー中かどうかはボタンが示すので、
-              // ここでは「相手からフォローされている」ことだけ出す
               if (detail.isFollowed) ...[
                 const SizedBox(height: 8),
                 const RelationshipChip(label: 'フォローされています'),
@@ -252,7 +242,6 @@ class FullHeader extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
-                  // 3 つとも押せるので、隣を踏まないよう間隔を空ける
                   spacing: 12,
                   children: [
                     StatColumn(count: detail.notesCount, label: 'ノート'),
@@ -280,7 +269,11 @@ class FullHeader extends StatelessWidget {
               if (detail.description != null && detail.description!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: MfmText(detail.description!, emojis: emojis),
+                  child: MfmText(
+                    detail.description!,
+                    emojis: emojis,
+                    host: detail.host,
+                  ),
                 ),
               if (detail.fields.isNotEmpty)
                 Column(
@@ -365,16 +358,14 @@ class FollowButton extends ConsumerWidget {
     final myId = ref.watch(profileNotifierProvider).value?.id;
     if (myId == detail.id) return const SizedBox.shrink();
 
-    final override = ref.watch(
-      followOverridesProvider.select((m) => m[detail.id]),
-    );
-    final isFollowing = override ?? detail.isFollowing;
+    final followState =
+        ref.watch(followOverridesProvider.select((m) => m[detail.id])) ??
+        detail.followState;
+    final actions = ref.read(followActionsProvider);
 
-    Future<void> toggle() async {
+    Future<void> run(Future<void> Function() action) async {
       try {
-        await ref
-            .read(followActionsProvider)
-            .setFollowing(detail.id, following: !isFollowing);
+        await action();
       } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(
@@ -383,36 +374,68 @@ class FollowButton extends ConsumerWidget {
       }
     }
 
-    if (isFollowing) {
-      return OutlinedButton.icon(
-        onPressed: toggle,
-        icon: const Icon(Icons.check, size: 18),
-        label: const Text('フォロー中'),
-      );
+    switch (followState) {
+      case FollowState.following:
+        return OutlinedButton.icon(
+          onPressed: () async {
+            final ok = await showConfirmDialog(
+              context,
+              title: 'フォロー解除',
+              message: '${detail.acct} のフォローを解除しますか？',
+              action: '解除',
+            );
+            if (ok) await run(() => actions.unfollow(detail.id));
+          },
+          icon: const Icon(Icons.check, size: 18),
+          label: const Text('フォロー中'),
+        );
+      case FollowState.requested:
+        return OutlinedButton.icon(
+          onPressed: () async {
+            final ok = await showConfirmDialog(
+              context,
+              title: 'フォロー申請の取り消し',
+              message: '${detail.acct} へのフォロー申請を取り消しますか？',
+              action: '取り消す',
+            );
+            if (ok) await run(() => actions.cancelRequest(detail.id));
+          },
+          icon: const Icon(Icons.hourglass_empty, size: 18),
+          label: const Text('申請中'),
+        );
+      case FollowState.none:
+        return FilledButton.icon(
+          onPressed: () =>
+              run(() => actions.follow(detail.id, locked: detail.isLocked)),
+          icon: Icon(
+            detail.isLocked ? Icons.lock_outline : Icons.person_add_alt,
+            size: 18,
+          ),
+          label: Text(detail.isLocked ? 'フォロー申請' : 'フォロー'),
+        );
     }
-    return FilledButton.icon(
-      onPressed: toggle,
-      icon: const Icon(Icons.person_add_alt, size: 18),
-      label: const Text('フォロー'),
-    );
   }
 }
 
-/// プロフィール右上のメニュー。ミュート・ブロックと Web で開く。
 class UserMenuButton extends ConsumerWidget {
   const UserMenuButton({super.key, required this.detail});
 
   final UserDetailed detail;
 
+  bool _isMuted(UserModeration? override) => override?.muted ?? detail.isMuted;
+
+  bool _isBlocking(UserModeration? override) =>
+      override?.blocking ?? detail.isBlocking;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myId = ref.watch(profileNotifierProvider).value?.id;
     final isMe = myId == detail.id;
-    final hidden = ref.watch(
-      hiddenUserIdsProvider.select((ids) => ids.contains(detail.id)),
+    final moderation = ref.watch(
+      moderationOverridesProvider.select((m) => m[detail.id]),
     );
-    final isMuted = detail.isMuted || hidden;
-    final isBlocking = detail.isBlocking;
+    final isMuted = _isMuted(moderation);
+    final isBlocking = _isBlocking(moderation);
     return PopupMenuButton<String>(
       onSelected: (value) => _select(context, ref, value),
       itemBuilder: (context) => [
@@ -453,7 +476,7 @@ class UserMenuButton extends ConsumerWidget {
     String value,
   ) async {
     final actions = ref.read(moderationActionsProvider);
-    final hidden = ref.read(hiddenUserIdsProvider).contains(detail.id);
+    final moderation = ref.read(moderationOverridesProvider)[detail.id];
     final acct = '@${detail.username}';
 
     try {
@@ -466,17 +489,27 @@ class UserMenuButton extends ConsumerWidget {
                 : '/@${detail.username}@${detail.host}',
           );
         case 'mute':
-          final muted = detail.isMuted || hidden;
+          final muted = _isMuted(moderation);
           await actions.setMuted(detail.id, muted: !muted);
           if (context.mounted) {
             _toast(context, muted ? '$acct のミュートを解除しました' : '$acct をミュートしました');
           }
         case 'block':
-          await actions.setBlocked(detail.id, blocked: !detail.isBlocking);
+          final blocking = _isBlocking(moderation);
+          if (!blocking) {
+            final ok = await showConfirmDialog(
+              context,
+              title: 'ブロック',
+              message: '$acct をブロックしますか？相手からあなたのノートは見えなくなります。',
+              action: 'ブロック',
+            );
+            if (!ok || !context.mounted) return;
+          }
+          await actions.setBlocked(detail.id, blocked: !blocking);
           if (context.mounted) {
             _toast(
               context,
-              detail.isBlocking ? '$acct のブロックを解除しました' : '$acct をブロックしました',
+              blocking ? '$acct のブロックを解除しました' : '$acct をブロックしました',
             );
           }
       }

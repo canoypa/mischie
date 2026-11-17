@@ -6,9 +6,6 @@ import 'package:mischie/core/streaming/streaming_service.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-/// 実ソケットの代わりに注入するフェイク。sink.add した内容を記録し、
-/// テストから任意のタイミングでメッセージ／エラー／切断を発生させられる。
-/// pipe/transform 等は StreamChannelMixin の既定実装に任せる。
 class _FakeWebSocketChannel extends StreamChannelMixin
     implements WebSocketChannel {
   final _incoming = StreamController<dynamic>.broadcast();
@@ -52,8 +49,7 @@ class _FakeWebSocketSink implements WebSocketSink {
   Future get done => Future.value();
 }
 
-/// 再接続タイマーを実際には待たず、渡された Duration とコールバックだけを
-/// 記録する。コールバックはテストから明示的に呼んで「時間経過」を模する。
+/// タイマーは発火させず、テストが fireLast で時間を進める。
 class _RecordingTimerFactory {
   final List<Duration> delays = [];
   final List<void Function()> _callbacks = [];
@@ -61,21 +57,17 @@ class _RecordingTimerFactory {
   Timer call(Duration delay, void Function() callback) {
     delays.add(delay);
     _callbacks.add(callback);
-    // 実際には発火させない。テストが fireLast で明示的に進める。
     return Timer(const Duration(days: 1), () {});
   }
 
   void fireLast() => _callbacks.removeLast()();
 }
 
-/// StreamController.add/addError/close はリスナーに非同期で届く
-/// （broadcast でも同期呼び出しにはならない）。組み込みイベントを発生
-/// させた直後は、その配送を待つためにこれを挟む。
 Future<void> _flush() => Future<void>.delayed(Duration.zero);
 
 void main() {
   group('StreamingService の connect メッセージ', () {
-    test('channel 固有のパラメータは params にネストされる（トップレベルに漏れない）', () {
+    test('channel 固有のパラメータは params に入れて送る', () {
       _FakeWebSocketChannel? channel;
       final service = StreamingService(
         host: 'example.com',
@@ -118,8 +110,7 @@ void main() {
 
       service.connect();
 
-      // メッセージを一度も受け取れないまま切断を繰り返す
-      // （2, 4, 8, 16, 32, 60, 60, ...）
+      // メッセージを一度も受け取らないまま切断を繰り返す
       const expected = [2, 4, 8, 16, 32, 60, 60];
       for (final seconds in expected) {
         channels.last.emitDone();
@@ -147,7 +138,6 @@ void main() {
 
       service.connect();
 
-      // 実ソケットは onError の後に onDone が続くことがある
       channels.last.emitError(Exception('boom'));
       channels.last.emitDone();
       await _flush();
@@ -172,17 +162,16 @@ void main() {
       addTearDown(service.dispose);
 
       service.connect();
-      channels.last.emitDone(); // 2 秒
+      channels.last.emitDone();
       await _flush();
       expect(timerFactory.delays.last, const Duration(seconds: 2));
       timerFactory.fireLast();
 
-      channels.last.emitDone(); // 4 秒（まだ何も受け取っていない）
+      channels.last.emitDone();
       await _flush();
       expect(timerFactory.delays.last, const Duration(seconds: 4));
       timerFactory.fireLast();
 
-      // ここで初めて生きた通信を確認する
       channels.last.emit(jsonEncode({'type': 'noteUpdated', 'body': {}}));
       await _flush();
       channels.last.emitDone();
@@ -218,11 +207,11 @@ void main() {
 
       channels.last.emitDone();
       await _flush();
-      timerFactory.fireLast(); // タイマー経由の自動再接続
+      timerFactory.fireLast();
       await _flush();
       expect(reconnectedCount, 1);
 
-      service.reconnect(); // アプリ復帰などによる強制再接続
+      service.reconnect();
       await _flush();
       expect(reconnectedCount, 2);
     });

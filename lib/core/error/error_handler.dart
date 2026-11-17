@@ -5,11 +5,10 @@ String resolveErrorMessage(Object error) {
     final statusCode = error.response?.statusCode;
     if (statusCode == 401) return '認証エラー: 再ログインしてください';
     if (statusCode == 403) {
-      // 権限不足はスコープ不足が原因のことが多く、再ログインで直る。
-      // 「アクセス権がありません」だけだと何をすればいいか分からない。
-      final code = _misskeyErrorCode(error);
+      // PERMISSION_DENIED は再ログインで直るため、その手順まで示す。
+      final code = misskeyErrorCode(error);
       if (code == 'PERMISSION_DENIED') {
-        return '権限が足りません。設定からログインし直してください';
+        return '権限が足りません。設定の「アカウントを追加」から同じサーバーにログインし直してください';
       }
       return 'アクセス権がありません';
     }
@@ -28,8 +27,7 @@ String resolveErrorMessage(Object error) {
   return 'エラーが発生しました';
 }
 
-/// Misskey は `{"error": {"code": ..., "message": ...}}` を返す。
-String? _misskeyErrorCode(DioException error) {
+String? misskeyErrorCode(DioException error) {
   final data = error.response?.data;
   if (data is! Map) return null;
   final body = data['error'];

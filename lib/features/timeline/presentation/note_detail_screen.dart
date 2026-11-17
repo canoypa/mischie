@@ -8,14 +8,12 @@ import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/domain/note_store.dart';
 import 'package:mischie/features/timeline/presentation/note_card.dart';
 
-/// ノート詳細（会話）を開く。引用や埋め込みからも呼ぶ。
 void openNoteDetail(BuildContext context, Note note) {
   Navigator.of(
     context,
   ).push(MaterialPageRoute(builder: (_) => NoteDetailScreen(note: note)));
 }
 
-/// 1 つのノートを中心に、返信元（祖先）と返信（子）を縦に並べる会話ビュー。
 class NoteDetailScreen extends ConsumerStatefulWidget {
   const NoteDetailScreen({super.key, required this.note});
 
@@ -31,6 +29,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   bool _loading = true;
   Object? _error;
 
+  bool _hasMoreChildren = false;
+  bool _loadingMoreChildren = false;
+
+  static const _childrenPageSize = 30;
+
   @override
   void initState() {
     super.initState();
@@ -45,12 +48,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       _error = null;
     });
     try {
-      // 祖先と子は独立なので同時に取る
       final results = await Future.wait([
         widget.note.replyId == null
             ? Future.value(<Note>[])
             : repo.conversation(widget.note.id),
-        repo.children(widget.note.id),
+        repo.children(widget.note.id, limit: _childrenPageSize),
       ]);
       if (!mounted) return;
       // conversation は新しい順で返るので、時系列に直す
@@ -65,6 +67,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       setState(() {
         _ancestors = ancestors;
         _children = children;
+        _hasMoreChildren = children.length >= _childrenPageSize;
         _loading = false;
       });
     } catch (e) {
@@ -76,6 +79,32 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     }
   }
 
+  Future<void> _loadMoreChildren() async {
+    final repo = ref.read(noteRepositoryProvider);
+    if (repo == null || _children.isEmpty) return;
+    setState(() => _loadingMoreChildren = true);
+    try {
+      final more = await repo.children(
+        widget.note.id,
+        limit: _childrenPageSize,
+        untilId: _children.last.id,
+      );
+      if (!mounted) return;
+      ref.read(noteOverridesProvider.notifier).evictFetched(more);
+      setState(() {
+        _children = [..._children, ...more];
+        _hasMoreChildren = more.length >= _childrenPageSize;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resolveErrorMessage(e))));
+    } finally {
+      if (mounted) setState(() => _loadingMoreChildren = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final serverEmojis = ref.watch(emojiCacheProvider).value ?? const {};
@@ -84,6 +113,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('ノート')),
       floatingActionButton: FloatingActionButton(
+        tooltip: '返信',
         onPressed: () async {
           await Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => ComposeScreen(replyTo: note)),
@@ -98,8 +128,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
           padding: const EdgeInsets.only(bottom: 96),
           children: [
             for (final ancestor in _ancestors)
-              NoteCard(note: ancestor, serverEmojis: serverEmojis),
-            // 中心のノートは少し強調する
+              NoteCard(
+                note: ancestor,
+                serverEmojis: serverEmojis,
+                showReplyTarget: false,
+              ),
             Container(
               decoration: BoxDecoration(
                 border: Border(
@@ -113,6 +146,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
                 note: note,
                 serverEmojis: serverEmojis,
                 onTap: () {},
+                showReplyTarget: false,
               ),
             ),
             if (_loading)
@@ -140,7 +174,23 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
               for (final child in _children)
                 Padding(
                   padding: const EdgeInsets.only(left: 16),
-                  child: NoteCard(note: child, serverEmojis: serverEmojis),
+                  child: NoteCard(
+                    note: child,
+                    serverEmojis: serverEmojis,
+                    showReplyTarget: false,
+                  ),
+                ),
+              if (_hasMoreChildren)
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Center(
+                    child: _loadingMoreChildren
+                        ? const CircularProgressIndicator()
+                        : TextButton(
+                            onPressed: _loadMoreChildren,
+                            child: const Text('返信をさらに読み込む'),
+                          ),
+                  ),
                 ),
             ],
           ],

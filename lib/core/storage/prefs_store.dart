@@ -5,8 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 /// 秘密でない設定値の置き場。
 ///
-/// トークンは暗号化された [FlutterSecureStorage] に置くが、よく使う絵文字や
-/// 選んでいたタブのような値まで暗号化する必要はない。
+/// トークンはここに置かない。
 class PrefsStore {
   const PrefsStore();
 

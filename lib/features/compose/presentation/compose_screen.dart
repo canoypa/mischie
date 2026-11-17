@@ -10,7 +10,10 @@ import 'package:mischie/features/compose/presentation/attachments.dart';
 import 'package:mischie/features/compose/presentation/completion_bar.dart';
 import 'package:mischie/features/compose/presentation/poll_editor.dart';
 import 'package:mischie/core/error/error_handler.dart';
+import 'package:mischie/core/widgets/confirm_dialog.dart';
 import 'package:mischie/features/compose/domain/compose_notifier.dart';
+import 'package:mischie/features/drive/presentation/drive_screen.dart';
+import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
 
@@ -19,30 +22,40 @@ const _maxLength = 3000;
 /// Misskey が 1 ノートに添付できる上限。
 const _maxAttachments = 16;
 
+/// テストで差し替えるために外から渡す。
+typedef DriveFilePicker =
+    Future<List<DriveFile>?> Function(BuildContext context, {int max});
+
 class ComposeScreen extends ConsumerStatefulWidget {
   const ComposeScreen({
     super.key,
     this.replyTo,
     this.quoteOf,
+    this.channel,
     this.initialText,
-    this.initialImagePaths = const [],
+    this.initialFilePaths = const [],
     this.draft,
+    this.editFrom,
+    this.driveFilePicker = pickDriveFiles,
   });
 
-  /// 下書きから再開する場合の元データ。
+  final DriveFilePicker driveFilePicker;
+
   final Draft? draft;
 
-  /// 他アプリからの共有で渡された本文。
   final String? initialText;
 
-  /// 他アプリからの共有で渡された画像のローカルパス。
-  final List<String> initialImagePaths;
+  final List<String> initialFilePaths;
 
-  /// 返信先のノート。指定すると replyId 付きで投稿する。
   final Note? replyTo;
 
-  /// 引用元のノート。指定すると renoteId 付きで投稿する。
+  /// 削除して書き直す元のノート。
+  final Note? editFrom;
+
   final Note? quoteOf;
+
+  /// チャンネルのノートへの返信では省略できる。
+  final NoteChannel? channel;
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
@@ -51,37 +64,35 @@ class ComposeScreen extends ConsumerStatefulWidget {
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final _textController = TextEditingController();
   final _cwController = TextEditingController();
+  final _textFocus = FocusNode();
   bool _showCw = false;
   NoteVisibility _visibility = NoteVisibility.public;
   int _textLength = 0;
   final List<Attachment> _attachments = [];
 
-  /// 投票を付けているあいだだけ持つ。null なら投票なし。
   PollDraft? _poll;
 
-  /// カーソル位置で補完しようとしているもの。
   CompletionQuery? _completion;
 
-  /// メンション検索へ渡す語。打鍵が落ち着いてから更新する。
   String _mentionQuery = '';
   Timer? _mentionDebounce;
 
-  /// 下書きの同一性。保存し直しても増殖しないように使い回す。
+  /// 保存し直しても下書きが増えないよう使い回す。
   late final String _draftId =
       widget.draft?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
 
-  /// 返信先・引用元の id。フレッシュな返信・引用は widget から、
-  /// 下書きから戻した場合は下書きに残っていたものから引く。
-  /// 投稿・再保存は常にここを見る（widget.replyTo/quoteOf は直接見ない）。
+  /// 下書きから戻すと widget.replyTo/quoteOf は null なので、投稿・再保存はここを見る。
   String? _replyId;
   String? _renoteId;
 
-  /// ヘッダー表示用の本体。フレッシュな返信・引用では渡されるが、下書きから
-  /// 戻した場合は id しか無いので取得する。取れなくても id があれば投稿できる。
+  /// チャンネルのノートは公開範囲が反映されないので、指定があるあいだは選ばせない。
+  String? _channelId;
+  String? _channelName;
+
+  /// ヘッダー表示用。下書きから戻すと id しか無いので取りに行く。取れなくても投稿はできる。
   Note? _targetNote;
   bool _targetLoading = false;
 
-  /// アップロード中の添付を、下書き保存時に待ち合わせるための Future。
   final Map<Attachment, Future<void>> _uploads = {};
 
   @override
@@ -89,11 +100,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     super.initState();
     _textController.addListener(_onTextChanged);
 
-    final draft = widget.draft;
+    final draft = widget.draft ?? _draftFromNote(widget.editFrom);
 
     _replyId = widget.replyTo?.id ?? draft?.replyId;
     _renoteId = widget.quoteOf?.id ?? draft?.renoteId;
-    _targetNote = widget.replyTo ?? widget.quoteOf;
+    final channel = widget.channel ?? widget.replyTo?.channel;
+    _channelId = channel?.id ?? draft?.channelId;
+    _channelName = channel?.name ?? draft?.channelName;
+    _targetNote =
+        widget.replyTo ??
+        widget.quoteOf ??
+        widget.editFrom?.reply ??
+        widget.editFrom?.renote;
 
     // 返信は元ノートの公開範囲を引き継ぐ（元より広く公開しない）
     final source = widget.replyTo;
@@ -104,8 +122,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (widget.initialText != null) {
       _textController.text = widget.initialText!;
     }
-    if (widget.initialImagePaths.isNotEmpty) {
-      _addAttachments(widget.initialImagePaths);
+    if (widget.initialFilePaths.isNotEmpty) {
+      _addAttachments(widget.initialFilePaths);
     }
 
     if (draft != null) {
@@ -142,7 +160,33 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  /// 下書きから戻した返信・引用は id しか持たないので notes/show で取りに行く。
+  static Draft? _draftFromNote(Note? note) {
+    if (note == null) return null;
+    final poll = note.poll;
+    final expiresAt = poll?.expiresAt;
+    // 締め切り済みの投票は、残り時間を持てないので期限なしとして戻す
+    final remaining = expiresAt == null
+        ? null
+        : DateTime.parse(expiresAt).difference(DateTime.now());
+    return Draft(
+      id: note.id,
+      text: note.text ?? '',
+      savedAt: DateTime.now().toIso8601String(),
+      cw: note.cw,
+      visibility: note.visibility,
+      fileIds: note.files.map((f) => f.id).toList(),
+      replyId: note.replyId,
+      renoteId: note.renote?.id,
+      channelId: note.channel?.id,
+      channelName: note.channel?.name,
+      pollChoices: poll?.choices.map((c) => c.text).toList(),
+      pollMultiple: poll?.multiple ?? false,
+      pollExpiresInMs: remaining != null && !remaining.isNegative
+          ? remaining.inMilliseconds
+          : null,
+    );
+  }
+
   Future<void> _fetchTarget() async {
     final id = _replyId ?? _renoteId;
     if (id == null) return;
@@ -154,8 +198,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       setState(() {
         _targetNote = note;
         _targetLoading = false;
-        // 返信は元ノートより広い公開範囲にはしない。下書きに残っていた
-        // 公開範囲がすでにそれより狭ければそのまま保つ（勝手に広げない）。
+        if (_replyId != null && _channelId == null && note.channel != null) {
+          _channelId = note.channel!.id;
+          _channelName = note.channel!.name;
+        }
+        // 元ノートより広い公開範囲にはしない（下書きのほうが狭ければそのまま）。
         if (_replyId != null) {
           final sourceVisibility = NoteVisibility.fromName(note.visibility);
           if (sourceVisibility.index > _visibility.index) {
@@ -181,8 +228,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _scheduleMentionSearch();
   }
 
-  /// メンションだけはサーバーに聞くしかないので、打鍵が止まってから投げる。
-  /// 1 文字ごとに検索すると、サーバーに無駄な負荷をかける。
+  /// サーバーに無駄な負荷をかけないよう、打鍵が止まってから検索する。
   void _scheduleMentionSearch() {
     final completion = _completion;
     if (completion == null || completion.kind != CompletionKind.mention) {
@@ -198,7 +244,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     });
   }
 
-  /// 候補を選んだら、記号ごと置き換えてカーソルを末尾へ送る。
   void _applyCompletion(String replacement) {
     final query = _completion;
     if (query == null) return;
@@ -218,8 +263,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _poll != null;
 
   Future<void> _saveDraft() async {
-    // アップロード中のまま保存すると fileId が無く、その添付が
-    // 静かに消えるので、書き込む前に完了を待つ。
+    // アップロード中のまま保存すると添付が消えるので、完了を待つ。
     final pending = _attachments.where((a) => a.uploading).toList();
     if (pending.isNotEmpty) {
       await Future.wait(pending.map((a) => _uploads[a] ?? Future.value()));
@@ -240,6 +284,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 .toList(),
             replyId: _replyId,
             renoteId: _renoteId,
+            channelId: _channelId,
+            channelName: _channelName,
             pollChoices: _poll?.controllers.map((c) => c.text).toList(),
             pollMultiple: _poll?.multiple ?? false,
             pollExpiresInMs: _poll?.duration?.inMilliseconds,
@@ -257,7 +303,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  /// 書きかけを黙って捨てない。破棄・下書き保存・書き続けるを選ばせる。
+  /// 書きかけを黙って捨てない。
   Future<bool> _confirmDiscard() async {
     if (!_hasContent) return true;
 
@@ -310,6 +356,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 subtitle: Text(draft.savedAt.substring(0, 16)),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
+                  tooltip: '下書きを削除',
                   onPressed: () =>
                       ref.read(draftsProvider.notifier).remove(draft.id),
                 ),
@@ -321,7 +368,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
     if (selected == null || !mounted) return;
 
-    // 書きかけを黙って捨てない（PopScope と同じ確認を通す）。
     if (!await _confirmDiscard() || !mounted) return;
 
     // _confirmDiscard で保存すると selected 自身が上書きされることがあるので、
@@ -337,8 +383,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
   }
 
-  /// 選んだ時点でアップロードを始める。投稿ボタンを押してから
-  /// 全部上げ始めると、その分だけユーザーを待たせることになるため。
+  /// 投稿時に待たせないよう、選んだ時点でアップロードを始める。
   void _addAttachments(List<String> paths) {
     final room = _maxAttachments - _attachments.length;
     if (room <= 0) return;
@@ -369,8 +414,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  /// 添付の説明（alt）とセンシティブ指定。読み上げ環境のために alt は
-  /// 付けられるようにしておく。
   Future<void> _editAttachment(Attachment attachment) async {
     final controller = TextEditingController(text: attachment.alt);
     var sensitive = attachment.isSensitive;
@@ -413,6 +456,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         ),
       ),
     );
+    final alt = controller.text.trim();
     controller.dispose();
     if (saved != true) return;
 
@@ -421,15 +465,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     try {
       await ref
           .read(composeRepositoryProvider)!
-          .updateFile(
-            fileId,
-            comment: controller.text.trim(),
-            isSensitive: sensitive,
-          );
+          .updateFile(fileId, comment: alt, isSensitive: sensitive);
       if (!mounted) return;
       setState(() {
         attachment
-          ..alt = controller.text.trim()
+          ..alt = alt
           ..isSensitive = sensitive;
       });
     } catch (e) {
@@ -440,16 +480,54 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  Future<void> _pickImages() async {
-    final picked = await ImagePicker().pickMultiImage(limit: _maxAttachments);
+  Future<void> _pickMedia() async {
+    final picked = await ImagePicker().pickMultipleMedia(
+      limit: _maxAttachments - _attachments.length,
+    );
     if (picked.isEmpty) return;
     _addAttachments(picked.map((x) => x.path).toList());
+  }
+
+  Future<void> _pickFromDrive() async {
+    final room = _maxAttachments - _attachments.length;
+    if (room <= 0) return;
+    final files = await widget.driveFilePicker(context, max: room);
+    if (files == null || !mounted) return;
+
+    final attached = _attachments.map((a) => a.fileId).toSet();
+    final added = files
+        .where((f) => !attached.contains(f.id))
+        .take(_maxAttachments - _attachments.length)
+        .map(Attachment.fromDriveFile)
+        .toList();
+    if (added.isEmpty) return;
+    setState(() => _attachments.addAll(added));
+  }
+
+  /// 選択肢を入力済みなら、誤タップで消えないよう確認を挟む。
+  Future<void> _removePoll() async {
+    final poll = _poll;
+    if (poll == null) return;
+    if (poll.controllers.any((c) => c.text.trim().isNotEmpty)) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: '投票をやめる',
+        message: '入力した選択肢は消えます。',
+        action: 'やめる',
+      );
+      if (!confirmed || !mounted || _poll != poll) return;
+    }
+    setState(() {
+      poll.dispose();
+      _poll = null;
+    });
   }
 
   @override
   void dispose() {
     _mentionDebounce?.cancel();
     _poll?.dispose();
+    _textFocus.dispose();
     _textController.dispose();
     _cwController.dispose();
     super.dispose();
@@ -457,7 +535,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<void> _post() async {
     final text = _textController.text.trim();
-    if (text.isEmpty && _attachments.isEmpty) return;
+    if (text.isEmpty && _attachments.isEmpty && _poll == null) return;
 
     await ref
         .read(composeNotifierProvider.notifier)
@@ -467,6 +545,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           visibility: _visibility,
           replyId: _replyId,
           renoteId: _renoteId,
+          channelId: _channelId,
           fileIds: _attachments
               .map((a) => a.fileId)
               .whereType<String>()
@@ -484,7 +563,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         );
       } else {
         await ref.read(draftsProvider.notifier).remove(_draftId);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) Navigator.of(context).pop(true);
       }
     }
   }
@@ -497,7 +576,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final isUploading = _attachments.any((a) => a.uploading);
     final hasUploadError = _attachments.any((a) => a.error != null);
     final pollIncomplete = _poll != null && !_poll!.isValid;
-    final isEmpty = _textLength == 0 && _attachments.isEmpty;
+    final isEmpty = _textLength == 0 && _attachments.isEmpty && _poll == null;
 
     final isReply = _replyId != null;
     final isQuote = _renoteId != null;
@@ -532,8 +611,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 tooltip: '下書き',
                 onPressed: _openDrafts,
               ),
-            // 送信はここに置く。下部に浮かせるとキーボード対策で本体末尾へ
-            // 移したツールバーと重なり、文字数カウントが隠れる。
+            // 下部に置くとツールバーと重なり、文字数カウントが隠れる。
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: FilledButton(
@@ -559,48 +637,83 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         ),
         body: Column(
           children: [
-            if (target != null)
-              _TargetPreview(note: target, isReply: isReply)
-            else if (isReply || isQuote)
-              _TargetPreviewCompact(isReply: isReply, loading: _targetLoading),
-            if (_showCw)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: TextField(
-                  controller: _cwController,
-                  decoration: const InputDecoration(
-                    hintText: '閲覧注意の説明',
-                    border: UnderlineInputBorder(),
-                  ),
-                ),
-              ),
-            if (_attachments.isNotEmpty)
-              AttachmentStrip(
-                attachments: _attachments,
-                onRemove: (a) => setState(() => _attachments.remove(a)),
-                onRetry: (a) {
-                  setState(() {
-                    a.uploading = true;
-                    a.error = null;
-                  });
-                  _uploads[a] = _upload(a);
-                },
-                onEdit: _editAttachment,
-              ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _textController,
-                  autofocus: true,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  decoration: InputDecoration(
-                    hintText: isReply ? 'このノートに返信' : '今何してる？',
-                    border: InputBorder.none,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        if (target != null)
+                          _TargetPreview(note: target, isReply: isReply)
+                        else if (isReply || isQuote)
+                          _TargetPreviewCompact(
+                            isReply: isReply,
+                            loading: _targetLoading,
+                          ),
+                        if (_showCw)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                            child: TextField(
+                              controller: _cwController,
+                              decoration: const InputDecoration(
+                                hintText: '閲覧注意の説明',
+                                border: UnderlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        if (_attachments.isNotEmpty)
+                          AttachmentStrip(
+                            attachments: _attachments,
+                            onRemove: (a) =>
+                                setState(() => _attachments.remove(a)),
+                            onRetry: (a) {
+                              setState(() {
+                                a.uploading = true;
+                                a.error = null;
+                              });
+                              _uploads[a] = _upload(a);
+                            },
+                            onEdit: _editAttachment,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        controller: _textController,
+                        focusNode: _textFocus,
+                        autofocus: true,
+                        minLines: 4,
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          hintText: isReply ? 'このノートに返信' : '今何してる？',
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_poll case final poll?)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: PollEditor(
+                          draft: poll,
+                          onChanged: () => setState(() {}),
+                          onRemove: _removePoll,
+                        ),
+                      ),
+                    ),
+                  // 余白のタップでも本文に入力できるようにする
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _textFocus.requestFocus,
+                    ),
+                  ),
+                ],
               ),
             ),
             if (_completion case final completion?)
@@ -610,65 +723,55 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 mentionQuery: _mentionQuery,
                 onSelected: _applyCompletion,
               ),
-            // 本文を書いてから選択肢を足す並びにする
-            if (_poll case final poll?)
-              PollEditor(
-                draft: poll,
-                onChanged: () => setState(() {}),
-                onRemove: () => setState(() {
-                  _poll?.dispose();
-                  _poll = null;
-                }),
-              ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
                   children: [
-                    // 画像添付
                     IconButton(
-                      icon: const Icon(Icons.image_outlined),
-                      tooltip: '画像を追加',
+                      icon: const Icon(Icons.perm_media_outlined),
+                      tooltip: '画像・動画を追加',
                       onPressed: _attachments.length >= _maxAttachments
                           ? null
-                          : _pickImages,
+                          : _pickMedia,
                     ),
-                    // 投票
                     IconButton(
-                      icon: Icon(
-                        Icons.poll_outlined,
-                        color: _poll != null
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
+                      icon: const Icon(Icons.cloud_outlined),
+                      tooltip: 'ドライブから添付',
+                      onPressed: _attachments.length >= _maxAttachments
+                          ? null
+                          : _pickFromDrive,
+                    ),
+                    IconButton(
+                      isSelected: _poll != null,
+                      icon: const Icon(Icons.poll_outlined),
+                      selectedIcon: const Icon(Icons.poll),
                       tooltip: '投票',
-                      onPressed: () => setState(() {
-                        if (_poll == null) {
-                          _poll = PollDraft();
-                        } else {
-                          _poll!.dispose();
-                          _poll = null;
-                        }
-                      }),
+                      onPressed: _poll == null
+                          ? () => setState(() => _poll = PollDraft())
+                          : _removePoll,
                     ),
-                    // CW トグル
                     IconButton(
-                      icon: Icon(
-                        _showCw ? Icons.warning : Icons.warning_outlined,
-                        color: _showCw
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
+                      isSelected: _showCw,
+                      icon: const Icon(Icons.warning_outlined),
+                      selectedIcon: const Icon(Icons.warning),
                       tooltip: 'CW (閲覧注意)',
                       onPressed: () => setState(() => _showCw = !_showCw),
                     ),
-                    // 公開範囲
-                    _VisibilitySelector(
-                      value: _visibility,
-                      onChanged: (v) => setState(() => _visibility = v),
-                    ),
-                    const Spacer(),
-                    // 文字数カウント
+                    if (_channelId != null)
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _ChannelLabel(name: _channelName),
+                        ),
+                      )
+                    else ...[
+                      _VisibilitySelector(
+                        value: _visibility,
+                        onChanged: (v) => setState(() => _visibility = v),
+                      ),
+                      const Spacer(),
+                    ],
                     Text(
                       '$remaining',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -715,6 +818,7 @@ class _VisibilitySelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<NoteVisibility>(
       initialValue: value,
+      tooltip: '公開範囲: ${_label(value)}',
       onSelected: onChanged,
       itemBuilder: (_) => NoteVisibility.values
           .map(
@@ -730,18 +834,43 @@ class _VisibilitySelector extends StatelessWidget {
             ),
           )
           .toList(),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(_icon(value), size: 20),
-          const Icon(Icons.arrow_drop_down, size: 16),
-        ],
+      child: SizedBox(
+        height: 48,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_icon(value), size: 20),
+              const Icon(Icons.arrow_drop_down, size: 16),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-/// 返信先・引用元を投稿画面の上部に薄く出す。
+class _ChannelLabel extends StatelessWidget {
+  const _ChannelLabel({required this.name});
+
+  final String? name;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Chip(
+      avatar: Icon(Icons.tv, size: 18, color: colorScheme.onSurfaceVariant),
+      label: Text(
+        name == null || name!.isEmpty ? 'チャンネル' : name!,
+        overflow: TextOverflow.ellipsis,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
 class _TargetPreview extends StatelessWidget {
   const _TargetPreview({required this.note, required this.isReply});
 
@@ -795,10 +924,7 @@ class _TargetPreview extends StatelessWidget {
   }
 }
 
-/// 返信先・引用元の本体を取得できていない間の簡易表示。
-///
-/// 下書きから戻した直後や notes/show が失敗した場合に出す。本体が無くても
-/// id さえあれば投稿はできるので、ここでは「返信/引用であること」だけ示す。
+/// 返信先・引用元の本体が取れていないあいだの表示。
 class _TargetPreviewCompact extends StatelessWidget {
   const _TargetPreviewCompact({required this.isReply, required this.loading});
 

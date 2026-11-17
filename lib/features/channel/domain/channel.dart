@@ -3,7 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'channel.freezed.dart';
 part 'channel.g.dart';
 
-/// チャンネル（channels/show）。
 @freezed
 sealed class Channel with _$Channel {
   const factory Channel({

@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/features/profile/domain/user_detailed.dart';
 
-/// プロフィールのヘッダーを構成する小物。
-/// 画面の骨格と混ざると、どこが構造でどこが飾りか読み取れなくなる。
-
 class CompactChip extends StatelessWidget {
   const CompactChip({super.key, required this.icon, required this.label});
 
@@ -91,8 +88,6 @@ class StatColumn extends StatelessWidget {
 
   final int? count;
   final String label;
-
-  /// 数字は一覧への入り口。押せるものは押せると分かるようにする。
   final VoidCallback? onTap;
 
   @override
@@ -159,5 +154,3 @@ class MetaRow extends StatelessWidget {
     );
   }
 }
-
-/// フォロー / フォロー解除ボタン。自分自身のプロフィールでは何も出さない。

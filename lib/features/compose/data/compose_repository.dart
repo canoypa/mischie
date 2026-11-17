@@ -13,6 +13,7 @@ class ComposeRepository {
     NoteVisibility visibility = NoteVisibility.public,
     String? replyId,
     String? renoteId,
+    String? channelId,
     List<String> fileIds = const [],
     List<String> pollChoices = const [],
     bool pollMultiple = false,
@@ -20,18 +21,17 @@ class ComposeRepository {
   }) async {
     final body = <String, dynamic>{
       'visibility': visibility.name,
-      // 引用でない純粋なリノート以外は text を必ず送る
       if (text.isNotEmpty) 'text': text,
       if (cw != null && cw.isNotEmpty) 'cw': cw,
       'replyId': ?replyId,
       'renoteId': ?renoteId,
+      'channelId': ?channelId,
       if (fileIds.isNotEmpty) 'fileIds': fileIds,
       // 選択肢は 2 つ以上でないとサーバーが受け取らない
       if (pollChoices.length >= 2)
         'poll': {
           'choices': pollChoices,
           'multiple': pollMultiple,
-          // expiredAfter はミリ秒。null なら締め切り無し。
           'expiredAfter': ?pollDuration?.inMilliseconds,
         },
     };
@@ -39,7 +39,6 @@ class ComposeRepository {
     await _client.post('notes/create', body: body);
   }
 
-  /// 添付の説明（alt）とセンシティブ指定を更新する。
   Future<void> updateFile(
     String fileId, {
     String? comment,
@@ -53,7 +52,6 @@ class ComposeRepository {
     },
   );
 
-  /// 画像をドライブへ上げて、投稿に添付できる DriveFile を返す。
   Future<DriveFile> uploadFile(String path, {String? name}) async {
     final data = await _client.postMultipart(
       'drive/files/create',

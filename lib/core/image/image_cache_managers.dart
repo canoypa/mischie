@@ -1,10 +1,6 @@
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-/// 画像キャッシュの上限を用途別に分ける。
-///
-/// 既定の [DefaultCacheManager] は 200 件までしか保持しない。カスタム絵文字が
-/// 1 万件規模あるサーバーではタイムラインを流すだけで溢れ、同じ絵文字を
-/// 何度も取り直すことになる。サーバーへの負荷にも表示の速さにも効く。
+/// 既定のキャッシュでは絵文字がすぐ溢れて取り直しになるため、用途別に上限を持つ。
 class EmojiCacheManager {
   static const key = 'mischie_emoji';
 

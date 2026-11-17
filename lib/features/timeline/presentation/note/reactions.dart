@@ -3,15 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:mischie/core/widgets/custom_emoji_image.dart';
 import 'package:mischie/features/timeline/domain/note.dart';
 
-/// `:name:` / `:name@server.tld:` 形式のリアクションキー。
-/// リアクションごとに組み直すと、その回数だけ正規表現の構築コストがかかる。
+/// カスタム絵文字のリアクション（`:name:` / `:name@host:`）。
 final customEmojiPattern = RegExp(r'^:([^:]+):$');
 
-/// 他サーバーの絵文字によるリアクションか。自サーバーへは付け直せない。
-///
-/// Misskey はリアクションのキーにホストを付ける。ローカルの絵文字は
-/// `name@.` の形（`.` がローカルホストを指す）で返るため、`@` の有無だけで
-/// 判定するとローカルの絵文字まで「押せない」ことになる。
+/// 他サーバーの絵文字か（自サーバーからは付けられない）。ローカルも `name@.` の形で来るので、`@` の有無だけでは判定できない。
 bool isRemoteReaction(String identifier) {
   final atIndex = identifier.indexOf('@');
   if (atIndex < 0) return false;
@@ -19,8 +14,6 @@ bool isRemoteReaction(String identifier) {
   return host.isNotEmpty && host != '.';
 }
 
-/// 絵文字の URL を引く。フルキー (name@server.tld) でまず検索し、
-/// なければホストを落とした短縮名 (name) で引き直す。
 String? lookupEmojiUrl(Map<String, String> emojis, String identifier) {
   final url = emojis[identifier];
   if (url != null) return url;
@@ -29,17 +22,52 @@ String? lookupEmojiUrl(Map<String, String> emojis, String identifier) {
   return emojis[identifier.substring(0, atIndex)];
 }
 
+class ReactionGlyph extends StatelessWidget {
+  const ReactionGlyph({
+    super.key,
+    required this.reaction,
+    required this.emojis,
+    this.size = 24,
+  });
+
+  final String reaction;
+  final Map<String, String> emojis;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = customEmojiPattern.firstMatch(reaction);
+    if (match == null) {
+      return Text(reaction, style: TextStyle(fontSize: size * 0.875));
+    }
+    final identifier = match.group(1)!;
+    final atIndex = identifier.indexOf('@');
+    final name = atIndex > 0 ? identifier.substring(0, atIndex) : identifier;
+    final url = lookupEmojiUrl(emojis, identifier);
+    if (url == null) return Text(':$name:');
+    return CustomEmojiImage(
+      url: url,
+      size: size,
+      maxWidth: size * 3,
+      errorFallback: Text(':$name:'),
+    );
+  }
+}
+
 class NoteReactions extends StatelessWidget {
   const NoteReactions({
     super.key,
     required this.note,
     required this.emojis,
     required this.onTap,
+    this.onLongPress,
   });
 
   final Note note;
   final Map<String, String> emojis;
   final ValueChanged<String> onTap;
+
+  final ValueChanged<String>? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +75,10 @@ class NoteReactions extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Wrap(
-      // 隣のリアクションを押してしまわないよう、間隔は 8 取る。
-      // 高さは Material 3 のチップに合わせて詰めたままにする。
+      // 押し間違いを防ぐため、間隔は 8 取る。
       spacing: 8,
       runSpacing: 8,
       children: sorted.map((e) {
-        // `:name:` または `:name@server.tld:` 形式からキーを抽出
         final match = customEmojiPattern.firstMatch(e.key);
         final identifier = match?.group(1) ?? e.key;
         final emojiUrl = lookupEmojiUrl(emojis, identifier);
@@ -60,7 +86,6 @@ class NoteReactions extends StatelessWidget {
         final displayName = atIndex > 0
             ? identifier.substring(0, atIndex)
             : identifier;
-        // match != null → カスタム絵文字 (:name:)、null → Unicode 絵文字
         final isCustomEmoji = match != null;
         final isExternal = isRemoteReaction(identifier);
 
@@ -73,17 +98,14 @@ class NoteReactions extends StatelessWidget {
           emojiUrl: emojiUrl,
           fallbackLabel: isCustomEmoji ? ':$displayName:' : displayName,
           onTap: () => onTap(e.key),
+          onLongPress: onLongPress == null ? null : () => onLongPress!(e.key),
         );
       }).toList(),
     );
   }
 }
 
-/// リアクション 1 つぶん。
-///
-/// 箱を自前で描くと InkWell の上に不透明な面が乗り、Material 3 の状態
-/// レイヤー（ホバー・押下・フォーカス）が見えなくなる。標準のチップに
-/// 任せることで、状態表現も 48dp のタップ領域も付いてくる。
+/// 自前の箱にすると押下などの状態表示が隠れるので、標準のチップを使う。
 class _ReactionChip extends StatefulWidget {
   const _ReactionChip({
     super.key,
@@ -94,6 +116,7 @@ class _ReactionChip extends StatefulWidget {
     required this.emojiUrl,
     required this.fallbackLabel,
     required this.onTap,
+    this.onLongPress,
   });
 
   final int count;
@@ -103,6 +126,7 @@ class _ReactionChip extends StatefulWidget {
   final String? emojiUrl;
   final String fallbackLabel;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   State<_ReactionChip> createState() => _ReactionChipState();
@@ -140,15 +164,12 @@ class _ReactionChipState extends State<_ReactionChip>
       );
       return;
     }
-    // 押した手応えを返す。見た目の変化はサーバー応答を待たない。
     HapticFeedback.selectionClick();
     _controller.forward(from: 0);
     widget.onTap();
   }
 
-  // Misskey Web と同じく、絵文字は 1.5em (≈24px) 相当の高さで出す。幅は
-  // 縦横比まかせ（横に長い絵文字を正方形へ押し込むと潰れる）で、代わりに
-  // 70px 前後で上限を切る。
+  // 横長の絵文字が潰れないよう、幅は縦横比のまま出して上限だけ切る。
   static const _emojiSize = 24.0;
   static const _emojiMaxWidth = 72.0;
   static const _unicodeStyle = TextStyle(fontSize: 21);
@@ -161,8 +182,7 @@ class _ReactionChipState extends State<_ReactionChip>
   Widget build(BuildContext context) {
     final emojiUrl = widget.emojiUrl;
 
-    // avatar 枠は正方形固定で、横に長い絵文字を入れると潰れる。ラベル側に
-    // 絵文字とカウントを並べて置き、実際の縦横比のまま出す。
+    // avatar に入れると正方形に潰れるので、ラベルに並べる。
     final Widget label = emojiUrl != null
         ? Row(
             mainAxisSize: MainAxisSize.min,
@@ -182,8 +202,7 @@ class _ReactionChipState extends State<_ReactionChip>
             children: [
               Text(
                 widget.fallbackLabel,
-                // カスタム絵文字名の ":name:" 表記は本文サイズのまま。
-                // Unicode 絵文字だけ Misskey Web と揃えて大きく出す。
+                // Unicode 絵文字だけ、画像の絵文字と大きさを揃える。
                 style: widget.isCustomEmoji ? null : _unicodeStyle,
               ),
               const SizedBox(width: 4),
@@ -191,15 +210,18 @@ class _ReactionChipState extends State<_ReactionChip>
             ],
           );
 
-    return ScaleTransition(
-      scale: _pop,
-      child: FilterChip(
-        label: label,
-        selected: widget.isMine,
-        showCheckmark: false,
-        visualDensity: VisualDensity.compact,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-        onSelected: (_) => _handleTap(),
+    return GestureDetector(
+      onLongPress: widget.onLongPress,
+      child: ScaleTransition(
+        scale: _pop,
+        child: FilterChip(
+          label: label,
+          selected: widget.isMine,
+          showCheckmark: false,
+          visualDensity: VisualDensity.compact,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+          onSelected: (_) => _handleTap(),
+        ),
       ),
     );
   }
