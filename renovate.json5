@@ -1,0 +1,44 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended'],
+  // 更新 PR は週に一度、月曜の朝にまとめて来るようにする
+  timezone: 'Asia/Tokyo',
+  schedule: ['before 9am on monday'],
+  // 公開直後の版は取り下げられることがあるので、少し寝かせてから上げる
+  minimumReleaseAge: '3 days',
+  // 依存の依存 (pubspec.lock だけに載るもの) も月に一度まとめて上げる
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 9am on the first day of the month'],
+  },
+  labels: ['dependencies'],
+  packageRules: [
+    {
+      // pub の破壊的でない更新は 1 本の PR にまとめる
+      matchManagers: ['pub'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'pub (non-major)',
+    },
+    {
+      // 1.9 以降は今の Flutter stable でビルドできない (pubspec.yaml のコメント参照)
+      matchManagers: ['pub'],
+      matchPackageNames: ['receive_sharing_intent'],
+      allowedVersions: '<1.9.0',
+    },
+    {
+      // Gradle / AGP / Kotlin は Flutter が対応する組み合わせでないとビルドできない。
+      // 1 本にまとめ、メジャー更新はダッシュボードで承認したときだけ PR にする
+      matchManagers: ['gradle', 'gradle-wrapper'],
+      groupName: 'Android build tooling',
+    },
+    {
+      matchManagers: ['gradle', 'gradle-wrapper'],
+      matchUpdateTypes: ['major'],
+      dependencyDashboardApproval: true,
+    },
+    {
+      matchManagers: ['github-actions'],
+      groupName: 'GitHub Actions',
+    },
+  ],
+}
