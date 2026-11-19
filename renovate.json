@@ -23,6 +23,7 @@
     {
       "description": "Android ビルドツールを揃えて更新する",
       "matchManagers": ["gradle", "gradle-wrapper"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
       "groupName": "Android build tooling"
     },
     {
@@ -30,6 +31,12 @@
       "matchManagers": ["gradle", "gradle-wrapper"],
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Flutter SDK に同梱される Gradle プラグインは Flutter の更新で上げる",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["dev.flutter.flutter-plugin-loader"],
+      "enabled": false
     },
     {
       "description": "GitHub Actions の更新をまとめてレビューする",
