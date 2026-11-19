@@ -35,7 +35,7 @@
     {
       "description": "Flutter SDK に同梱される Gradle プラグインは Flutter の更新で上げる",
       "matchManagers": ["gradle"],
-      "matchPackageNames": ["dev.flutter.flutter-plugin-loader"],
+      "matchDepNames": ["dev.flutter.flutter-plugin-loader"],
       "enabled": false
     },
     {
