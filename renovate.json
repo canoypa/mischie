@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>canoypa/renovate-config"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["on friday"],
+  "lockFileMaintenance": {
+    "schedule": ["on friday"]
+  },
+  "packageRules": [
+    {
+      "description": "pub の非破壊的な更新をまとめてレビューする",
+      "matchManagers": ["pub"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "pub (non-major)"
+    },
+    {
+      "description": "receive_sharing_intent の更新が通らなくても他の pub 更新を止めず、通るようになったら気付けるようにする",
+      "matchManagers": ["pub"],
+      "matchPackageNames": ["receive_sharing_intent"],
+      "groupName": null,
+      "rebaseWhen": "behind-base-branch"
+    },
+    {
+      "description": "Android ビルドツールを揃えて更新する",
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "groupName": "Android build tooling"
+    },
+    {
+      "description": "Android ビルドツールのメジャー更新は承認してから取り込む",
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "GitHub Actions の更新をまとめてレビューする",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    }
+  ]
+}

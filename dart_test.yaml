@@ -1,0 +1,4 @@
+tags:
+  # ゴールデン画像は macOS で描いたもの (ヒラギノを読み込む) なので、
+  # Linux の CI では `--exclude-tags golden` で外す
+  golden:

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.4.0
+      # Flutter は mise.toml の版を使う。Renovate が mise.toml を上げた PR では新しい版で検証される
+      - uses: jdx/mise-action@v2.4.4
+      - run: flutter pub get
+      # 生成コードはコミットしているので、生成器の更新で出力が変わったら気付けるようにする
+      - name: Check generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          git diff --exit-code
+      - run: flutter analyze lib/ test/
+      # ゴールデンは macOS で描いた画像なので Linux では外す (dart_test.yaml 参照)
+      - run: flutter test --exclude-tags golden
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.4.0
+      - uses: actions/setup-java@v4.9.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: jdx/mise-action@v2.4.4
+      - run: flutter pub get
+      # Gradle / AGP / Kotlin やネイティブ部分を持つプラグインの更新で壊れていないかを見る
+      - run: flutter build apk --debug
