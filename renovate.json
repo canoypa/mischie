@@ -14,10 +14,11 @@
       "groupName": "pub (non-major)"
     },
     {
-      "description": "receive_sharing_intent 1.9 以降は今の Flutter stable でビルドできない",
+      "description": "receive_sharing_intent は Flutter の版によってビルドできないことがあるので、他の pub 更新とまとめず単独の PR にする。main が進むたびに追従して CI をやり直し、通った時点でマージできるようにする",
       "matchManagers": ["pub"],
       "matchPackageNames": ["receive_sharing_intent"],
-      "allowedVersions": "<1.9.0"
+      "groupName": null,
+      "rebaseWhen": "behind-base-branch"
     },
     {
       "description": "Gradle / AGP / Kotlin は Flutter が対応する組み合わせでないとビルドできないので 1 本にまとめる",
