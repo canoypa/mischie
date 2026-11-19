@@ -33,6 +33,16 @@
       "dependencyDashboardApproval": true
     },
     {
+      "description": [
+        "JDK は Android ビルドツールと揃え、承認してから取り込む",
+        "待ち期間を判定できない JDK で警告を出さない"
+      ],
+      "matchDatasources": ["java-version"],
+      "groupName": "Android build tooling",
+      "dependencyDashboardApproval": true,
+      "minimumReleaseAge": null
+    },
+    {
       "description": "Flutter SDK に同梱される Gradle プラグインは Flutter の更新で上げる",
       "matchManagers": ["gradle"],
       "matchDepNames": ["dev.flutter.flutter-plugin-loader"],
