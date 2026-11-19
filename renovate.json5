@@ -3,9 +3,11 @@
   // 共通の設定 (config:recommended、dependencies ラベル、3 日寝かせる、
   // lock ファイルの週次更新など) は共有プリセットに任せる
   extends: ['github>canoypa/renovate-config'],
-  // 更新 PR は週に一度、月曜の朝にまとめて来るようにする
   timezone: 'Asia/Tokyo',
-  schedule: ['before 9am on monday'],
+  schedule: ['on friday'],
+  lockFileMaintenance: {
+    schedule: ['on friday'],
+  },
   packageRules: [
     {
       // pub の破壊的でない更新は 1 本の PR にまとめる
