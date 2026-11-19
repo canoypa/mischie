@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/error/error_handler.dart';
 import 'package:mischie/features/auth/domain/auth_notifier.dart';
+import 'package:mischie/features/channel/presentation/channel_screen.dart';
 import 'package:mischie/features/profile/domain/profile_notifier.dart';
 import 'package:mischie/features/profile/presentation/user_profile_screen.dart';
+import 'package:mischie/features/search/presentation/hashtag_screen.dart';
 import 'package:mischie/features/timeline/domain/note_actions.dart';
 import 'package:mischie/features/timeline/presentation/note_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,6 +34,18 @@ Future<void> openLink(BuildContext context, WidgetRef ref, String url) async {
   final segments = uri.pathSegments;
   if (segments.length == 2 && segments.first == 'notes') {
     await openNoteById(context, ref, segments[1]);
+    return;
+  }
+  if (segments.length == 2 &&
+      segments.first == 'tags' &&
+      segments[1].isNotEmpty) {
+    openHashtag(context, segments[1]);
+    return;
+  }
+  if (segments.length == 2 &&
+      segments.first == 'channels' &&
+      segments[1].isNotEmpty) {
+    openChannel(context, segments[1]);
     return;
   }
   if (segments.length == 1 && segments.first.startsWith('@')) {
