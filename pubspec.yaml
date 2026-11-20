@@ -40,7 +40,7 @@ dependencies:
   # タイムラインの位置へ戻れない
   video_player: ^2.11.1
   # 1.9 以降は今の Flutter stable でビルドできないため 1.8 系に留める
-  receive_sharing_intent: ">=1.8.1 <1.9.0"
+  receive_sharing_intent: "<1.10.0"
   share_plus: ^13.3.1
 
 dev_dependencies:
