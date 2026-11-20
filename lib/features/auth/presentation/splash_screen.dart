@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 認証状態が決まるまでの繋ぎ。読み出しは一瞬で終わるので、スピナーを置くとちらつくだけになる。
 class SplashScreen extends StatelessWidget {

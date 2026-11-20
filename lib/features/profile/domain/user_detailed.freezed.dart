@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'user_detailed.dart';
@@ -9,6 +9,7 @@ part of 'user_detailed.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $UserDetailedCopyWith<UserDetailed> get copyWith => _$UserDetailedCopyWithImpl<U
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked)&&(identical(other.hasPendingFollowRequestFromYou, hasPendingFollowRequestFromYou) || other.hasPendingFollowRequestFromYou == hasPendingFollowRequestFromYou)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other.avatarDecorations, avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other.fields, fields)&&const DeepCollectionEquality().equals(other.pinnedNotes, pinnedNotes)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.emojis, emojis));
+  final _this = this as UserDetailed;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDetailed&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.username, _this.username) || other.username == _this.username)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.host, _this.host) || other.host == _this.host)&&(identical(other.avatarUrl, _this.avatarUrl) || other.avatarUrl == _this.avatarUrl)&&(identical(other.bannerUrl, _this.bannerUrl) || other.bannerUrl == _this.bannerUrl)&&(identical(other.bannerBlurhash, _this.bannerBlurhash) || other.bannerBlurhash == _this.bannerBlurhash)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.location, _this.location) || other.location == _this.location)&&(identical(other.birthday, _this.birthday) || other.birthday == _this.birthday)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.isBot, _this.isBot) || other.isBot == _this.isBot)&&(identical(other.isCat, _this.isCat) || other.isCat == _this.isCat)&&(identical(other.isFollowing, _this.isFollowing) || other.isFollowing == _this.isFollowing)&&(identical(other.isFollowed, _this.isFollowed) || other.isFollowed == _this.isFollowed)&&(identical(other.isLocked, _this.isLocked) || other.isLocked == _this.isLocked)&&(identical(other.hasPendingFollowRequestFromYou, _this.hasPendingFollowRequestFromYou) || other.hasPendingFollowRequestFromYou == _this.hasPendingFollowRequestFromYou)&&(identical(other.isMuted, _this.isMuted) || other.isMuted == _this.isMuted)&&(identical(other.isBlocking, _this.isBlocking) || other.isBlocking == _this.isBlocking)&&const DeepCollectionEquality().equals(other.avatarDecorations, _this.avatarDecorations)&&(identical(other.followersCount, _this.followersCount) || other.followersCount == _this.followersCount)&&(identical(other.followingCount, _this.followingCount) || other.followingCount == _this.followingCount)&&(identical(other.notesCount, _this.notesCount) || other.notesCount == _this.notesCount)&&const DeepCollectionEquality().equals(other.fields, _this.fields)&&const DeepCollectionEquality().equals(other.pinnedNotes, _this.pinnedNotes)&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&const DeepCollectionEquality().equals(other.emojis, _this.emojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isLocked,hasPendingFollowRequestFromYou,isMuted,isBlocking,const DeepCollectionEquality().hash(avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(fields),const DeepCollectionEquality().hash(pinnedNotes),const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(emojis)]);
+int get hashCode {
+  final _this = this as UserDetailed;
+  return Object.hashAll([runtimeType,_this.id,_this.username,_this.name,_this.host,_this.avatarUrl,_this.bannerUrl,_this.bannerBlurhash,_this.description,_this.location,_this.birthday,_this.createdAt,_this.isBot,_this.isCat,_this.isFollowing,_this.isFollowed,_this.isLocked,_this.hasPendingFollowRequestFromYou,_this.isMuted,_this.isBlocking,const DeepCollectionEquality().hash(_this.avatarDecorations),_this.followersCount,_this.followingCount,_this.notesCount,const DeepCollectionEquality().hash(_this.fields),const DeepCollectionEquality().hash(_this.pinnedNotes),const DeepCollectionEquality().hash(_this.roles),const DeepCollectionEquality().hash(_this.emojis)]);
+}
 
 @override
 String toString() {
-  return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isLocked: $isLocked, hasPendingFollowRequestFromYou: $hasPendingFollowRequestFromYou, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
+  final _this = this as UserDetailed;
+  return 'UserDetailed(id: ${_this.id}, username: ${_this.username}, name: ${_this.name}, host: ${_this.host}, avatarUrl: ${_this.avatarUrl}, bannerUrl: ${_this.bannerUrl}, bannerBlurhash: ${_this.bannerBlurhash}, description: ${_this.description}, location: ${_this.location}, birthday: ${_this.birthday}, createdAt: ${_this.createdAt}, isBot: ${_this.isBot}, isCat: ${_this.isCat}, isFollowing: ${_this.isFollowing}, isFollowed: ${_this.isFollowed}, isLocked: ${_this.isLocked}, hasPendingFollowRequestFromYou: ${_this.hasPendingFollowRequestFromYou}, isMuted: ${_this.isMuted}, isBlocking: ${_this.isBlocking}, avatarDecorations: ${_this.avatarDecorations}, followersCount: ${_this.followersCount}, followingCount: ${_this.followingCount}, notesCount: ${_this.notesCount}, fields: ${_this.fields}, pinnedNotes: ${_this.pinnedNotes}, roles: ${_this.roles}, emojis: ${_this.emojis})';
 }
 
 
@@ -66,7 +72,7 @@ class _$UserDetailedCopyWithImpl<$Res>
 /// Create a copy of UserDetailed
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? name = freezed,Object? host = freezed,Object? avatarUrl = freezed,Object? bannerUrl = freezed,Object? bannerBlurhash = freezed,Object? description = freezed,Object? location = freezed,Object? birthday = freezed,Object? createdAt = freezed,Object? isBot = null,Object? isCat = null,Object? isFollowing = null,Object? isFollowed = null,Object? isLocked = null,Object? hasPendingFollowRequestFromYou = null,Object? isMuted = null,Object? isBlocking = null,Object? avatarDecorations = null,Object? followersCount = freezed,Object? followingCount = freezed,Object? notesCount = freezed,Object? fields = null,Object? pinnedNotes = null,Object? roles = null,Object? emojis = null,}) {
-  return _then(_self.copyWith(
+  return _then(UserDetailed(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -229,7 +235,7 @@ return $default(_that.id,_that.username,_that.name,_that.host,_that.avatarUrl,_t
 @JsonSerializable()
 
 class _UserDetailed extends UserDetailed {
-  const _UserDetailed({required this.id, required this.username, this.name, this.host, this.avatarUrl, this.bannerUrl, this.bannerBlurhash, this.description, this.location, this.birthday, this.createdAt, this.isBot = false, this.isCat = false, this.isFollowing = false, this.isFollowed = false, this.isLocked = false, this.hasPendingFollowRequestFromYou = false, this.isMuted = false, this.isBlocking = false, final  List<AvatarDecoration> avatarDecorations = const [], this.followersCount, this.followingCount, this.notesCount, final  List<ProfileField> fields = const [], final  List<Note> pinnedNotes = const [], final  List<UserRole> roles = const [], final  Map<String, String> emojis = const {}}): _avatarDecorations = avatarDecorations,_fields = fields,_pinnedNotes = pinnedNotes,_roles = roles,_emojis = emojis,super._();
+  const _UserDetailed({required this.id, required this.username, this.name, this.host, this.avatarUrl, this.bannerUrl, this.bannerBlurhash, this.description, this.location, this.birthday, this.createdAt, this.isBot = false, this.isCat = false, this.isFollowing = false, this.isFollowed = false, this.isLocked = false, this.hasPendingFollowRequestFromYou = false, this.isMuted = false, this.isBlocking = false,  List<AvatarDecoration> avatarDecorations = const [], this.followersCount, this.followingCount, this.notesCount,  List<ProfileField> fields = const [],  List<Note> pinnedNotes = const [],  List<UserRole> roles = const [],  Map<String, String> emojis = const {}}): _avatarDecorations = avatarDecorations,_fields = fields,_pinnedNotes = pinnedNotes,_roles = roles,_emojis = emojis,super._();
   factory _UserDetailed.fromJson(Map<String, dynamic> json) => _$UserDetailedFromJson(json);
 
 @override final  String id;
@@ -303,16 +309,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked)&&(identical(other.hasPendingFollowRequestFromYou, hasPendingFollowRequestFromYou) || other.hasPendingFollowRequestFromYou == hasPendingFollowRequestFromYou)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other._avatarDecorations, _avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other._fields, _fields)&&const DeepCollectionEquality().equals(other._pinnedNotes, _pinnedNotes)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._emojis, _emojis));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDetailed&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.host, host) || other.host == host)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.bannerBlurhash, bannerBlurhash) || other.bannerBlurhash == bannerBlurhash)&&(identical(other.description, description) || other.description == description)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFollowed, isFollowed) || other.isFollowed == isFollowed)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked)&&(identical(other.hasPendingFollowRequestFromYou, hasPendingFollowRequestFromYou) || other.hasPendingFollowRequestFromYou == hasPendingFollowRequestFromYou)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isBlocking, isBlocking) || other.isBlocking == isBlocking)&&const DeepCollectionEquality().equals(other.avatarDecorations, _avatarDecorations)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followingCount, followingCount) || other.followingCount == followingCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&const DeepCollectionEquality().equals(other.fields, _fields)&&const DeepCollectionEquality().equals(other.pinnedNotes, _pinnedNotes)&&const DeepCollectionEquality().equals(other.roles, _roles)&&const DeepCollectionEquality().equals(other.emojis, _emojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isLocked,hasPendingFollowRequestFromYou,isMuted,isBlocking,const DeepCollectionEquality().hash(_avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(_fields),const DeepCollectionEquality().hash(_pinnedNotes),const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_emojis)]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,username,name,host,avatarUrl,bannerUrl,bannerBlurhash,description,location,birthday,createdAt,isBot,isCat,isFollowing,isFollowed,isLocked,hasPendingFollowRequestFromYou,isMuted,isBlocking,const DeepCollectionEquality().hash(_avatarDecorations),followersCount,followingCount,notesCount,const DeepCollectionEquality().hash(_fields),const DeepCollectionEquality().hash(_pinnedNotes),const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_emojis)]);
+}
 
 @override
 String toString() {
-  return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isLocked: $isLocked, hasPendingFollowRequestFromYou: $hasPendingFollowRequestFromYou, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
+    return 'UserDetailed(id: $id, username: $username, name: $name, host: $host, avatarUrl: $avatarUrl, bannerUrl: $bannerUrl, bannerBlurhash: $bannerBlurhash, description: $description, location: $location, birthday: $birthday, createdAt: $createdAt, isBot: $isBot, isCat: $isCat, isFollowing: $isFollowing, isFollowed: $isFollowed, isLocked: $isLocked, hasPendingFollowRequestFromYou: $hasPendingFollowRequestFromYou, isMuted: $isMuted, isBlocking: $isBlocking, avatarDecorations: $avatarDecorations, followersCount: $followersCount, followingCount: $followingCount, notesCount: $notesCount, fields: $fields, pinnedNotes: $pinnedNotes, roles: $roles, emojis: $emojis)';
 }
 
 
@@ -393,16 +401,21 @@ $ProfileFieldCopyWith<ProfileField> get copyWith => _$ProfileFieldCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileField&&(identical(other.name, name) || other.name == name)&&(identical(other.value, value) || other.value == value));
+  final _this = this as ProfileField;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileField&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.value, _this.value) || other.value == _this.value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,value);
+int get hashCode {
+  final _this = this as ProfileField;
+  return Object.hash(runtimeType,_this.name,_this.value);
+}
 
 @override
 String toString() {
-  return 'ProfileField(name: $name, value: $value)';
+  final _this = this as ProfileField;
+  return 'ProfileField(name: ${_this.name}, value: ${_this.value})';
 }
 
 
@@ -431,7 +444,7 @@ class _$ProfileFieldCopyWithImpl<$Res>
 /// Create a copy of ProfileField
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? value = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProfileField(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,
@@ -588,16 +601,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileField&&(identical(other.name, name) || other.name == name)&&(identical(other.value, value) || other.value == value));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileField&&(identical(other.name, name) || other.name == name)&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,value);
+int get hashCode {
+    return Object.hash(runtimeType,name,value);
+}
 
 @override
 String toString() {
-  return 'ProfileField(name: $name, value: $value)';
+    return 'ProfileField(name: $name, value: $value)';
 }
 
 
@@ -653,16 +668,21 @@ $UserRoleCopyWith<UserRole> get copyWith => _$UserRoleCopyWithImpl<UserRole>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserRole&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
+  final _this = this as UserRole;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserRole&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.color, _this.color) || other.color == _this.color)&&(identical(other.iconUrl, _this.iconUrl) || other.iconUrl == _this.iconUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color,iconUrl);
+int get hashCode {
+  final _this = this as UserRole;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.color,_this.iconUrl);
+}
 
 @override
 String toString() {
-  return 'UserRole(id: $id, name: $name, color: $color, iconUrl: $iconUrl)';
+  final _this = this as UserRole;
+  return 'UserRole(id: ${_this.id}, name: ${_this.name}, color: ${_this.color}, iconUrl: ${_this.iconUrl})';
 }
 
 
@@ -691,7 +711,7 @@ class _$UserRoleCopyWithImpl<$Res>
 /// Create a copy of UserRole
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? color = freezed,Object? iconUrl = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(UserRole(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: freezed == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
@@ -852,16 +872,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserRole&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserRole&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color,iconUrl);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,color,iconUrl);
+}
 
 @override
 String toString() {
-  return 'UserRole(id: $id, name: $name, color: $color, iconUrl: $iconUrl)';
+    return 'UserRole(id: $id, name: $name, color: $color, iconUrl: $iconUrl)';
 }
 
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 選択肢は 2 つ以上必要なので、最初から 2 つ用意する。
 class PollDraft {

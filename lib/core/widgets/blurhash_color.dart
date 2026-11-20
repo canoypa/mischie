@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// blurhash の先頭にある平均色を取り出す。画像の読み込みを待たずに色が分かる。
 Color? averageColorOfBlurhash(String? hash) {

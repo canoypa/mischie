@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/core/emoji/emoji_providers.dart';
 import 'package:mischie/core/error/error_handler.dart';
@@ -133,8 +133,8 @@ class TimelineScreenState extends ConsumerState<TimelineScreen> {
                       return false;
                     },
                     child: ListView.custom(
+                      scrollCacheExtent: ScrollCacheExtent.pixels(1000),
                       controller: _scrollController,
-                      cacheExtent: 1000,
                       // キーで追わないと、先頭に新着が入るたびに表示中のカードが作り直されてガクつく。
                       childrenDelegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -267,7 +267,7 @@ class _NoteAppearState extends ConsumerState<_NoteAppear>
     final curve = CurvedAnimation(parent: controller, curve: Curves.easeOut);
     return SizeTransition(
       sizeFactor: curve,
-      axisAlignment: -1,
+      alignment: Alignment.topLeft,
       child: FadeTransition(opacity: curve, child: widget.child),
     );
   }
