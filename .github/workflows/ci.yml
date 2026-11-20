@@ -30,11 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.4.0
-      - uses: actions/setup-java@v4.9.1
-        with:
-          distribution: temurin
-          java-version: '17'
       - uses: jdx/mise-action@v2.4.4
+      # JDK も mise.toml の版を使う
+      - run: flutter config --jdk-dir "$(mise where java)"
       - run: flutter pub get
       # Gradle / AGP / Kotlin やネイティブ部分を持つプラグインの更新で壊れていないかを見る
       - run: flutter build apk --debug
