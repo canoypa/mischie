@@ -56,10 +56,10 @@
       "customType": "regex",
       "managerFilePatterns": ["/(^|/)mise\\.toml$/"],
       "matchStrings": [
-        "java = \"temurin-(?<currentValue>[^\"]+)\""
+        "java = \"temurin-(?<currentValue>(?<major>\\d+)[^\"]*)\""
       ],
       "depNameTemplate": "temurin-jdk",
-      "packageNameTemplate": "adoptium/temurin17-binaries",
+      "packageNameTemplate": "adoptium/temurin{{{major}}}-binaries",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^jdk-(?<version>\\d+\\.\\d+\\.\\d+(\\.\\d+)?\\+\\d+)$",
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(\\.(?<build>\\d+))?\\+(?<revision>\\d+)$"
