@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mischie/features/compose/presentation/compose_screen.dart';
 import 'package:mischie/features/search/domain/search_notifier.dart';

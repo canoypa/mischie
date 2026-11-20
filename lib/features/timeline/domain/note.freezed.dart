@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'note.dart';
@@ -9,6 +9,7 @@ part of 'note.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $NoteCopyWith<Note> get copyWith => _$NoteCopyWithImpl<Note>(this as Note, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.replyId, replyId) || other.replyId == replyId)&&(identical(other.reply, reply) || other.reply == reply)&&(identical(other.renote, renote) || other.renote == renote)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.url, url) || other.url == url)&&(identical(other.channelId, channelId) || other.channelId == channelId)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.poll, poll) || other.poll == poll)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.localOnly, localOnly) || other.localOnly == localOnly)&&(identical(other.repliesCount, repliesCount) || other.repliesCount == repliesCount)&&(identical(other.renoteCount, renoteCount) || other.renoteCount == renoteCount)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction)&&const DeepCollectionEquality().equals(other.files, files)&&const DeepCollectionEquality().equals(other.reactions, reactions)&&const DeepCollectionEquality().equals(other.emojis, emojis)&&const DeepCollectionEquality().equals(other.reactionEmojis, reactionEmojis));
+  final _this = this as Note;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Note&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.user, _this.user) || other.user == _this.user)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.cw, _this.cw) || other.cw == _this.cw)&&(identical(other.replyId, _this.replyId) || other.replyId == _this.replyId)&&(identical(other.reply, _this.reply) || other.reply == _this.reply)&&(identical(other.renote, _this.renote) || other.renote == _this.renote)&&(identical(other.uri, _this.uri) || other.uri == _this.uri)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.channelId, _this.channelId) || other.channelId == _this.channelId)&&(identical(other.channel, _this.channel) || other.channel == _this.channel)&&(identical(other.poll, _this.poll) || other.poll == _this.poll)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.localOnly, _this.localOnly) || other.localOnly == _this.localOnly)&&(identical(other.repliesCount, _this.repliesCount) || other.repliesCount == _this.repliesCount)&&(identical(other.renoteCount, _this.renoteCount) || other.renoteCount == _this.renoteCount)&&(identical(other.myReaction, _this.myReaction) || other.myReaction == _this.myReaction)&&const DeepCollectionEquality().equals(other.files, _this.files)&&const DeepCollectionEquality().equals(other.reactions, _this.reactions)&&const DeepCollectionEquality().equals(other.emojis, _this.emojis)&&const DeepCollectionEquality().equals(other.reactionEmojis, _this.reactionEmojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,createdAt,user,userId,text,cw,replyId,reply,renote,uri,url,channelId,channel,poll,visibility,localOnly,repliesCount,renoteCount,myReaction,const DeepCollectionEquality().hash(files),const DeepCollectionEquality().hash(reactions),const DeepCollectionEquality().hash(emojis),const DeepCollectionEquality().hash(reactionEmojis)]);
+int get hashCode {
+  final _this = this as Note;
+  return Object.hashAll([runtimeType,_this.id,_this.createdAt,_this.user,_this.userId,_this.text,_this.cw,_this.replyId,_this.reply,_this.renote,_this.uri,_this.url,_this.channelId,_this.channel,_this.poll,_this.visibility,_this.localOnly,_this.repliesCount,_this.renoteCount,_this.myReaction,const DeepCollectionEquality().hash(_this.files),const DeepCollectionEquality().hash(_this.reactions),const DeepCollectionEquality().hash(_this.emojis),const DeepCollectionEquality().hash(_this.reactionEmojis)]);
+}
 
 @override
 String toString() {
-  return 'Note(id: $id, createdAt: $createdAt, user: $user, userId: $userId, text: $text, cw: $cw, replyId: $replyId, reply: $reply, renote: $renote, uri: $uri, url: $url, channelId: $channelId, channel: $channel, poll: $poll, visibility: $visibility, localOnly: $localOnly, repliesCount: $repliesCount, renoteCount: $renoteCount, myReaction: $myReaction, files: $files, reactions: $reactions, emojis: $emojis, reactionEmojis: $reactionEmojis)';
+  final _this = this as Note;
+  return 'Note(id: ${_this.id}, createdAt: ${_this.createdAt}, user: ${_this.user}, userId: ${_this.userId}, text: ${_this.text}, cw: ${_this.cw}, replyId: ${_this.replyId}, reply: ${_this.reply}, renote: ${_this.renote}, uri: ${_this.uri}, url: ${_this.url}, channelId: ${_this.channelId}, channel: ${_this.channel}, poll: ${_this.poll}, visibility: ${_this.visibility}, localOnly: ${_this.localOnly}, repliesCount: ${_this.repliesCount}, renoteCount: ${_this.renoteCount}, myReaction: ${_this.myReaction}, files: ${_this.files}, reactions: ${_this.reactions}, emojis: ${_this.emojis}, reactionEmojis: ${_this.reactionEmojis})';
 }
 
 
@@ -66,7 +72,7 @@ class _$NoteCopyWithImpl<$Res>
 /// Create a copy of Note
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? user = null,Object? userId = freezed,Object? text = freezed,Object? cw = freezed,Object? replyId = freezed,Object? reply = freezed,Object? renote = freezed,Object? uri = freezed,Object? url = freezed,Object? channelId = freezed,Object? channel = freezed,Object? poll = freezed,Object? visibility = null,Object? localOnly = null,Object? repliesCount = null,Object? renoteCount = null,Object? myReaction = freezed,Object? files = null,Object? reactions = null,Object? emojis = null,Object? reactionEmojis = null,}) {
-  return _then(_self.copyWith(
+  return _then(Note(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
@@ -282,7 +288,7 @@ return $default(_that.id,_that.createdAt,_that.user,_that.userId,_that.text,_tha
 @JsonSerializable()
 
 class _Note extends Note {
-  const _Note({required this.id, required this.createdAt, required this.user, this.userId, this.text, this.cw, this.replyId, this.reply, this.renote, this.uri, this.url, this.channelId, this.channel, this.poll, this.visibility = 'public', this.localOnly = false, this.repliesCount = 0, this.renoteCount = 0, this.myReaction, final  List<DriveFile> files = const [], final  Map<String, int> reactions = const {}, final  Map<String, String> emojis = const {}, final  Map<String, String> reactionEmojis = const {}}): _files = files,_reactions = reactions,_emojis = emojis,_reactionEmojis = reactionEmojis,super._();
+  const _Note({required this.id, required this.createdAt, required this.user, this.userId, this.text, this.cw, this.replyId, this.reply, this.renote, this.uri, this.url, this.channelId, this.channel, this.poll, this.visibility = 'public', this.localOnly = false, this.repliesCount = 0, this.renoteCount = 0, this.myReaction,  List<DriveFile> files = const [],  Map<String, int> reactions = const {},  Map<String, String> emojis = const {},  Map<String, String> reactionEmojis = const {}}): _files = files,_reactions = reactions,_emojis = emojis,_reactionEmojis = reactionEmojis,super._();
   factory _Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 
 @override final  String id;
@@ -346,16 +352,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.replyId, replyId) || other.replyId == replyId)&&(identical(other.reply, reply) || other.reply == reply)&&(identical(other.renote, renote) || other.renote == renote)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.url, url) || other.url == url)&&(identical(other.channelId, channelId) || other.channelId == channelId)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.poll, poll) || other.poll == poll)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.localOnly, localOnly) || other.localOnly == localOnly)&&(identical(other.repliesCount, repliesCount) || other.repliesCount == repliesCount)&&(identical(other.renoteCount, renoteCount) || other.renoteCount == renoteCount)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction)&&const DeepCollectionEquality().equals(other._files, _files)&&const DeepCollectionEquality().equals(other._reactions, _reactions)&&const DeepCollectionEquality().equals(other._emojis, _emojis)&&const DeepCollectionEquality().equals(other._reactionEmojis, _reactionEmojis));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Note&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.user, user) || other.user == user)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.text, text) || other.text == text)&&(identical(other.cw, cw) || other.cw == cw)&&(identical(other.replyId, replyId) || other.replyId == replyId)&&(identical(other.reply, reply) || other.reply == reply)&&(identical(other.renote, renote) || other.renote == renote)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.url, url) || other.url == url)&&(identical(other.channelId, channelId) || other.channelId == channelId)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.poll, poll) || other.poll == poll)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.localOnly, localOnly) || other.localOnly == localOnly)&&(identical(other.repliesCount, repliesCount) || other.repliesCount == repliesCount)&&(identical(other.renoteCount, renoteCount) || other.renoteCount == renoteCount)&&(identical(other.myReaction, myReaction) || other.myReaction == myReaction)&&const DeepCollectionEquality().equals(other.files, _files)&&const DeepCollectionEquality().equals(other.reactions, _reactions)&&const DeepCollectionEquality().equals(other.emojis, _emojis)&&const DeepCollectionEquality().equals(other.reactionEmojis, _reactionEmojis));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,createdAt,user,userId,text,cw,replyId,reply,renote,uri,url,channelId,channel,poll,visibility,localOnly,repliesCount,renoteCount,myReaction,const DeepCollectionEquality().hash(_files),const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_emojis),const DeepCollectionEquality().hash(_reactionEmojis)]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,createdAt,user,userId,text,cw,replyId,reply,renote,uri,url,channelId,channel,poll,visibility,localOnly,repliesCount,renoteCount,myReaction,const DeepCollectionEquality().hash(_files),const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_emojis),const DeepCollectionEquality().hash(_reactionEmojis)]);
+}
 
 @override
 String toString() {
-  return 'Note(id: $id, createdAt: $createdAt, user: $user, userId: $userId, text: $text, cw: $cw, replyId: $replyId, reply: $reply, renote: $renote, uri: $uri, url: $url, channelId: $channelId, channel: $channel, poll: $poll, visibility: $visibility, localOnly: $localOnly, repliesCount: $repliesCount, renoteCount: $renoteCount, myReaction: $myReaction, files: $files, reactions: $reactions, emojis: $emojis, reactionEmojis: $reactionEmojis)';
+    return 'Note(id: $id, createdAt: $createdAt, user: $user, userId: $userId, text: $text, cw: $cw, replyId: $replyId, reply: $reply, renote: $renote, uri: $uri, url: $url, channelId: $channelId, channel: $channel, poll: $poll, visibility: $visibility, localOnly: $localOnly, repliesCount: $repliesCount, renoteCount: $renoteCount, myReaction: $myReaction, files: $files, reactions: $reactions, emojis: $emojis, reactionEmojis: $reactionEmojis)';
 }
 
 
@@ -489,16 +497,21 @@ $PollCopyWith<Poll> get copyWith => _$PollCopyWithImpl<Poll>(this as Poll, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Poll&&const DeepCollectionEquality().equals(other.choices, choices)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
+  final _this = this as Poll;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Poll&&const DeepCollectionEquality().equals(other.choices, _this.choices)&&(identical(other.multiple, _this.multiple) || other.multiple == _this.multiple)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(choices),multiple,expiresAt);
+int get hashCode {
+  final _this = this as Poll;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.choices),_this.multiple,_this.expiresAt);
+}
 
 @override
 String toString() {
-  return 'Poll(choices: $choices, multiple: $multiple, expiresAt: $expiresAt)';
+  final _this = this as Poll;
+  return 'Poll(choices: ${_this.choices}, multiple: ${_this.multiple}, expiresAt: ${_this.expiresAt})';
 }
 
 
@@ -527,7 +540,7 @@ class _$PollCopyWithImpl<$Res>
 /// Create a copy of Poll
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? choices = null,Object? multiple = null,Object? expiresAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Poll(
 choices: null == choices ? _self.choices : choices // ignore: cast_nullable_to_non_nullable
 as List<PollChoice>,multiple: null == multiple ? _self.multiple : multiple // ignore: cast_nullable_to_non_nullable
 as bool,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
@@ -666,7 +679,7 @@ return $default(_that.choices,_that.multiple,_that.expiresAt);case _:
 @JsonSerializable()
 
 class _Poll extends Poll {
-  const _Poll({final  List<PollChoice> choices = const [], this.multiple = false, this.expiresAt}): _choices = choices,super._();
+  const _Poll({ List<PollChoice> choices = const [], this.multiple = false, this.expiresAt}): _choices = choices,super._();
   factory _Poll.fromJson(Map<String, dynamic> json) => _$PollFromJson(json);
 
  final  List<PollChoice> _choices;
@@ -692,16 +705,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Poll&&const DeepCollectionEquality().equals(other._choices, _choices)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Poll&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_choices),multiple,expiresAt);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_choices),multiple,expiresAt);
+}
 
 @override
 String toString() {
-  return 'Poll(choices: $choices, multiple: $multiple, expiresAt: $expiresAt)';
+    return 'Poll(choices: $choices, multiple: $multiple, expiresAt: $expiresAt)';
 }
 
 
@@ -758,16 +773,21 @@ $PollChoiceCopyWith<PollChoice> get copyWith => _$PollChoiceCopyWithImpl<PollCho
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PollChoice&&(identical(other.text, text) || other.text == text)&&(identical(other.votes, votes) || other.votes == votes)&&(identical(other.isVoted, isVoted) || other.isVoted == isVoted));
+  final _this = this as PollChoice;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PollChoice&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.votes, _this.votes) || other.votes == _this.votes)&&(identical(other.isVoted, _this.isVoted) || other.isVoted == _this.isVoted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,text,votes,isVoted);
+int get hashCode {
+  final _this = this as PollChoice;
+  return Object.hash(runtimeType,_this.text,_this.votes,_this.isVoted);
+}
 
 @override
 String toString() {
-  return 'PollChoice(text: $text, votes: $votes, isVoted: $isVoted)';
+  final _this = this as PollChoice;
+  return 'PollChoice(text: ${_this.text}, votes: ${_this.votes}, isVoted: ${_this.isVoted})';
 }
 
 
@@ -796,7 +816,7 @@ class _$PollChoiceCopyWithImpl<$Res>
 /// Create a copy of PollChoice
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? text = null,Object? votes = null,Object? isVoted = null,}) {
-  return _then(_self.copyWith(
+  return _then(PollChoice(
 text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,votes: null == votes ? _self.votes : votes // ignore: cast_nullable_to_non_nullable
 as int,isVoted: null == isVoted ? _self.isVoted : isVoted // ignore: cast_nullable_to_non_nullable
@@ -955,16 +975,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PollChoice&&(identical(other.text, text) || other.text == text)&&(identical(other.votes, votes) || other.votes == votes)&&(identical(other.isVoted, isVoted) || other.isVoted == isVoted));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PollChoice&&(identical(other.text, text) || other.text == text)&&(identical(other.votes, votes) || other.votes == votes)&&(identical(other.isVoted, isVoted) || other.isVoted == isVoted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,text,votes,isVoted);
+int get hashCode {
+    return Object.hash(runtimeType,text,votes,isVoted);
+}
 
 @override
 String toString() {
-  return 'PollChoice(text: $text, votes: $votes, isVoted: $isVoted)';
+    return 'PollChoice(text: $text, votes: $votes, isVoted: $isVoted)';
 }
 
 
@@ -1021,16 +1043,21 @@ $NoteChannelCopyWith<NoteChannel> get copyWith => _$NoteChannelCopyWithImpl<Note
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive)&&(identical(other.allowRenoteToExternal, allowRenoteToExternal) || other.allowRenoteToExternal == allowRenoteToExternal));
+  final _this = this as NoteChannel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NoteChannel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.color, _this.color) || other.color == _this.color)&&(identical(other.isSensitive, _this.isSensitive) || other.isSensitive == _this.isSensitive)&&(identical(other.allowRenoteToExternal, _this.allowRenoteToExternal) || other.allowRenoteToExternal == _this.allowRenoteToExternal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color,isSensitive,allowRenoteToExternal);
+int get hashCode {
+  final _this = this as NoteChannel;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.color,_this.isSensitive,_this.allowRenoteToExternal);
+}
 
 @override
 String toString() {
-  return 'NoteChannel(id: $id, name: $name, color: $color, isSensitive: $isSensitive, allowRenoteToExternal: $allowRenoteToExternal)';
+  final _this = this as NoteChannel;
+  return 'NoteChannel(id: ${_this.id}, name: ${_this.name}, color: ${_this.color}, isSensitive: ${_this.isSensitive}, allowRenoteToExternal: ${_this.allowRenoteToExternal})';
 }
 
 
@@ -1059,7 +1086,7 @@ class _$NoteChannelCopyWithImpl<$Res>
 /// Create a copy of NoteChannel
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? color = freezed,Object? isSensitive = null,Object? allowRenoteToExternal = null,}) {
-  return _then(_self.copyWith(
+  return _then(NoteChannel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: freezed == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
@@ -1222,16 +1249,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive)&&(identical(other.allowRenoteToExternal, allowRenoteToExternal) || other.allowRenoteToExternal == allowRenoteToExternal));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NoteChannel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive)&&(identical(other.allowRenoteToExternal, allowRenoteToExternal) || other.allowRenoteToExternal == allowRenoteToExternal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color,isSensitive,allowRenoteToExternal);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,color,isSensitive,allowRenoteToExternal);
+}
 
 @override
 String toString() {
-  return 'NoteChannel(id: $id, name: $name, color: $color, isSensitive: $isSensitive, allowRenoteToExternal: $allowRenoteToExternal)';
+    return 'NoteChannel(id: $id, name: $name, color: $color, isSensitive: $isSensitive, allowRenoteToExternal: $allowRenoteToExternal)';
 }
 
 

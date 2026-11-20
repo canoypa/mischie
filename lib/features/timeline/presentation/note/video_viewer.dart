@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:mischie/features/timeline/domain/drive_file.dart';
 import 'package:video_player/video_player.dart';

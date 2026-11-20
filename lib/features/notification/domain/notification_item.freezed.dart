@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'notification_item.dart';
@@ -9,6 +9,7 @@ part of 'notification_item.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -30,16 +31,21 @@ $NotificationItemCopyWith<NotificationItem> get copyWith => _$NotificationItemCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction)&&const DeepCollectionEquality().equals(other.reactions, reactions)&&const DeepCollectionEquality().equals(other.users, users));
+  final _this = this as NotificationItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.user, _this.user) || other.user == _this.user)&&(identical(other.note, _this.note) || other.note == _this.note)&&(identical(other.reaction, _this.reaction) || other.reaction == _this.reaction)&&const DeepCollectionEquality().equals(other.reactions, _this.reactions)&&const DeepCollectionEquality().equals(other.users, _this.users));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,type,user,note,reaction,const DeepCollectionEquality().hash(reactions),const DeepCollectionEquality().hash(users));
+int get hashCode {
+  final _this = this as NotificationItem;
+  return Object.hash(runtimeType,_this.id,_this.createdAt,_this.type,_this.user,_this.note,_this.reaction,const DeepCollectionEquality().hash(_this.reactions),const DeepCollectionEquality().hash(_this.users));
+}
 
 @override
 String toString() {
-  return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction, reactions: $reactions, users: $users)';
+  final _this = this as NotificationItem;
+  return 'NotificationItem(id: ${_this.id}, createdAt: ${_this.createdAt}, type: ${_this.type}, user: ${_this.user}, note: ${_this.note}, reaction: ${_this.reaction}, reactions: ${_this.reactions}, users: ${_this.users})';
 }
 
 
@@ -68,7 +74,7 @@ class _$NotificationItemCopyWithImpl<$Res>
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? type = null,Object? user = freezed,Object? note = freezed,Object? reaction = freezed,Object? reactions = freezed,Object? users = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NotificationItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -236,7 +242,7 @@ return $default(_that.id,_that.createdAt,_that.type,_that.user,_that.note,_that.
 @JsonSerializable()
 
 class _NotificationItem implements NotificationItem {
-  const _NotificationItem({required this.id, required this.createdAt, required this.type, this.user, this.note, this.reaction, final  List<GroupedReaction>? reactions, final  List<User>? users}): _reactions = reactions,_users = users;
+  const _NotificationItem({required this.id, required this.createdAt, required this.type, this.user, this.note, this.reaction,  List<GroupedReaction>? reactions,  List<User>? users}): _reactions = reactions,_users = users;
   factory _NotificationItem.fromJson(Map<String, dynamic> json) => _$NotificationItemFromJson(json);
 
 @override final  String id;
@@ -281,16 +287,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction)&&const DeepCollectionEquality().equals(other._reactions, _reactions)&&const DeepCollectionEquality().equals(other._users, _users));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.type, type) || other.type == type)&&(identical(other.user, user) || other.user == user)&&(identical(other.note, note) || other.note == note)&&(identical(other.reaction, reaction) || other.reaction == reaction)&&const DeepCollectionEquality().equals(other.reactions, _reactions)&&const DeepCollectionEquality().equals(other.users, _users));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,type,user,note,reaction,const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_users));
+int get hashCode {
+    return Object.hash(runtimeType,id,createdAt,type,user,note,reaction,const DeepCollectionEquality().hash(_reactions),const DeepCollectionEquality().hash(_users));
+}
 
 @override
 String toString() {
-  return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction, reactions: $reactions, users: $users)';
+    return 'NotificationItem(id: $id, createdAt: $createdAt, type: $type, user: $user, note: $note, reaction: $reaction, reactions: $reactions, users: $users)';
 }
 
 
@@ -376,16 +384,21 @@ $GroupedReactionCopyWith<GroupedReaction> get copyWith => _$GroupedReactionCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupedReaction&&(identical(other.user, user) || other.user == user)&&(identical(other.reaction, reaction) || other.reaction == reaction));
+  final _this = this as GroupedReaction;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GroupedReaction&&(identical(other.user, _this.user) || other.user == _this.user)&&(identical(other.reaction, _this.reaction) || other.reaction == _this.reaction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,user,reaction);
+int get hashCode {
+  final _this = this as GroupedReaction;
+  return Object.hash(runtimeType,_this.user,_this.reaction);
+}
 
 @override
 String toString() {
-  return 'GroupedReaction(user: $user, reaction: $reaction)';
+  final _this = this as GroupedReaction;
+  return 'GroupedReaction(user: ${_this.user}, reaction: ${_this.reaction})';
 }
 
 
@@ -414,7 +427,7 @@ class _$GroupedReactionCopyWithImpl<$Res>
 /// Create a copy of GroupedReaction
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? user = null,Object? reaction = null,}) {
-  return _then(_self.copyWith(
+  return _then(GroupedReaction(
 user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as User,reaction: null == reaction ? _self.reaction : reaction // ignore: cast_nullable_to_non_nullable
 as String,
@@ -580,16 +593,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupedReaction&&(identical(other.user, user) || other.user == user)&&(identical(other.reaction, reaction) || other.reaction == reaction));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GroupedReaction&&(identical(other.user, user) || other.user == user)&&(identical(other.reaction, reaction) || other.reaction == reaction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,user,reaction);
+int get hashCode {
+    return Object.hash(runtimeType,user,reaction);
+}
 
 @override
 String toString() {
-  return 'GroupedReaction(user: $user, reaction: $reaction)';
+    return 'GroupedReaction(user: $user, reaction: $reaction)';
 }
 
 

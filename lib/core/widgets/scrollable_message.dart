@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 中身が無いときも引っ張って更新できるよう、画面の高さいっぱいの
 /// スクロール領域に置く。

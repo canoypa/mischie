@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mischie/core/image/image_cache_managers.dart';
 import 'package:mischie/core/widgets/blurhash_color.dart';
 import 'package:mischie/core/widgets/cat_ears.dart';

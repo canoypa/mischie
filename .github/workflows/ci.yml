@@ -20,7 +20,7 @@ jobs:
       # 生成コードはコミットしているので、生成器の更新で出力が変わったら気付けるようにする
       - name: Check generated code is up to date
         run: |
-          dart run build_runner build --delete-conflicting-outputs
+          dart run build_runner build
           git diff --exit-code
       - run: flutter analyze lib/ test/
       # ゴールデンは macOS で描いた画像なので Linux では外す (dart_test.yaml 参照)

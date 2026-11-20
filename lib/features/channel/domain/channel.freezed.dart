@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'channel.dart';
@@ -9,6 +9,7 @@ part of 'channel.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $ChannelCopyWith<Channel> get copyWith => _$ChannelCopyWithImpl<Channel>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Channel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.color, color) || other.color == color)&&(identical(other.usersCount, usersCount) || other.usersCount == usersCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFavorited, isFavorited) || other.isFavorited == isFavorited)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
+  final _this = this as Channel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Channel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.bannerUrl, _this.bannerUrl) || other.bannerUrl == _this.bannerUrl)&&(identical(other.color, _this.color) || other.color == _this.color)&&(identical(other.usersCount, _this.usersCount) || other.usersCount == _this.usersCount)&&(identical(other.notesCount, _this.notesCount) || other.notesCount == _this.notesCount)&&(identical(other.isFollowing, _this.isFollowing) || other.isFollowing == _this.isFollowing)&&(identical(other.isFavorited, _this.isFavorited) || other.isFavorited == _this.isFavorited)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.isSensitive, _this.isSensitive) || other.isSensitive == _this.isSensitive));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,bannerUrl,color,usersCount,notesCount,isFollowing,isFavorited,isArchived,isSensitive);
+int get hashCode {
+  final _this = this as Channel;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.bannerUrl,_this.color,_this.usersCount,_this.notesCount,_this.isFollowing,_this.isFavorited,_this.isArchived,_this.isSensitive);
+}
 
 @override
 String toString() {
-  return 'Channel(id: $id, name: $name, description: $description, bannerUrl: $bannerUrl, color: $color, usersCount: $usersCount, notesCount: $notesCount, isFollowing: $isFollowing, isFavorited: $isFavorited, isArchived: $isArchived, isSensitive: $isSensitive)';
+  final _this = this as Channel;
+  return 'Channel(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, bannerUrl: ${_this.bannerUrl}, color: ${_this.color}, usersCount: ${_this.usersCount}, notesCount: ${_this.notesCount}, isFollowing: ${_this.isFollowing}, isFavorited: ${_this.isFavorited}, isArchived: ${_this.isArchived}, isSensitive: ${_this.isSensitive})';
 }
 
 
@@ -66,7 +72,7 @@ class _$ChannelCopyWithImpl<$Res>
 /// Create a copy of Channel
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? bannerUrl = freezed,Object? color = freezed,Object? usersCount = null,Object? notesCount = null,Object? isFollowing = null,Object? isFavorited = null,Object? isArchived = null,Object? isSensitive = null,}) {
-  return _then(_self.copyWith(
+  return _then(Channel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -241,16 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Channel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.color, color) || other.color == color)&&(identical(other.usersCount, usersCount) || other.usersCount == usersCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFavorited, isFavorited) || other.isFavorited == isFavorited)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Channel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.bannerUrl, bannerUrl) || other.bannerUrl == bannerUrl)&&(identical(other.color, color) || other.color == color)&&(identical(other.usersCount, usersCount) || other.usersCount == usersCount)&&(identical(other.notesCount, notesCount) || other.notesCount == notesCount)&&(identical(other.isFollowing, isFollowing) || other.isFollowing == isFollowing)&&(identical(other.isFavorited, isFavorited) || other.isFavorited == isFavorited)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isSensitive, isSensitive) || other.isSensitive == isSensitive));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,bannerUrl,color,usersCount,notesCount,isFollowing,isFavorited,isArchived,isSensitive);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,description,bannerUrl,color,usersCount,notesCount,isFollowing,isFavorited,isArchived,isSensitive);
+}
 
 @override
 String toString() {
-  return 'Channel(id: $id, name: $name, description: $description, bannerUrl: $bannerUrl, color: $color, usersCount: $usersCount, notesCount: $notesCount, isFollowing: $isFollowing, isFavorited: $isFavorited, isArchived: $isArchived, isSensitive: $isSensitive)';
+    return 'Channel(id: $id, name: $name, description: $description, bannerUrl: $bannerUrl, color: $color, usersCount: $usersCount, notesCount: $notesCount, isFollowing: $isFollowing, isFavorited: $isFavorited, isArchived: $isArchived, isSensitive: $isSensitive)';
 }
 
 

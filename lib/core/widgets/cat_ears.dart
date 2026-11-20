@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// isCat のユーザーのアイコンに載せる猫耳。
 class CatEars extends StatelessWidget {

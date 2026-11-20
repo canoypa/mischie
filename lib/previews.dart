@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:mischie/core/widgets/cat_ears.dart';
 import 'package:mischie/core/widgets/collapsible_content.dart';
@@ -8,13 +8,27 @@ import 'package:mischie/core/widgets/decorated_avatar.dart';
 /// ゴールデンで確かめる。
 
 /// 配色は MischieApp のテーマと揃えておく。
+final class _MischiePreviewTheme extends PreviewThemeData {
+  const _MischiePreviewTheme();
+
+  static const _seed = Color(0xFFA8E800);
+
+  @override
+  Widget apply(BuildContext context, Widget child) => Theme(
+    data: ThemeData(
+      useMaterial3: true,
+      colorSchemeSeed: _seed,
+      brightness: MediaQuery.platformBrightnessOf(context),
+    ),
+    child: child,
+  );
+}
+
 final class _MischiePreview extends MultiPreview {
   const _MischiePreview({required this.previewName, this.previewSize});
 
   final String previewName;
   final Size? previewSize;
-
-  static const _seed = Color(0xFFA8E800);
 
   @override
   List<Preview> get previews => [
@@ -32,14 +46,7 @@ final class _MischiePreview extends MultiPreview {
     ),
   ];
 
-  static PreviewThemeData _theme() => PreviewThemeData(
-    materialLight: ThemeData(useMaterial3: true, colorSchemeSeed: _seed),
-    materialDark: ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: _seed,
-      brightness: Brightness.dark,
-    ),
-  );
+  static PreviewThemeData _theme() => const _MischiePreviewTheme();
 }
 
 @_MischiePreview(previewName: '猫耳アイコン', previewSize: Size(240, 160))

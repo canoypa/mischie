@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'user.dart';
@@ -9,6 +9,7 @@ part of 'user.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $UserCopyWith<User> get copyWith => _$UserCopyWithImpl<User>(this as User, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is User&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.avatarBlurhash, avatarBlurhash) || other.avatarBlurhash == avatarBlurhash)&&(identical(other.host, host) || other.host == host)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&const DeepCollectionEquality().equals(other.avatarDecorations, avatarDecorations));
+  final _this = this as User;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is User&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.username, _this.username) || other.username == _this.username)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.avatarUrl, _this.avatarUrl) || other.avatarUrl == _this.avatarUrl)&&(identical(other.avatarBlurhash, _this.avatarBlurhash) || other.avatarBlurhash == _this.avatarBlurhash)&&(identical(other.host, _this.host) || other.host == _this.host)&&(identical(other.isCat, _this.isCat) || other.isCat == _this.isCat)&&(identical(other.isBot, _this.isBot) || other.isBot == _this.isBot)&&const DeepCollectionEquality().equals(other.avatarDecorations, _this.avatarDecorations));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,username,name,avatarUrl,avatarBlurhash,host,isCat,isBot,const DeepCollectionEquality().hash(avatarDecorations));
+int get hashCode {
+  final _this = this as User;
+  return Object.hash(runtimeType,_this.id,_this.username,_this.name,_this.avatarUrl,_this.avatarBlurhash,_this.host,_this.isCat,_this.isBot,const DeepCollectionEquality().hash(_this.avatarDecorations));
+}
 
 @override
 String toString() {
-  return 'User(id: $id, username: $username, name: $name, avatarUrl: $avatarUrl, avatarBlurhash: $avatarBlurhash, host: $host, isCat: $isCat, isBot: $isBot, avatarDecorations: $avatarDecorations)';
+  final _this = this as User;
+  return 'User(id: ${_this.id}, username: ${_this.username}, name: ${_this.name}, avatarUrl: ${_this.avatarUrl}, avatarBlurhash: ${_this.avatarBlurhash}, host: ${_this.host}, isCat: ${_this.isCat}, isBot: ${_this.isBot}, avatarDecorations: ${_this.avatarDecorations})';
 }
 
 
@@ -66,7 +72,7 @@ class _$UserCopyWithImpl<$Res>
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? username = null,Object? name = freezed,Object? avatarUrl = freezed,Object? avatarBlurhash = freezed,Object? host = freezed,Object? isCat = null,Object? isBot = null,Object? avatarDecorations = null,}) {
-  return _then(_self.copyWith(
+  return _then(User(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.id,_that.username,_that.name,_that.avatarUrl,_that.avatarB
 @JsonSerializable()
 
 class _User extends User {
-  const _User({required this.id, required this.username, this.name, this.avatarUrl, this.avatarBlurhash, this.host, this.isCat = false, this.isBot = false, final  List<AvatarDecoration> avatarDecorations = const []}): _avatarDecorations = avatarDecorations,super._();
+  const _User({required this.id, required this.username, this.name, this.avatarUrl, this.avatarBlurhash, this.host, this.isCat = false, this.isBot = false,  List<AvatarDecoration> avatarDecorations = const []}): _avatarDecorations = avatarDecorations,super._();
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
 @override final  String id;
@@ -243,16 +249,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _User&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.avatarBlurhash, avatarBlurhash) || other.avatarBlurhash == avatarBlurhash)&&(identical(other.host, host) || other.host == host)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&const DeepCollectionEquality().equals(other._avatarDecorations, _avatarDecorations));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _User&&(identical(other.id, id) || other.id == id)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.avatarBlurhash, avatarBlurhash) || other.avatarBlurhash == avatarBlurhash)&&(identical(other.host, host) || other.host == host)&&(identical(other.isCat, isCat) || other.isCat == isCat)&&(identical(other.isBot, isBot) || other.isBot == isBot)&&const DeepCollectionEquality().equals(other.avatarDecorations, _avatarDecorations));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,username,name,avatarUrl,avatarBlurhash,host,isCat,isBot,const DeepCollectionEquality().hash(_avatarDecorations));
+int get hashCode {
+    return Object.hash(runtimeType,id,username,name,avatarUrl,avatarBlurhash,host,isCat,isBot,const DeepCollectionEquality().hash(_avatarDecorations));
+}
 
 @override
 String toString() {
-  return 'User(id: $id, username: $username, name: $name, avatarUrl: $avatarUrl, avatarBlurhash: $avatarBlurhash, host: $host, isCat: $isCat, isBot: $isBot, avatarDecorations: $avatarDecorations)';
+    return 'User(id: $id, username: $username, name: $name, avatarUrl: $avatarUrl, avatarBlurhash: $avatarBlurhash, host: $host, isCat: $isCat, isBot: $isBot, avatarDecorations: $avatarDecorations)';
 }
 
 
@@ -315,16 +323,21 @@ $AvatarDecorationCopyWith<AvatarDecoration> get copyWith => _$AvatarDecorationCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AvatarDecoration&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.angle, angle) || other.angle == angle)&&(identical(other.flipH, flipH) || other.flipH == flipH)&&(identical(other.offsetX, offsetX) || other.offsetX == offsetX)&&(identical(other.offsetY, offsetY) || other.offsetY == offsetY));
+  final _this = this as AvatarDecoration;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AvatarDecoration&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.angle, _this.angle) || other.angle == _this.angle)&&(identical(other.flipH, _this.flipH) || other.flipH == _this.flipH)&&(identical(other.offsetX, _this.offsetX) || other.offsetX == _this.offsetX)&&(identical(other.offsetY, _this.offsetY) || other.offsetY == _this.offsetY));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,url,angle,flipH,offsetX,offsetY);
+int get hashCode {
+  final _this = this as AvatarDecoration;
+  return Object.hash(runtimeType,_this.id,_this.url,_this.angle,_this.flipH,_this.offsetX,_this.offsetY);
+}
 
 @override
 String toString() {
-  return 'AvatarDecoration(id: $id, url: $url, angle: $angle, flipH: $flipH, offsetX: $offsetX, offsetY: $offsetY)';
+  final _this = this as AvatarDecoration;
+  return 'AvatarDecoration(id: ${_this.id}, url: ${_this.url}, angle: ${_this.angle}, flipH: ${_this.flipH}, offsetX: ${_this.offsetX}, offsetY: ${_this.offsetY})';
 }
 
 
@@ -353,7 +366,7 @@ class _$AvatarDecorationCopyWithImpl<$Res>
 /// Create a copy of AvatarDecoration
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? url = null,Object? angle = null,Object? flipH = null,Object? offsetX = null,Object? offsetY = null,}) {
-  return _then(_self.copyWith(
+  return _then(AvatarDecoration(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,angle: null == angle ? _self.angle : angle // ignore: cast_nullable_to_non_nullable
@@ -518,16 +531,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AvatarDecoration&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.angle, angle) || other.angle == angle)&&(identical(other.flipH, flipH) || other.flipH == flipH)&&(identical(other.offsetX, offsetX) || other.offsetX == offsetX)&&(identical(other.offsetY, offsetY) || other.offsetY == offsetY));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AvatarDecoration&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.angle, angle) || other.angle == angle)&&(identical(other.flipH, flipH) || other.flipH == flipH)&&(identical(other.offsetX, offsetX) || other.offsetX == offsetX)&&(identical(other.offsetY, offsetY) || other.offsetY == offsetY));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,url,angle,flipH,offsetX,offsetY);
+int get hashCode {
+    return Object.hash(runtimeType,id,url,angle,flipH,offsetX,offsetY);
+}
 
 @override
 String toString() {
-  return 'AvatarDecoration(id: $id, url: $url, angle: $angle, flipH: $flipH, offsetX: $offsetX, offsetY: $offsetY)';
+    return 'AvatarDecoration(id: $id, url: $url, angle: $angle, flipH: $flipH, offsetX: $offsetX, offsetY: $offsetY)';
 }
 
 
