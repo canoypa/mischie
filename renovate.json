@@ -8,6 +8,12 @@
   },
   "packageRules": [
     {
+      "description": "JDK を公開日時の取れないデータソースで追わない",
+      "matchManagers": ["mise"],
+      "matchDepNames": ["java"],
+      "enabled": false
+    },
+    {
       "description": "pub の非破壊的な更新をまとめてレビューする",
       "matchManagers": ["pub"],
       "matchUpdateTypes": ["minor", "patch"],
@@ -42,6 +48,21 @@
       "description": "GitHub Actions の更新をまとめてレビューする",
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "mise.toml の JDK を公開日時の取れる Adoptium の GitHub Releases で追う",
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)mise\\.toml$/"],
+      "matchStrings": [
+        "java = \"temurin-(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "temurin-jdk",
+      "packageNameTemplate": "adoptium/temurin17-binaries",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^jdk-(?<version>\\d+\\.\\d+\\.\\d+(\\.\\d+)?\\+\\d+)$",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(\\.(?<build>\\d+))?\\+(?<revision>\\d+)$"
     }
   ]
 }
