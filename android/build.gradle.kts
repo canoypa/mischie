@@ -23,7 +23,7 @@ subprojects {
 // ターゲットが食い違ってビルドが通らない。アプリと同じ 17 に揃える。
 subprojects {
     plugins.withId("com.android.library") {
-        extensions.configure<com.android.build.gradle.LibraryExtension> {
+        extensions.configure<com.android.build.api.dsl.LibraryExtension> {
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_17
                 targetCompatibility = JavaVersion.VERSION_17
